@@ -15,7 +15,21 @@ typedef struct
 
 } Board;
 
+/**
+ * @brief Create a new board.
+ * 
+ * @param name 
+ * @param w 
+ * @param h 
+ * @return Board 
+ */
 Board board_create(const char *name, int w, int h);
+
+/**
+ * @brief Destroy the given board.
+ * 
+ * @param b 
+ */
 void board_destroy(Board *b);
 
 /**

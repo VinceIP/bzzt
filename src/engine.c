@@ -6,11 +6,9 @@ bool Engine_Init(Engine* e, int w, int h){
 }
 
 void Engine_Run(Engine* e){
-    while(e->running && !WindowShouldClose()){
         //Update input
         //Update world
         //Render
-    }
 }
 
 void Engine_Quit(Engine* e) {

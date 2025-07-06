@@ -6,8 +6,8 @@
 
 typedef struct {
     World world;
-    Renderer renderer;
-    Input input;
+    // Renderer renderer;
+    // Input input;
     bool running;
 } Engine;
 

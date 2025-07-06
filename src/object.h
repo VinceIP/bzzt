@@ -1,8 +1,14 @@
 #pragma once
-#include <cstdint>
+#include <stdint.h>
+#include "color.h"
 
-typedef enum {
-    DIR_NONE, DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT
+typedef enum
+{
+    DIR_NONE,
+    DIR_UP,
+    DIR_DOWN,
+    DIR_LEFT,
+    DIR_RIGHT
 } Direction;
 
 typedef struct
@@ -10,5 +16,9 @@ typedef struct
     int id;
     int x, y;
     Direction dir;
-    uint8_t glyph, fg_color, bg_color;
+    uint8_t glyph;
+    Color_bzzt fg_color, bg_color;
 } Object;
+
+Object *object_create(uint8_t glyph, Color_bzzt fg_color, Color_bzzt bg_color, int x, int y);
+void object_destroy(int id);

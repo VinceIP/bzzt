@@ -1,23 +1,24 @@
 #include "raylib.h"
+#include "world.h"
+
 
 int main(void)
 {
     const int screenWidth = 640;
     const int screenHeight = 400;
 
-    InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+    InitWindow(screenWidth, screenHeight, "Bzzt - prototype");
     SetTargetFPS(60);
+
+    World *world = world_create("New World");
 
     while (!WindowShouldClose())
     {
-        BeginDrawing();
-
-            ClearBackground(RAYWHITE);
-
-            DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
-
-        EndDrawing();
+        //input_update();
+        //world_update();
+        //renderer_draw();
     }
+    world_unload(world);
     CloseWindow();
     return 0;
 }
