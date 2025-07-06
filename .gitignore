@@ -1,0 +1,20 @@
+# object files / binaries
+*.o
+*.obj
+*.exe
+*.out
+*.a
+*.so
+*.dll
+
+# build directories
+/build/
+/dist/
+/bin/
+/lib/
+
+# editor files
+*~ 
+
+# misc
+.vscode/
