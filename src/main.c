@@ -14,9 +14,12 @@ int main(void)
 
     while (!WindowShouldClose())
     {
+        BeginDrawing();
+        DrawText("bzzt", 100,100,20,BLACK);
         //input_update();
         //world_update();
         //renderer_draw();
+        EndDrawing();
     }
     world_unload(world);
     CloseWindow();

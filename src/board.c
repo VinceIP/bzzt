@@ -4,16 +4,17 @@
 
 #define START_CAP 64
 
-Board board_create(const char *name, int w, int h)
+Board *board_create(const char *name, int w, int h)
 {
-    Board b = {
-        .width = w,
-        .height = h,
-        .object_cap = START_CAP,
-        .objects = malloc(sizeof(Object) * START_CAP),
-        .name = strdup(name ? name : "Untitled"),
-        .object_count = 0,
-        .object_next_id = 1};
+    Board *b = malloc(sizeof(Board));
+    if (!b) return NULL;
+    b->width = w;
+    b->height = h;
+    b->object_cap = START_CAP;
+    b->objects = malloc(sizeof(Object) * START_CAP);
+    b->name = strdup(name ? name : "Untitled");
+    b->object_count = 0;
+    b->object_next_id = 1;
     return b;
 }
 

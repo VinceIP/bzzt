@@ -23,7 +23,7 @@ typedef struct
  * @param h 
  * @return Board 
  */
-Board board_create(const char *name, int w, int h);
+Board *board_create(const char *name, int w, int h);
 
 /**
  * @brief Destroy the given board.
