@@ -8,7 +8,7 @@ typedef struct
 {
     int width, height;
 
-    Object *objects;
+    Object **objects;
     int object_count, object_cap, object_next_id;
 
     char *name;
@@ -39,7 +39,7 @@ void board_destroy(Board *b);
  * @param proto The object.
  * @return Object* Pointer to new object.
  */
-Object *board_add_obj(Board *b, Object proto);
+Object *board_add_obj(Board *b, Object *o);
 /**
  * @brief Remove an object from a board by id.
  *
