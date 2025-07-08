@@ -2,6 +2,7 @@
 #include <string.h>
 #include "world.h"
 #include "object.h"
+#include "input.h"
 #include "color.h"
 
 World *world_create(char *title)
@@ -15,7 +16,7 @@ World *world_create(char *title)
     w->boards[0] = board_create("Title Screen", BOARD_DEFAULT_W, BOARD_DEFAULT_H); // create a starting empty title screen board
 
     w->player = board_add_obj(w->boards[0], // Pushes a default player obj to the board
-                              object_create(3, COLOR_LIGHT_GREEN, COLOR_BLUE, 40, 14));
+                              object_create(2, COLOR_WHITE, COLOR_BLUE, 40, 14));
     w->boards_current = 0;
     w->boards_count = 1;
     return w;
@@ -34,4 +35,17 @@ void world_unload(World *w)
     }
     free(w->boards);
     free(w);
+}
+
+void world_update(World *w, const InputState *in)
+{
+    Object *p = w->player;
+
+    int newX = p->x + in->dx;
+    int newY = p->y + in->dy;
+
+    if (newX >= 0 && newX < w->boards[w->boards_current]->width)
+        p->x = newX;
+    if (newY >= 0 && newY < w->boards[w->boards_current]->height)
+        p->y = newY;
 }

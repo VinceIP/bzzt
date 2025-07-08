@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "board.h"
+#include "input.h"
 
 #define MAX_PATH 32
 
@@ -29,3 +30,5 @@ World *world_create(char *title);
 int world_load(World *w, const char *path);
 int world_save(World *w, const char *path);
 void world_unload(World *w);
+
+void world_update(World *w, const InputState *in);

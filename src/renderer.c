@@ -6,14 +6,17 @@
 bool Renderer_Init(Renderer *r, const char *path)
 {
     Image img = LoadImage(path);
-    //ImageColorReplace(&img, (Color){0,0,0,255}, (Color){0,0,0,0});
+    ImageFormat(&img, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+    ImageColorReplace(&img, (Color){0, 0, 0, 255}, BLANK);    // pure black
+    ImageColorReplace(&img, (Color){8, 8, 8, 255}, BLANK);    // dark grey 1
+    ImageColorReplace(&img, (Color){16, 16, 16, 255}, BLANK); // dark grey 2    r->font = LoadTextureFromImage(img);
     r->font = LoadTextureFromImage(img);
     UnloadImage(img);
     if (r->font.id == 0)
         return false;
     SetTextureFilter(r->font, TEXTURE_FILTER_POINT);
     r->glyph_w = 16;
-    r->glyph_h = 24;
+    r->glyph_h = 32;
     return true;
 }
 
@@ -35,8 +38,8 @@ static void draw_cell(Renderer *r, int cellX, int cellY, unsigned char glyph, Co
     Color rb = (Color){bg.r, bg.g, bg.b, 255};
 
     Rectangle dst = {
-        cellX,
-        cellY,
+        cellX * r->glyph_w,
+        cellY * r->glyph_h,
         r->glyph_w,
         r->glyph_h};
 
@@ -49,9 +52,8 @@ static void draw_cell(Renderer *r, int cellX, int cellY, unsigned char glyph, Co
 
 void Renderer_DrawBoard(Renderer *r, Board *b)
 {
-    static const Object empty = {.glyph = ' ', .fg_color = COLOR_BLACK, .bg_color = COLOR_BLACK};
-    const Object *grid[b->width][b->height];
-
+    static const Object empty = {.glyph = '0', .fg_color = COLOR_BLACK, .bg_color = COLOR_BLACK};
+    const Object *grid[b->height][b->width];
     // Initialize board as empty objects
     for (int y = 0; y < b->height; ++y)
     {
@@ -78,6 +80,7 @@ void Renderer_DrawBoard(Renderer *r, Board *b)
     }
 }
 
-void Renderer_Quit(Renderer* r){
+void Renderer_Quit(Renderer *r)
+{
     UnloadTexture(r->font);
 }
