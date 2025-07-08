@@ -5,12 +5,15 @@
 
 bool Renderer_Init(Renderer *r, const char *path)
 {
-    r->font = LoadTexture(path);
+    Image img = LoadImage(path);
+    //ImageColorReplace(&img, (Color){0,0,0,255}, (Color){0,0,0,0});
+    r->font = LoadTextureFromImage(img);
+    UnloadImage(img);
     if (r->font.id == 0)
         return false;
     SetTextureFilter(r->font, TEXTURE_FILTER_POINT);
-    r->glyph_w = 8;
-    r->glyph_h = 16;
+    r->glyph_w = 16;
+    r->glyph_h = 24;
     return true;
 }
 
@@ -32,8 +35,8 @@ static void draw_cell(Renderer *r, int cellX, int cellY, unsigned char glyph, Co
     Color rb = (Color){bg.r, bg.g, bg.b, 255};
 
     Rectangle dst = {
-        cellX * r->glyph_w,
-        cellY * r->glyph_h,
+        cellX,
+        cellY,
         r->glyph_w,
         r->glyph_h};
 
@@ -47,7 +50,7 @@ static void draw_cell(Renderer *r, int cellX, int cellY, unsigned char glyph, Co
 void Renderer_DrawBoard(Renderer *r, Board *b)
 {
     static const Object empty = {.glyph = ' ', .fg_color = COLOR_BLACK, .bg_color = COLOR_BLACK};
-    const Object *grid[b->height][b->width];
+    const Object *grid[b->width][b->height];
 
     // Initialize board as empty objects
     for (int y = 0; y < b->height; ++y)
@@ -77,5 +80,4 @@ void Renderer_DrawBoard(Renderer *r, Board *b)
 
 void Renderer_Quit(Renderer* r){
     UnloadTexture(r->font);
-    free(r);
 }

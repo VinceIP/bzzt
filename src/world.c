@@ -15,7 +15,7 @@ World *world_create(char *title)
     w->boards[0] = board_create("Title Screen", BOARD_DEFAULT_W, BOARD_DEFAULT_H); // create a starting empty title screen board
 
     w->player = board_add_obj(w->boards[0], // Pushes a default player obj to the board
-                              object_create(3, COLOR_WHITE, COLOR_BLUE, 40, 14));
+                              object_create(3, COLOR_LIGHT_GREEN, COLOR_BLUE, 40, 14));
     w->boards_current = 0;
     w->boards_count = 1;
     return w;
