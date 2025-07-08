@@ -35,8 +35,8 @@ static void draw_cell(Renderer *r, int cellX, int cellY, unsigned char glyph, Co
     Color rb = (Color){bg.r, bg.g, bg.b, 255};
 
     Rectangle dst = {
-        cellX,
-        cellY,
+        cellX * r->glyph_w,
+        cellY * r->glyph_h,
         r->glyph_w,
         r->glyph_h};
 

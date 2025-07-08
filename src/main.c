@@ -4,15 +4,15 @@
 
 int main(void)
 {
-    const int screenWidth = 640;
-    const int screenHeight = 400;
+    Renderer rend;
+    Renderer_Init(&rend, "assets/bzzt_font_8x16.png");
+
+    World *world = world_create("New World");
+    const int screenWidth = world->boards[world->boards_current]->width * rend.glyph_w;
+    const int screenHeight = world->boards[world->boards_current]->height * rend.glyph_h;
 
     InitWindow(screenWidth, screenHeight, "Bzzt - prototype");
     SetTargetFPS(60);
-
-    World *world = world_create("New World");
-    Renderer rend;
-    Renderer_Init(&rend, "assets/bzzt_font_8x16.png");
 
     while (!WindowShouldClose())
     {
