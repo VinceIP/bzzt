@@ -20,10 +20,9 @@ int main(void)
     setup_raylib();
     Font font = LoadFont("assets/Perfect DOS VGA 437 Win.ttf");
     Engine e;
-    e.state = SPLASH_MODE;
-    e.debugShow = false;
+    Engine_Init(&e);
     e.font = font;
-    //World *world = world_create("New World");
+    World *world = world_create("New World");
     Renderer rend;
 
     Renderer_Init(&rend, "assets/bzzt_font_8x16.png");
@@ -34,18 +33,17 @@ int main(void)
     {
         Input_Poll(&in);
         Engine_Update(&e, &in);
-        //World_Update(world, &in);
+        World_Update(world, &in);
 
         BeginDrawing();
-        ClearBackground((Color){10, 26, 51, 255});
+        ClearBackground((Color){10, 26, 51, 0});
+        //Renderer_DrawBoard(&rend, world->boards[world->boards_current]);
         Renderer_Update(&rend, &e);
-        // Renderer_DrawBoard(&rend, world->boards[world->boards_current]);
-        
-        //draw_debug(world, &in);
-        // renderer_draw();
+
+        // draw_debug(world, &in);
         EndDrawing();
     }
-    //world_unload(world);
+    world_unload(world);
     Renderer_Quit(&rend);
     CloseWindow();
     return 0;

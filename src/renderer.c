@@ -74,24 +74,23 @@ static void draw_splash(Renderer *r, Engine *e)
 
 static void draw_editor(Renderer *r, Engine *e)
 {
-    // Vector2 c = r->centerCoord;
-    // draw_text_centered(e->font, "Edit mode engaged. Press Q to go back to title.", c, 30, 0, RAYWHITE);
+    Vector2 c = r->centerCoord;
+   draw_text_centered(e->font, "Edit mode engaged. Press Q to go back to title.", (Vector2){c.x, c.y+20}, 30, 0, RAYWHITE);
 }
 
 static void draw_cursor(Renderer *r, Engine *e)
 {
-    Cursor c = e->cursor;
-    double frames = GetTime();
-    if (frames - c.lastBlink >= c.blinkRate)
-    {
-        printf("drawing cursor");
-        c.visible = !c.visible;
-        c.lastBlink = 0;
+    Cursor *c = &e->cursor;
+    double now = GetTime();
+
+    if(now - c->lastBlink >= c->blinkRate){
+        printf("blinking");
+        c->visible = !c->visible;
+        c->lastBlink = now;
     }
 
-    if (c.visible)
-    {
-        draw_cell(r, c.x, c.y, c.glyph, c.color, COLOR_BLACK);
+    if(c->visible){
+        draw_cell(r, c->x, c->y, c->glyph, c->color, COLOR_BLACK);
     }
 }
 

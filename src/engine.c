@@ -5,7 +5,23 @@
 
 bool Engine_Init(Engine *e)
 {
-    return false;
+    if(!e) return false;
+
+    e->state = SPLASH_MODE;
+    e->running = true;
+    e->debugShow = false;
+    e->edit_mode_init_done = false;
+
+    Cursor *c = &e->cursor;
+    c->x = 0;
+    c->y = 0;
+    c->visible = true;
+    c->enabled = true;
+    c->blinkRate = 0.5;
+    c->lastBlink = GetTime();
+    c->glyph = '#';
+    c->color = COLOR_WHITE;
+    return true;
 }
 
 static void init_edit_mode(Engine *e)
@@ -13,10 +29,13 @@ static void init_edit_mode(Engine *e)
     e->edit_mode_init_done = true;
     Cursor *c = &e->cursor;
     c->color = COLOR_WHITE;
-    c->blinkRate = 8.0;
-    c->glyph = '#';
-    c->x = 25;
-    c->y = 25;
+    c->blinkRate = 0.5;
+    c->glyph = '0';
+    c->x = 50;
+    c->y = 50;
+    c->visible = true;
+    c->enabled = true;
+    c->lastBlink = GetTime();
 }
 
 void Engine_Update(Engine *e, InputState *in)
