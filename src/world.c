@@ -10,7 +10,7 @@ World *world_create(char *title)
     World *w = (World *)malloc(sizeof(World));
     if (!w)
         return NULL;
-    strcpy(w->title, title);
+    strncpy(w->title, title, sizeof(w->title) -1);
     w->boards_cap = 4;
     w->boards = (Board **)malloc(sizeof(Board *) * w->boards_cap);                 // allocate initial boards size to 4
     w->boards[0] = board_create("Title Screen", BOARD_DEFAULT_W, BOARD_DEFAULT_H); // create a starting empty title screen board

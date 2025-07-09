@@ -8,9 +8,9 @@ bool Renderer_Init(Renderer *r, const char *path)
 {
     Image img = LoadImage(path);
     ImageFormat(&img, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
-    ImageColorReplace(&img, (Color){0, 0, 0, 255}, BLANK);    // pure black
-    ImageColorReplace(&img, (Color){8, 8, 8, 255}, BLANK);    // dark grey 1
-    ImageColorReplace(&img, (Color){16, 16, 16, 255}, BLANK); // dark grey 2    r->font = LoadTextureFromImage(img);
+    // ImageColorReplace(&img, (Color){0, 0, 0, 255}, BLANK);
+    // ImageColorReplace(&img, (Color){8, 8, 8, 255}, BLANK);
+    // ImageColorReplace(&img, (Color){16, 16, 16, 255}, BLANK);
     r->font = LoadTextureFromImage(img);
     UnloadImage(img);
     if (r->font.id == 0)
@@ -18,6 +18,12 @@ bool Renderer_Init(Renderer *r, const char *path)
     SetTextureFilter(r->font, TEXTURE_FILTER_POINT);
     r->glyph_w = 16;
     r->glyph_h = 32;
+
+    Vector2 centerCoord = {(float)GetRenderWidth() / 2, (float)GetRenderHeight() / 2};
+    r->centerCoord = centerCoord;
+
+    r->inStr = "\n\nL - load world\nE - editor\nESC - quit";
+
     return true;
 }
 
@@ -51,13 +57,37 @@ static void draw_cell(Renderer *r, int cellX, int cellY, unsigned char glyph, Co
     DrawTextureRec(r->font, glyph_rec(r, glyph), (Vector2){dst.x, dst.y}, rf);
 }
 
-void Renderer_Update(Renderer *r, Engine *e){
+static void draw_text_centered(Font f, const char *msg, Vector2 center, float size, float spacing, Color tint)
+{
+    Vector2 ext = MeasureTextEx(f, msg, size, spacing);
+    Vector2 origin = {ext.x * 0.5f, ext.y * 0.5f};
+    DrawTextPro(f, msg, center, origin, 0.0f, size, spacing, tint);
+}
+
+static void draw_splash(Renderer *r, Engine *e)
+{
+    Vector2 c = r->centerCoord;
+    draw_text_centered(e->font, "bzzt!", (Vector2){c.x, c.y - 60}, 60, 0, RAYWHITE);
+    draw_text_centered(e->font, r->inStr, c, 25, 0, RAYWHITE);
+}
+
+static void draw_editor(Renderer *r, Engine *e){
+    Vector2 c = r->centerCoord;
+    draw_text_centered(e->font, "Edit mode engaged. Press Q to go back to title.", c, 60, 0, RAYWHITE);
+}
+
+void Renderer_Update(Renderer *r, Engine *e)
+{
     switch (e->state)
     {
     case SPLASH_MODE:
-        draw_splash(r);
+        draw_splash(r, e);
         break;
-    
+
+    case EDIT_MODE:
+        draw_editor(r,e);
+        break;
+
     default:
         break;
     }
@@ -96,13 +126,4 @@ void Renderer_DrawBoard(Renderer *r, Board *b)
 void Renderer_Quit(Renderer *r)
 {
     UnloadTexture(r->font);
-}
-
-static void draw_splash(Renderer *r)
-{
-    int cx = GetRenderWidth()/2;
-    int cy = GetRenderHeight()/2;
-    DrawText("bzzt!",cx,cy,30, RAYWHITE);
-    DrawText("L - load world", cx, cy+30, 20, RAYWHITE);
-    DrawText("E - editor", cx, cy + 50, 20, RAYWHITE);
 }

@@ -6,37 +6,45 @@
 #include "renderer.h"
 #include "debugger.h"
 
-int main(void)
+static void setup_raylib()
 {
     const int screenWidth = 1280;
     const int screenHeight = 800;
     InitWindow(screenWidth, screenHeight, "Bzzt - prototype");
     SetTargetFPS(60);
+}
 
-    Engine *engine;
-    engine->state = SPLASH_MODE;
-    engine->debugShow = true;
-    World *world = world_create("New World");
+int main(void)
+{
+    setup_raylib();
+    Font font = LoadFont("assets/Perfect DOS VGA 437 Win.ttf");
+    Engine e;
+    e.state = SPLASH_MODE;
+    e.debugShow = false;
+    e.font = font;
+    //World *world = world_create("New World");
     Renderer rend;
 
     Renderer_Init(&rend, "assets/bzzt_font_8x16.png");
-    ClearBackground(BLACK);
 
     InputState in = {0};
 
     while (!in.quit)
     {
-        Input_Poll(&in);
-        World_Update(world, &in);
+        Input_Poll(&in, &e);
+        Engine_Update(&e, &in);
+        //World_Update(world, &in);
 
         BeginDrawing();
-        Renderer_Update(&rend, engine);
-        Renderer_DrawBoard(&rend, world->boards[world->boards_current]);
-        draw_debug(world, &in);
+        ClearBackground((Color){10, 26, 51, 255});
+        Renderer_Update(&rend, &e);
+        // Renderer_DrawBoard(&rend, world->boards[world->boards_current]);
+        
+        //draw_debug(world, &in);
         // renderer_draw();
         EndDrawing();
     }
-    world_unload(world);
+    //world_unload(world);
     Renderer_Quit(&rend);
     CloseWindow();
     return 0;

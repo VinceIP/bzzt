@@ -1,12 +1,15 @@
 #include <stdbool.h>
 #include "raylib.h"
+#include "engine.h"
 #include "input.h"
 
-void Input_Poll(InputState *s)
+void Input_Poll(InputState *s, Engine *e)
 {
-    s->elapsedTime += GetTime();
+    //s->elapsedTime = GetTime();
     s->dx = (IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT));
     s->dy = (IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP));
+    s->L_pressed = IsKeyPressed(KEY_L);
+    s->Q_pressed = IsKeyPressed(KEY_Q);
     if (s->dx != 0 || s->dy != 0) // If key is down
     {
         if (s->heldFrames == 0)

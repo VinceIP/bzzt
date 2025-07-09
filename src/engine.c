@@ -1,26 +1,33 @@
 #include <stdbool.h>
 #include "engine.h"
+#include "input.h"
 
-typedef enum{
-    PLAY_MODE,
-    EDIT_MODE
-} EState;
-
-typedef struct{
-    EState state;
-} Engine;
-
-bool Engine_Init(Engine* e, int w, int h){
+bool Engine_Init(Engine *e)
+{
     return false;
 }
 
-void Engine_Run(Engine* e){
-        //Update input
-        //Update world
-        //Render
+void Engine_Update(Engine *e, InputState *in)
+{
+    switch (e->state)
+    {
+    case SPLASH_MODE:
+        if(in->L_pressed) e->state = EDIT_MODE;
+        break;
+
+    case PLAY_MODE:
+        break;
+
+    case EDIT_MODE:
+        break;
+
+    default:
+        break;
+    }
 }
 
-void Engine_Quit(Engine* e) {
-    //Destroy renderer
-    //Destroy world
+void Engine_Quit(Engine *e)
+{
+    // Destroy renderer
+    // Destroy world
 }

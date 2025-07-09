@@ -25,6 +25,7 @@ void board_destroy(Board *b)
         free(b->objects[i]);
     }
     free(b->objects);
+    free(b->name);
     free(b);
 }
 

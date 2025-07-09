@@ -9,6 +9,8 @@ typedef struct
     Texture2D font;
     int glyph_w, glyph_h;
     int src_w, src_h;
+    Vector2 centerCoord;
+    const char *inStr;
 } Renderer;
 
 bool Renderer_Init(Renderer *, const char *fontPath);
