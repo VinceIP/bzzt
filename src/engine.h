@@ -1,8 +1,8 @@
 #pragma once
 #include "raylib.h"
 #include "world.h"
-
-struct InputState;
+#include "input.h"
+#include "color.h"
 
 typedef enum
 {
@@ -13,13 +13,33 @@ typedef enum
 
 typedef struct
 {
+    int x, y;
+    bool visible;
+    bool enabled;
+    double lastBlink;
+    double blinkRate;
+    int paletteIndex;
+    enum Tool
+    {
+        BRUSH,
+        FILL,
+        SELECT
+    } tool;
+    unsigned char glyph;
+    Color_bzzt color;
+} Cursor;
+
+typedef struct
+{
     EState state;
     World world;
     Font font;
+    Cursor cursor;
     // Renderer renderer;
     // Input input;
     bool running;
     bool debugShow;
+    bool edit_mode_init_done;
 } Engine;
 
 bool Engine_Init(Engine *);

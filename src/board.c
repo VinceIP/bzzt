@@ -52,8 +52,6 @@ Object *board_add_obj(Board *b, Object *o)
     if (b->object_count == b->object_cap && board_grow(b) != 0)
         return NULL;
 
-    board_grow(b);
-
     o->id = b->object_next_id++;
     b->objects[b->object_count++] = o;
     return o;

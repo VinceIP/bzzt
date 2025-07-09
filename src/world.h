@@ -3,8 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "board.h"
-
-struct InputState;
+#include "input.h"
 
 #define MAX_PATH 32
 

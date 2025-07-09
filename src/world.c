@@ -37,7 +37,7 @@ void world_unload(World *w)
     free(w);
 }
 
-static void handle_input(World *w, const InputState *in)
+static void handle_input(World *w, InputState *in)
 {
     Object *p = w->player;
     int newX = p->x + in->dx;
@@ -49,7 +49,7 @@ static void handle_input(World *w, const InputState *in)
         p->y = newY;
 }
 
-void World_Update(World *w, const InputState *in)
+void World_Update(World *w, InputState *in)
 {
     handle_input(w, in);
 }

@@ -5,6 +5,7 @@ struct Engine;
 
 typedef struct {
     int dx, dy;
+    bool E_pressed;
     bool L_pressed;
     bool Q_pressed;
     bool quit;

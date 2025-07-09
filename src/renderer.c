@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "raylib.h"
 #include "renderer.h"
 #include "engine.h"
@@ -71,9 +72,27 @@ static void draw_splash(Renderer *r, Engine *e)
     draw_text_centered(e->font, r->inStr, c, 25, 0, RAYWHITE);
 }
 
-static void draw_editor(Renderer *r, Engine *e){
-    Vector2 c = r->centerCoord;
-    draw_text_centered(e->font, "Edit mode engaged. Press Q to go back to title.", c, 60, 0, RAYWHITE);
+static void draw_editor(Renderer *r, Engine *e)
+{
+    // Vector2 c = r->centerCoord;
+    // draw_text_centered(e->font, "Edit mode engaged. Press Q to go back to title.", c, 30, 0, RAYWHITE);
+}
+
+static void draw_cursor(Renderer *r, Engine *e)
+{
+    Cursor c = e->cursor;
+    double frames = GetTime();
+    if (frames - c.lastBlink >= c.blinkRate)
+    {
+        printf("drawing cursor");
+        c.visible = !c.visible;
+        c.lastBlink = 0;
+    }
+
+    if (c.visible)
+    {
+        draw_cell(r, c.x, c.y, c.glyph, c.color, COLOR_BLACK);
+    }
 }
 
 void Renderer_Update(Renderer *r, Engine *e)
@@ -85,7 +104,8 @@ void Renderer_Update(Renderer *r, Engine *e)
         break;
 
     case EDIT_MODE:
-        draw_editor(r,e);
+        draw_editor(r, e);
+        draw_cursor(r, e);
         break;
 
     default:
