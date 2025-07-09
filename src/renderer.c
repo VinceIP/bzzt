@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "raylib.h"
 #include "renderer.h"
+#include "engine.h"
 
 bool Renderer_Init(Renderer *r, const char *path)
 {
@@ -50,6 +51,18 @@ static void draw_cell(Renderer *r, int cellX, int cellY, unsigned char glyph, Co
     DrawTextureRec(r->font, glyph_rec(r, glyph), (Vector2){dst.x, dst.y}, rf);
 }
 
+void Renderer_Update(Renderer *r, Engine *e){
+    switch (e->state)
+    {
+    case SPLASH_MODE:
+        draw_splash(r);
+        break;
+    
+    default:
+        break;
+    }
+}
+
 void Renderer_DrawBoard(Renderer *r, Board *b)
 {
     static const Object empty = {.glyph = '0', .fg_color = COLOR_BLACK, .bg_color = COLOR_BLACK};
@@ -83,4 +96,13 @@ void Renderer_DrawBoard(Renderer *r, Board *b)
 void Renderer_Quit(Renderer *r)
 {
     UnloadTexture(r->font);
+}
+
+static void draw_splash(Renderer *r)
+{
+    int cx = GetRenderWidth()/2;
+    int cy = GetRenderHeight()/2;
+    DrawText("bzzt!",cx,cy,30, RAYWHITE);
+    DrawText("L - load world", cx, cy+30, 20, RAYWHITE);
+    DrawText("E - editor", cx, cy + 50, 20, RAYWHITE);
 }

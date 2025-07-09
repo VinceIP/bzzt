@@ -10,4 +10,4 @@ typedef struct {
     bool delayLock;
 } InputState;
 
-void input_poll(InputState *out);
+void Input_Poll(InputState *out);

@@ -2,7 +2,7 @@
 #include "raylib.h"
 #include "input.h"
 
-void input_poll(InputState *s)
+void Input_Poll(InputState *s)
 {
     s->elapsedTime += GetTime();
     s->dx = (IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT));

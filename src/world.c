@@ -49,7 +49,7 @@ static void handle_input(World *w, const InputState *in)
         p->y = newY;
 }
 
-void world_update(World *w, const InputState *in)
+void World_Update(World *w, const InputState *in)
 {
     handle_input(w, in);
 }
