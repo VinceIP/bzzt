@@ -30,12 +30,14 @@ static void init_edit_mode(Engine *e)
     Cursor *c = &e->cursor;
     c->color = COLOR_WHITE;
     c->blinkRate = 0.5;
-    c->glyph = '0';
-    c->x = 50;
-    c->y = 50;
+    c->glyph = 219;
+    c->x = 41;
+    c->y = 14;
     c->visible = true;
     c->enabled = true;
     c->lastBlink = GetTime();
+
+    if(e->world.loaded) e->world.doUnload = true;
 }
 
 void Engine_Update(Engine *e, InputState *in)

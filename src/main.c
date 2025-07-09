@@ -37,13 +37,13 @@ int main(void)
 
         BeginDrawing();
         ClearBackground((Color){10, 26, 51, 0});
-        //Renderer_DrawBoard(&rend, world->boards[world->boards_current]);
+        Renderer_DrawBoard(&rend, world->boards[world->boards_current]);
         Renderer_Update(&rend, &e);
 
         // draw_debug(world, &in);
         EndDrawing();
     }
-    world_unload(world);
+    World_Unload(world);
     Renderer_Quit(&rend);
     CloseWindow();
     return 0;

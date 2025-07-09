@@ -1,10 +1,11 @@
 #include <stdbool.h>
+#include <stdio.h>
 #include "raylib.h"
 #include "input.h"
 
 void Input_Poll(InputState *s)
 {
-    //s->elapsedTime = GetTime();
+    // s->elapsedTime = GetTime();
     s->dx = (IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT));
     s->dy = (IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP));
     s->E_pressed = IsKeyPressed(KEY_E);
@@ -16,11 +17,13 @@ void Input_Poll(InputState *s)
         {
             s->delayLock = false;
         }
-        else if(s->heldFrames >= 4){
+        else if (s->heldFrames >= 4)
+        {
             s->delayLock = false;
             s->heldFrames = 0;
         }
-        else {
+        else
+        {
             s->delayLock = true;
         }
         s->heldFrames++;
@@ -32,4 +35,15 @@ void Input_Poll(InputState *s)
     }
 
     s->quit = IsKeyPressed(KEY_ESCAPE) || WindowShouldClose();
+}
+
+void Handle_Key_Move(int *x, int *y, Rectangle bounds, InputState *in)
+{
+    int newX = *x + in->dx;
+    int newY = *y + in->dy;
+
+    if (newX >= bounds.x && newX < bounds.width && !in->delayLock)
+        *x = newX;
+    if (newY >= bounds.y && newY < bounds.height && !in->delayLock)
+        *y = newY;
 }

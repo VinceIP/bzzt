@@ -1,4 +1,4 @@
 #include <stdbool.h>
 #include "engine.h"
 
-void Update_Cursor(Cursor*);
+void Editor_Update(Engine *);

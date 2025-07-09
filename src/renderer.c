@@ -9,9 +9,9 @@ bool Renderer_Init(Renderer *r, const char *path)
 {
     Image img = LoadImage(path);
     ImageFormat(&img, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
-    // ImageColorReplace(&img, (Color){0, 0, 0, 255}, BLANK);
-    // ImageColorReplace(&img, (Color){8, 8, 8, 255}, BLANK);
-    // ImageColorReplace(&img, (Color){16, 16, 16, 255}, BLANK);
+    ImageColorReplace(&img, (Color){0, 0, 0, 255}, BLANK);
+    ImageColorReplace(&img, (Color){8, 8, 8, 255}, BLANK);
+    ImageColorReplace(&img, (Color){16, 16, 16, 255}, BLANK);
     r->font = LoadTextureFromImage(img);
     UnloadImage(img);
     if (r->font.id == 0)
@@ -84,7 +84,6 @@ static void draw_cursor(Renderer *r, Engine *e)
     double now = GetTime();
 
     if(now - c->lastBlink >= c->blinkRate){
-        printf("blinking");
         c->visible = !c->visible;
         c->lastBlink = now;
     }

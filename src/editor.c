@@ -3,6 +3,11 @@
 
 Cursor cursor;
 
-void Update_Cursor(Cursor *cursor){
+static void handle_input(Engine *e)
+{
+    
+}
 
+void Editor_Update(Engine *e)
+{
 }

@@ -1,9 +1,10 @@
 #pragma once
-#include<stdbool.h>
+#include <stdbool.h>
 
 struct Engine;
 
-typedef struct {
+typedef struct
+{
     int dx, dy;
     bool E_pressed;
     bool L_pressed;
@@ -16,3 +17,4 @@ typedef struct {
 } InputState;
 
 void Input_Poll(InputState *out);
+void Handle_Key_Move(int *, int *, Rectangle, InputState *in);
