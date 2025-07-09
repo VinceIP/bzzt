@@ -37,15 +37,19 @@ void world_unload(World *w)
     free(w);
 }
 
-void world_update(World *w, const InputState *in)
+static void handle_input(World *w, const InputState *in)
 {
     Object *p = w->player;
-
     int newX = p->x + in->dx;
     int newY = p->y + in->dy;
 
-    if (newX >= 0 && newX < w->boards[w->boards_current]->width)
+    if (newX >= 0 && newX < w->boards[w->boards_current]->width && !in->delayLock)
         p->x = newX;
-    if (newY >= 0 && newY < w->boards[w->boards_current]->height)
+    if (newY >= 0 && newY < w->boards[w->boards_current]->height && !in->delayLock)
         p->y = newY;
+}
+
+void world_update(World *w, const InputState *in)
+{
+    handle_input(w, in);
 }

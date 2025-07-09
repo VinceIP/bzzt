@@ -2,6 +2,7 @@
 #include "raylib.h"
 #include "world.h"
 #include "renderer.h"
+#include "debugger.h"
 
 int main(void)
 {
@@ -24,6 +25,7 @@ int main(void)
 
         BeginDrawing();
         Renderer_DrawBoard(&rend, world->boards[world->boards_current]);
+        draw_debug(world, &in);
         // renderer_draw();
         EndDrawing();
     }
