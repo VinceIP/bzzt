@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include "raylib.h"
 #include "engine.h"
+#include "input.h"
 #include "world.h"
 #include "renderer.h"
 #include "debugger.h"
@@ -31,7 +32,7 @@ int main(void)
 
     while (!in.quit)
     {
-        Input_Poll(&in, &e);
+        Input_Poll(&in);
         Engine_Update(&e, &in);
         //World_Update(world, &in);
 

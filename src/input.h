@@ -1,6 +1,7 @@
 #pragma once
 #include<stdbool.h>
-#include "engine.h"
+
+struct Engine;
 
 typedef struct {
     int dx, dy;
@@ -13,4 +14,4 @@ typedef struct {
     bool delayLock;
 } InputState;
 
-void Input_Poll(InputState *out, Engine*);
+void Input_Poll(InputState *out);

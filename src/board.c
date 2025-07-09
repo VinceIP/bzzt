@@ -12,7 +12,7 @@ Board *board_create(const char *name, int w, int h)
     b->width = w;
     b->height = h;
     b->object_cap = START_CAP;
-    b->objects = malloc(sizeof(Object*) * START_CAP);
+    b->objects = malloc(sizeof(Object *) * START_CAP);
     b->name = strdup(name ? name : "Untitled");
     b->object_count = 0;
     b->object_next_id = 1;
@@ -21,7 +21,8 @@ Board *board_create(const char *name, int w, int h)
 
 void board_destroy(Board *b)
 {
-    for(int i = 0; i <  b->object_count; ++i){
+    for (int i = 0; i < b->object_count; ++i)
+    {
         free(b->objects[i]);
     }
     free(b->objects);
@@ -34,18 +35,24 @@ void board_destroy(Board *b)
  *
  * @param b Target board.
  */
-static void board_grow(Board *b)
+static int board_grow(Board *b)
 {
-    b->object_cap *= 2;
-    b->objects = realloc(b->objects, b->object_cap * sizeof(Object *));
-    if (!b->objects)
-        return;
+    int new_cap = b->object_cap * 2;
+    Object **tmp = realloc(b->objects, new_cap * sizeof(Object *));
+    if (!tmp)
+        return -1;
+
+    b->objects = tmp;
+    b->object_cap = new_cap;
+    return 0;
 }
 
 Object *board_add_obj(Board *b, Object *o)
 {
-    if (b->object_count == b->object_cap)
-        board_grow(b);
+    if (b->object_count == b->object_cap && board_grow(b) != 0)
+        return NULL;
+
+    board_grow(b);
 
     o->id = b->object_next_id++;
     b->objects[b->object_count++] = o;

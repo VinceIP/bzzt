@@ -1,9 +1,8 @@
 #include <stdbool.h>
 #include "raylib.h"
-#include "engine.h"
 #include "input.h"
 
-void Input_Poll(InputState *s, Engine *e)
+void Input_Poll(InputState *s)
 {
     //s->elapsedTime = GetTime();
     s->dx = (IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT));

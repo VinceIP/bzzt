@@ -19,6 +19,7 @@ void Engine_Update(Engine *e, InputState *in)
         break;
 
     case EDIT_MODE:
+        if(in->Q_pressed) e->state = SPLASH_MODE;
         break;
 
     default:
