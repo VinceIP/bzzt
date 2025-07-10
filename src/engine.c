@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include "engine.h"
+#include "world.h"
 #include "input.h"
 #include "color.h"
 
@@ -47,6 +48,7 @@ void Engine_Update(Engine *e, InputState *in)
     case SPLASH_MODE:
         if (in->E_pressed)
             e->state = EDIT_MODE;
+        World_Update(&e->world, in);
         break;
 
     case PLAY_MODE:

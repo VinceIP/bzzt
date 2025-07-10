@@ -21,6 +21,7 @@ World *world_create(char *title)
                               object_create(2, COLOR_WHITE, COLOR_BLUE, 40, 14));
     w->boards_current = 0;
     w->boards_count = 1;
+    w->doUnload = false;
     w->loaded = true;
     return w;
 }

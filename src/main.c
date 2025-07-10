@@ -33,8 +33,6 @@ int main(void)
     {
         Input_Poll(&in);
         Engine_Update(&e, &in);
-        World_Update(world, &in);
-
         BeginDrawing();
         ClearBackground((Color){10, 26, 51, 0});
         Renderer_DrawBoard(&rend, world->boards[world->boards_current]);
