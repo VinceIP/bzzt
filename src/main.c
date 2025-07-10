@@ -22,7 +22,7 @@ int main(void)
     Engine e;
     Engine_Init(&e);
     e.font = font;
-    World *world = world_create("New World");
+    e.world = world_create("New World");
     Renderer rend;
 
     Renderer_Init(&rend, "assets/bzzt_font_8x16.png");
@@ -35,13 +35,14 @@ int main(void)
         Engine_Update(&e, &in);
         BeginDrawing();
         ClearBackground((Color){10, 26, 51, 0});
-        Renderer_DrawBoard(&rend, world->boards[world->boards_current]);
+        if (e.world)
+            Renderer_DrawBoard(&rend, e.world->boards[e.world->boards_current]);
         Renderer_Update(&rend, &e);
 
         // draw_debug(world, &in);
         EndDrawing();
     }
-    World_Unload(world);
+    Engine_Quit(&e);
     Renderer_Quit(&rend);
     CloseWindow();
     return 0;

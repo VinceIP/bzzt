@@ -6,9 +6,11 @@
 
 bool Engine_Init(Engine *e)
 {
-    if(!e) return false;
+    if (!e)
+        return false;
 
     e->state = SPLASH_MODE;
+    e->world = NULL;
     e->running = true;
     e->debugShow = false;
     e->edit_mode_init_done = false;
@@ -38,7 +40,8 @@ static void init_edit_mode(Engine *e)
     c->enabled = true;
     c->lastBlink = GetTime();
 
-    if(e->world.loaded) e->world.doUnload = true;
+    if (e->world && e->world->loaded)
+        e->world->doUnload = true;
 }
 
 void Engine_Update(Engine *e, InputState *in)
@@ -48,7 +51,11 @@ void Engine_Update(Engine *e, InputState *in)
     case SPLASH_MODE:
         if (in->E_pressed)
             e->state = EDIT_MODE;
-        World_Update(&e->world, in);
+        if (e->world)
+        {
+            e->world->doUnload = true;
+            World_Update(e->world, in);
+        }
         break;
 
     case PLAY_MODE:
@@ -72,6 +79,11 @@ void Engine_Update(Engine *e, InputState *in)
 
 void Engine_Quit(Engine *e)
 {
-    // Destroy renderer
-    // Destroy world
+    if (!e)
+        return;
+    if (e->world)
+    {
+        World_Unload(e->world);
+        e->world = NULL;
+    }
 }

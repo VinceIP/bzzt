@@ -32,7 +32,7 @@ typedef struct
 typedef struct
 {
     EState state;
-    World world;
+    World *world;
     Font font;
     Cursor cursor;
     // Renderer renderer;
