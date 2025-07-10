@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 #include "raylib.h"
@@ -18,7 +19,7 @@ World *world_create(char *title)
     w->boards[0] = Board_Create("Title Screen", BOARD_DEFAULT_W, BOARD_DEFAULT_H); // create a starting empty title screen board
 
     w->player = Board_Add_Obj(w->boards[0], // Pushes a default player obj to the board
-                              Object_Create(2, COLOR_WHITE, COLOR_BLUE, 40, 14));
+                              Object_Create(2, COLOR_WHITE, COLOR_BLUE, 47, 10));
     w->boards_current = 0;
     w->boards_count = 1;
     w->doUnload = false;
@@ -40,16 +41,10 @@ void World_Unload(World *w)
     }
     w->boards_count = 0;
     w->boards_current = 0;
+    w->doUnload = false;
+    w->loaded = false;
+    w->player = NULL;
     free(w->boards);
-    free(w);
-}
-
-static void handle_input(World *w, InputState *in)
-{
-    Board *b = w->boards[w->boards_current];
-    Rectangle bounds = {
-        0, 0, b->width, b->height};
-    Handle_Key_Move(&w->player->x, &w->player->y, bounds, in);
 }
 
 void World_Update(World *w, InputState *in)
@@ -59,5 +54,12 @@ void World_Update(World *w, InputState *in)
         World_Unload(w);
         return;
     }
-    handle_input(w, in);
+
+    int *dx = &w->player->x;
+    int *dy = &w->player->y;
+    //printf("Player x: %d\nPlayer y: %d\n\n", *dx, *dy);
+    Board *b = w->boards[w->boards_current];
+    Rectangle bounds = {0, 0, b->width, b->height};
+
+    Handle_Key_Move(dx, dy, bounds, in);
 }

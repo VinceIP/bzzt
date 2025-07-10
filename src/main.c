@@ -31,15 +31,9 @@ int main(void)
 
     while (!in.quit)
     {
-        Input_Poll(&in);
         Engine_Update(&e, &in);
         BeginDrawing();
-        ClearBackground((Color){10, 26, 51, 0});
-        if (e.world)
-            Renderer_DrawBoard(&rend, e.world->boards[e.world->boards_current]);
         Renderer_Update(&rend, &e);
-
-        // draw_debug(world, &in);
         EndDrawing();
     }
     Engine_Quit(&e);

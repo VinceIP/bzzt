@@ -75,7 +75,7 @@ static void draw_splash(Renderer *r, Engine *e)
 static void draw_editor(Renderer *r, Engine *e)
 {
     Vector2 c = r->centerCoord;
-   draw_text_centered(e->font, "Edit mode engaged. Press Q to go back to title.", (Vector2){c.x, c.y+20}, 30, 0, RAYWHITE);
+    draw_text_centered(e->font, "Edit mode engaged. Press Q to go back to title.", (Vector2){c.x, c.y + 20}, 30, 0, RAYWHITE);
 }
 
 static void draw_cursor(Renderer *r, Engine *e)
@@ -83,21 +83,25 @@ static void draw_cursor(Renderer *r, Engine *e)
     Cursor *c = &e->cursor;
     double now = GetTime();
 
-    if(now - c->lastBlink >= c->blinkRate){
+    if (now - c->lastBlink >= c->blinkRate)
+    {
         c->visible = !c->visible;
         c->lastBlink = now;
     }
 
-    if(c->visible){
+    if (c->visible)
+    {
         draw_cell(r, c->x, c->y, c->glyph, c->color, COLOR_BLACK);
     }
 }
 
 void Renderer_Update(Renderer *r, Engine *e)
 {
+    ClearBackground((Color){10, 26, 51, 0});
     switch (e->state)
     {
     case SPLASH_MODE:
+        Renderer_DrawBoard(r, e->world->boards[e->world->boards_current]);
         draw_splash(r, e);
         break;
 

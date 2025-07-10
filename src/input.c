@@ -5,7 +5,6 @@
 
 void Input_Poll(InputState *s)
 {
-    // s->elapsedTime = GetTime();
     s->dx = (IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT));
     s->dy = (IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP));
     s->E_pressed = IsKeyPressed(KEY_E);
@@ -37,13 +36,13 @@ void Input_Poll(InputState *s)
     s->quit = IsKeyPressed(KEY_ESCAPE) || WindowShouldClose();
 }
 
-void Handle_Key_Move(int *x, int *y, Rectangle bounds, InputState *in)
+void Handle_Key_Move(int *dx, int *dy, Rectangle bounds, InputState *in)
 {
-    int newX = *x + in->dx;
-    int newY = *y + in->dy;
+    int newX = *dx + in->dx;
+    int newY = *dy + in->dy;
 
     if (newX >= bounds.x && newX < bounds.width && !in->delayLock)
-        *x = newX;
+        *dx = newX;
     if (newY >= bounds.y && newY < bounds.height && !in->delayLock)
-        *y = newY;
+        *dy = newY;
 }

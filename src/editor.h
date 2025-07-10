@@ -1,4 +1,9 @@
 #include <stdbool.h>
 #include "engine.h"
 
-void Editor_Update(Engine *);
+typedef struct
+{
+    Cursor *c;
+} Editor;
+void Editor_Update(Engine *, InputState *);
+void Editor_Init(Engine *);

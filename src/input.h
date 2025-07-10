@@ -5,7 +5,7 @@ struct Engine;
 
 typedef struct
 {
-    int dx, dy;
+    int dx, dy; //Target input direction
     bool E_pressed;
     bool L_pressed;
     bool Q_pressed;
@@ -17,4 +17,4 @@ typedef struct
 } InputState;
 
 void Input_Poll(InputState *out);
-void Handle_Key_Move(int *, int *, Rectangle, InputState *in);
+void Handle_Key_Move(int * dx, int *dy, Rectangle bounds, InputState *in);

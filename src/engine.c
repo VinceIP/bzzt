@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include "engine.h"
+#include "editor.h"
 #include "world.h"
 #include "input.h"
 #include "color.h"
@@ -29,32 +30,25 @@ bool Engine_Init(Engine *e)
 
 static void init_edit_mode(Engine *e)
 {
-    e->edit_mode_init_done = true;
-    Cursor *c = &e->cursor;
-    c->color = COLOR_WHITE;
-    c->blinkRate = 0.5;
-    c->glyph = 219;
-    c->x = 41;
-    c->y = 14;
-    c->visible = true;
-    c->enabled = true;
-    c->lastBlink = GetTime();
 
-    if (e->world && e->world->loaded)
-        e->world->doUnload = true;
 }
 
 void Engine_Update(Engine *e, InputState *in)
 {
+    Input_Poll(in);
     switch (e->state)
     {
     case SPLASH_MODE:
+        World_Update(e->world, in);
+
         if (in->E_pressed)
-            e->state = EDIT_MODE;
-        if (e->world)
         {
-            e->world->doUnload = true;
-            World_Update(e->world, in);
+            e->state = EDIT_MODE;
+            Editor_Init(e);
+            if (e->world)
+            {
+                e->world->doUnload = true;
+            }
         }
         break;
 
@@ -62,8 +56,12 @@ void Engine_Update(Engine *e, InputState *in)
         break;
 
     case EDIT_MODE:
+        Editor_Update(e,in);
         if (in->Q_pressed)
+        {
             e->state = SPLASH_MODE;
+            e->world = world_create("Title Screen");
+        }
 
         if (!e->edit_mode_init_done)
         {
