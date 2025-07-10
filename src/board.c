@@ -4,7 +4,7 @@
 
 #define START_CAP 64
 
-Board *board_create(const char *name, int w, int h)
+Board *Board_Create(const char *name, int w, int h)
 {
     Board *b = malloc(sizeof(Board));
     if (!b)
@@ -17,17 +17,6 @@ Board *board_create(const char *name, int w, int h)
     b->object_count = 0;
     b->object_next_id = 1;
     return b;
-}
-
-void board_destroy(Board *b)
-{
-    for (int i = 0; i < b->object_count; ++i)
-    {
-        free(b->objects[i]);
-    }
-    free(b->objects);
-    free(b->name);
-    free(b);
 }
 
 /**
@@ -47,7 +36,18 @@ static int board_grow(Board *b)
     return 0;
 }
 
-Object *board_add_obj(Board *b, Object *o)
+void Board_Destroy(Board *b)
+{
+    for (int i = 0; i < b->object_count; ++i)
+    {
+        Object_Destroy(b->objects[i]);
+    }
+    free(b->objects);
+    free(b->name);
+    free(b);
+}
+
+Object *Board_Add_Obj(Board *b, Object *o)
 {
     if (b->object_count == b->object_cap && board_grow(b) != 0)
         return NULL;
@@ -57,19 +57,20 @@ Object *board_add_obj(Board *b, Object *o)
     return o;
 }
 
-void board_remove_obj(Board *b, int id)
+void Board_Remove_Obj(Board *b, int id)
 {
     for (int i = 0; i < b->object_count; ++i)
     {
         if (b->objects[i]->id == id)
         {
+            Object_Destroy(b->objects[i]);
             b->objects[i] = b->objects[--b->object_count];
             return;
         }
     }
 }
 
-Object *board_get_obj(Board *b, int id)
+Object *Board_Get_Obj(Board *b, int id)
 {
     for (int i = 0; i < b->object_count; ++i)
     {

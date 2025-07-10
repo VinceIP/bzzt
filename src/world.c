@@ -15,10 +15,10 @@ World *world_create(char *title)
     strncpy(w->title, title, sizeof(w->title) - 1);
     w->boards_cap = 4;
     w->boards = (Board **)malloc(sizeof(Board *) * w->boards_cap);                 // allocate initial boards size to 4
-    w->boards[0] = board_create("Title Screen", BOARD_DEFAULT_W, BOARD_DEFAULT_H); // create a starting empty title screen board
+    w->boards[0] = Board_Create("Title Screen", BOARD_DEFAULT_W, BOARD_DEFAULT_H); // create a starting empty title screen board
 
-    w->player = board_add_obj(w->boards[0], // Pushes a default player obj to the board
-                              object_create(2, COLOR_WHITE, COLOR_BLUE, 40, 14));
+    w->player = Board_Add_Obj(w->boards[0], // Pushes a default player obj to the board
+                              Object_Create(2, COLOR_WHITE, COLOR_BLUE, 40, 14));
     w->boards_current = 0;
     w->boards_count = 1;
     w->doUnload = false;
@@ -34,9 +34,12 @@ void World_Unload(World *w)
     {
         if (w->boards[i])
         {
-            board_destroy(w->boards[i]);
+            Board_Destroy(w->boards[i]);
+            w->boards[i] = NULL;
         }
     }
+    w->boards_count = 0;
+    w->boards_current = 0;
     free(w->boards);
     free(w);
 }

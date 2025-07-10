@@ -20,5 +20,5 @@ typedef struct
     Color_bzzt fg_color, bg_color;
 } Object;
 
-Object *object_create(uint8_t glyph, Color_bzzt fg_color, Color_bzzt bg_color, int x, int y);
-void object_destroy(int id);
+Object *Object_Create(uint8_t glyph, Color_bzzt fg_color, Color_bzzt bg_color, int x, int y);
+void Object_Destroy(Object *o);
