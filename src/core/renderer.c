@@ -4,10 +4,16 @@
 #include "raylib.h"
 #include "renderer.h"
 #include "engine.h"
+#include "color.h"
 
 bool Renderer_Init(Renderer *r, const char *path)
 {
     Image img = LoadImage(path);
+    if (!img.data)
+    {
+        TraceLog(LOG_ERROR, "Failed to load glyph sheet: %s", path);
+        return false;
+    }
     ImageFormat(&img, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
     ImageColorReplace(&img, (Color){0, 0, 0, 255}, BLANK);
     ImageColorReplace(&img, (Color){8, 8, 8, 255}, BLANK);
@@ -39,7 +45,7 @@ static Rectangle glyph_rec(Renderer *r, unsigned char ascii)
         r->glyph_h};
 }
 
-static void draw_cell(Renderer *r, int cellX, int cellY, unsigned char glyph, Color_bzzt fg, Color_bzzt bg)
+static void draw_cell(Renderer *r, int cellX, int cellY, unsigned char glyph, Color_Bzzt fg, Color_Bzzt bg)
 {
     // Convert to RayLib color
     Color rf = (Color){fg.r, fg.g, fg.b, 255};
@@ -117,7 +123,8 @@ void Renderer_Update(Renderer *r, Engine *e)
 
 void Renderer_DrawBoard(Renderer *r, Board *b)
 {
-    static const Object empty = {.glyph = '0', .fg_color = COLOR_BLACK, .bg_color = COLOR_BLACK};
+    static const Object empty = {
+        0, 0, 0, DIR_NONE, {0, 0, 0}};
     const Object *grid[b->height][b->width];
     // Initialize board as empty objects
     for (int y = 0; y < b->height; ++y)

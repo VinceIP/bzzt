@@ -26,7 +26,7 @@ typedef struct
         SELECT
     } tool;
     unsigned char glyph;
-    Color_bzzt color;
+    Color_Bzzt color;
 } Cursor;
 
 typedef struct

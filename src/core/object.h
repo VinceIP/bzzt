@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include "color.h"
+#include "renderer.h"
 
 typedef enum
 {
@@ -16,9 +17,8 @@ typedef struct
     int id;
     int x, y;
     Direction dir;
-    uint8_t glyph;
-    Color_bzzt fg_color, bg_color;
+    Cell cell;
 } Object;
 
-Object *Object_Create(uint8_t glyph, Color_bzzt fg_color, Color_bzzt bg_color, int x, int y);
+Object *Object_Create(uint8_t glyph, Color_Bzzt fg, Color_Bzzt bg, int x, int y);
 void Object_Destroy(Object *o);

@@ -7,8 +7,11 @@
 #include "renderer.h"
 #include "debugger.h"
 
+#define ASSET(rel) "assets/" rel
+
 static void setup_raylib()
 {
+    SetTraceLogLevel(LOG_NONE);
     const int screenWidth = 1280;
     const int screenHeight = 800;
     InitWindow(screenWidth, screenHeight, "Bzzt - prototype");
@@ -18,14 +21,16 @@ static void setup_raylib()
 int main(void)
 {
     setup_raylib();
-    Font font = LoadFont("assets/Perfect DOS VGA 437 Win.ttf");
+    const char *fontPath = ASSET("fonts/Perfect DOS VGA 437 Win.ttf");
+    // Font font = LoadFont(fontPath)
+    Font font = LoadFont(ASSET("fonts/Perfect DOS VGA 437 Win.ttf"));
     Engine e;
     Engine_Init(&e);
     e.font = font;
     e.world = world_create("New World");
     Renderer rend;
 
-    Renderer_Init(&rend, "assets/bzzt_font_8x16.png");
+    Renderer_Init(&rend, ASSET("fonts/bzzt_font_8x16.png"));
 
     InputState in = {0};
 

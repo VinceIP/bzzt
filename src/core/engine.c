@@ -4,6 +4,7 @@
 #include "world.h"
 #include "input.h"
 #include "color.h"
+#include "ui.h"
 
 bool Engine_Init(Engine *e)
 {
@@ -25,12 +26,15 @@ bool Engine_Init(Engine *e)
     c->lastBlink = GetTime();
     c->glyph = '#';
     c->color = COLOR_WHITE;
+
+    char *path = "assets/ui/ui.psci";
+    PlaysciiAsset *ui = Load_Playscii(path);
+
     return true;
 }
 
 static void init_edit_mode(Engine *e)
 {
-
 }
 
 void Engine_Update(Engine *e, InputState *in)
@@ -56,7 +60,7 @@ void Engine_Update(Engine *e, InputState *in)
         break;
 
     case EDIT_MODE:
-        Editor_Update(e,in);
+        Editor_Update(e, in);
         if (in->Q_pressed)
         {
             e->state = SPLASH_MODE;

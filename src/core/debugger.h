@@ -2,4 +2,4 @@
 #include "world.h"
 #include "input.h"
 
-void draw_debug(World *w, InputState *s);
+void draw_debug(InputState *s);
