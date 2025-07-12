@@ -67,7 +67,6 @@ void Engine_Update(Engine *e, InputState *in)
                 w->doUnload = true;
             }
             e->ui->visible = true;
-            UI_Print_Screen(e->ui, COLOR_RED, COLOR_BLACK, true, 10, 5, "Test text!");
         }
         break;
 

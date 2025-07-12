@@ -17,6 +17,14 @@ UISurface *UISurface_Create(int cell_count)
     if (!surface->cells)
         goto fail;
     surface->cell_count = cell_count;
+
+    for (int i = 0; i < cell_count; ++i)
+    {
+        surface->cells[i].visible = true;
+        surface->cells[i].glyph = 255;
+        surface->cells[i].fg = COLOR_WHITE;
+        surface->cells[i].bg = COLOR_BLACK;
+    }
     surface->overlays = NULL;
     surface->overlays_count = 0;
     surface->overlays_cap = 0;

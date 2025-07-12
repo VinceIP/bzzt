@@ -48,6 +48,7 @@ void UIText_WriteRaw(UISurface *surface, const char *utf8, int x, int y, Color_B
         cell->glyph = glyph;
         cell->fg = fg;
         cell->bg = bg;
+        cell->visible = true;
 
         cursX += 1;
     }

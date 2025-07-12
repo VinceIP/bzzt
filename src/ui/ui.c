@@ -129,6 +129,7 @@ UISurface *UISurface_Load_From_Playscii(const char *path)
         surface->cells[i].bg = bzzt_get_color(-1 + bg->valueint);
         surface->cells[i].glyph = glyph->valueint;
         surface->cells[i].fg = bzzt_get_color(-1 + fg->valueint);
+        surface->cells[i].visible = true;
         i++;
     }
 

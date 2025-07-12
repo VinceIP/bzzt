@@ -1,10 +1,15 @@
 #include <stdbool.h>
+#include <stdio.h>
 #include "raylib.h"
 #include "editor.h"
 #include "engine.h"
 #include "input.h"
+#include "cell.h"
 #include "ui.h"
+#include "ui_layer.h"
 #include "ui_surface.h"
+#include "ui_overlay.h"
+#include "ui_element.h"
 #include "camera.h"
 
 static void handle_cursor(Engine *e, InputState *in)
@@ -18,13 +23,38 @@ static void handle_cursor(Engine *e, InputState *in)
 
 static void ui_init(Engine *e)
 {
-    // Load sidebar
-    char *path = "assets/ui/ui.psci";
-    UISurface *surface = UISurface_Load_From_Playscii(path);
+    // Programmatically make a sidebar - not efficent or permananet but cool
     UI *ui = e->ui;
-    UI_Add_Surface(ui, surface);
 
-    // Load curs tracker
+    // Create a gray bg
+    int sidebar_w = 20;
+    int sidebar_h = 25;
+    UISurface *sidebar = UISurface_Create(sidebar_w * sidebar_h);
+    sidebar->w = sidebar_w;
+    sidebar->h = sidebar_h;
+    sidebar->x = 60;
+    sidebar->y = 0;
+
+    for (int i = 0; i < sidebar_w * sidebar_h; ++i)
+    {
+        sidebar->cells[i].bg = COLOR_CYAN;
+        sidebar->cells[i].glyph = 255;
+        sidebar->cells[i].fg = COLOR_WHITE;
+        sidebar->cells[i].visible = true;
+    }
+
+    UI_Add_Surface(ui, sidebar);
+
+    // Show text on it
+    // UIOverlay *o = UIOverlay_Create();
+    // UIText *t = UIText_Create(0, 0, COLOR_WHITE, COLOR_DARK_GRAY, "Sample text", NULL);
+    // UIOverlay_Add_Element(o, &t->base);
+    // UISurface_Add_Overlay(sidebar, o);
+    int x = sidebar->x;
+    int y = 0;
+    int testX = sidebar->x;
+    int testY = sidebar->y;
+    UI_Print_Screen(ui, COLOR_WHITE, COLOR_DARK_GRAY, false, x, y, "Sidebar X: %d\nSidebar Y: %d", testX, testY);
 }
 
 void Editor_Init(Engine *e)

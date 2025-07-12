@@ -95,13 +95,10 @@ static void draw_ui_surface(Renderer *r, UISurface *s)
             Cell c = cells[i];
             if (c.visible) // Skip invisible cells
             {
-
-                int x = i % width;
-                int y = i / width;
-                if (c.glyph != 255) // Skip "transparent" glyph
-                {
-                    Renderer_Draw_Cell(r, x, y, c.glyph, c.fg, c.bg);
-                }
+                int x = s->x + (i % width);
+                int y = s->y + (i / width);
+                unsigned char glyph = c.glyph == 255 ? 32 : c.glyph;
+                Renderer_Draw_Cell(r, x, y, glyph, c.fg, c.bg);
             }
         }
     }
