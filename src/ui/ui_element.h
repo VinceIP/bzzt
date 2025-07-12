@@ -38,9 +38,6 @@ typedef struct UIText
     bool wrap;
 } UIText;
 
-UIText *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg,
-                      const char *(*cb)(void *), void *ud);
-
 typedef void (*UIButtonAction)(void *ud);
 
 typedef struct UIButton
@@ -53,8 +50,9 @@ typedef struct UIButton
 
 UIElement *UIElement_Create();
 void UIElement_Update(struct UIElement *);
+void UIElement_Destroy(UIElement *e);
 
+UIText *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg,
+                      const char *(*cb)(void *), void *ud);
 UIButton *UIButton_Create(int x, int y, const char *caption,
                           UIButtonAction cb, void *ud);
-
-void UIElement_Destroy(UIElement *);

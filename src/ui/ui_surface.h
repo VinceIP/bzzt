@@ -30,9 +30,10 @@ typedef struct UISurface
     Cell *cells;
     int cell_count;
     UIOverlay **overlays;
-    int elements_count, elements_cap;
+    int overlays_count, overlays_cap;
 } UISurface;
 
 UISurface *UISurface_Create();
+void UISurface_Add_Overlay(UISurface *s, UIOverlay *o);
 void UISurface_Update();
 void UISurface_Destroy(UISurface *);

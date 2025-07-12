@@ -23,6 +23,7 @@ typedef struct UIElement UIElement;
 typedef struct UIOverlay
 {
     UIElement **elements;
+    int elements_count, elements_cap;
     int x, y, z;
     bool visible;
 } UIOverlay;
@@ -30,6 +31,8 @@ typedef struct UIOverlay
 UIOverlay *UIOverlay_Create();
 void UIOverlay_Update(UIOverlay *);
 void UIOverlay_Destroy(UIOverlay *);
+
+void UIOverlay_Add_Element(UIOverlay *, UIElement *);
 
 /**
  * @brief Print formatted text to a UIOverlay.
