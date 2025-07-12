@@ -8,6 +8,26 @@
 #include "camera.h"
 #include "color.h"
 
+static void init_cursor(Engine *e)
+{
+    Cursor *c = &e->cursor;
+    c->x = 0;
+    c->y = 0;
+    c->visible = true;
+    c->enabled = true;
+    c->blinkRate = 0.5;
+    c->lastBlink = GetTime();
+    c->glyph = '#';
+    c->color = COLOR_WHITE;
+}
+
+static void init_camera(Engine *e)
+{
+    e->camera = malloc(sizeof(BzztCamera));
+    BzztCamera *cam = e->camera;
+    cam->viewport.rect = (Rectangle){0, 0, 0, 0};
+}
+
 bool Engine_Init(Engine *e)
 {
     if (!e)
@@ -19,21 +39,11 @@ bool Engine_Init(Engine *e)
     e->debugShow = false;
     e->edit_mode_init_done = false;
 
+    init_cursor(e);
+
     e->ui = UI_Create();
 
-    Cursor *c = &e->cursor;
-    c->x = 0;
-    c->y = 0;
-    c->visible = true;
-    c->enabled = true;
-    c->blinkRate = 0.5;
-    c->lastBlink = GetTime();
-    c->glyph = '#';
-    c->color = COLOR_WHITE;
-
-    e->camera = malloc(sizeof(BzztCamera));
-    BzztCamera *cam = e->camera;
-    cam->viewport.rect = (Rectangle){0, 0, 0, 0};
+    init_camera(e);
 
     return true;
 }

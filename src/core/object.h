@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <stdbool.h>
 #include "color.h"
 
 typedef enum
@@ -13,6 +14,7 @@ typedef enum
 
 typedef struct Cell
 {
+    bool visible;
     uint8_t glyph;
     Color_Bzzt fg, bg;
 } Cell;

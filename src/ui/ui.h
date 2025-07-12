@@ -1,12 +1,16 @@
 #pragma once
 #include <stdint.h>
 #include <stdbool.h>
+#include "raylib.h"
+#include "color.h"
 
 struct Color;
+typedef struct UILayer UILayer;
+typedef struct UIOverlay UIOverlay;
 typedef struct Cell Cell;
 typedef struct cJSON cJSON;
 
-typedef struct
+typedef struct PlaysciiAsset
 {
     int width, height;
     uint32_t *glyphs;
@@ -18,58 +22,69 @@ typedef struct
  * @brief A surface on which to draw Cells.
  *
  */
-typedef struct
+typedef struct UISurface
 {
     Cell *cells;
+    UIOverlay *overlay;
     int width, height;
+    int x, y;
 } UISurface;
 
 /**
  * @brief An encapsulated UI which holds all UISurfaces.
  *
  */
-typedef struct
+typedef struct UI
 {
-    int count, cap;
-    UISurface **surfaces;
+    UILayer **layers;
+    int layer_count, layer_cap;
+    bool visible;
 } UI;
 
-/**
- * @brief A surface to be overlayed on a UISurface and toggled when needed.
- * For printing text to a UI element, etc
- *
- */
-typedef struct
+typedef struct UILayerStack
 {
-    UISurface *surface;
-    bool visible;
-} UIOverlay;
+    struct UILayer *stack;
+} UILayerStack;
 
 cJSON *Playscii_Load(const char *path);
 void Playscii_Unload(PlaysciiAsset *asset);
+
 /**
  * @brief Instantiate a new UI.
  *
  * @return UI*
  */
 UI *UI_Create(void);
+void UI_Update(UI *ui);
+void UI_Destroy(UI *ui);
 
 /**
- * @brief Push a new UISurface to the UI.
+ * @brief Push a new UILayer to UI.
  *
- * @param ui Main engine's UI
- * @param s  A UISurface to push.
+ * @param ui
+ * @return UILayer*
  */
-void UI_Add_Surface(UI *ui, UISurface *s);
+UILayer *UI_Add_Layer(UI *ui);
+
+void UI_Set_Visible_Layer(UILayer *, bool show);
+
 /**
- * @brief Print text to a UISurface.
+ * @brief Print text to screen-relative coordinates
  *
- * @param s
- * @param str
- * @param pos
+ * @param fg fb color
+ * @param bg bg color
+ * @param wrap Enable text wrapping at screen edge
+ * @param x
+ * @param y
+ * @param fmt String with/without format specifiers
+ * @param ... Formatting args
  */
-void UI_Draw_Text_To_Surface(UISurface *s, const char *str, Vector2 pos);
+void UI_Print_Screen(UI *ui, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int x, int y, char *fmt, ...);
+
 void UI_Destroy(UI *ui);
+
 UISurface *UISurface_Create(int cell_count);
+
 void UISurface_Destroy(UISurface *surface);
+
 UISurface *UISurface_Load_From_Playscii(const char *filename);

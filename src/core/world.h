@@ -7,7 +7,6 @@
 #define MAX_PATH 32
 
 struct World;
-struct InputState;
 struct Object;
 
 typedef struct World

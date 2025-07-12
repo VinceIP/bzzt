@@ -1,7 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include "ui.h"
 #include "cJSON.h"
+#include "object.h"
+#include "color.h"
+#include "ui_layer.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 #define CHECK_FAIL(cond, label, msg)                            \
     do                                                          \
@@ -38,53 +41,26 @@ static char *read_file(const char *path)
     return buf;
 }
 
-static int get_surface_count(UI *ui)
-{
-    UISurface **surfaces = ui->surfaces;
-    return sizeof(surfaces);
-}
-
 UI *UI_Create(void)
 {
     UI *ui = malloc(sizeof(UI));
-    ui->count = 0;
-    ui->cap = 4;
-    ui->surfaces = malloc(sizeof(UISurface *) * ui->cap);
+    ui->layer_count = 0;
+    ui->layer_cap = 4;
+    ui->layers = malloc(sizeof(UILayer *) * ui->layer_cap);
+    ui->visible = false;
     return ui;
 }
 
 void UI_Destroy(UI *ui)
 {
-    int surface_count = get_surface_count(ui);
-    for (int i = 0; i < surface_count; ++i)
+    int layer_count = ui->layer_count;
+    for (int i = 0; i < layer_count; ++i)
     {
-        UISurface *s = ui->surfaces[i];
-        UISurface_Destroy(s);
+        UILayer *l = ui->layers[i];
+        UILayer_Destroy(l);
     }
-    free(ui->surfaces);
+    free(ui->layers);
     free(ui);
-}
-
-void UI_Add_Surface(UI *ui, UISurface *s)
-{
-    if (ui->count == ui->cap)
-    {
-        ui->cap *= 2;
-        ui->surfaces = realloc(ui->surfaces, sizeof(UISurface *) * ui->cap);
-        if (!ui->surfaces)
-        {
-            fprintf(stderr, "Error reallocating UI surfaces.");
-        }
-    }
-    ui->surfaces[ui->count++] = s;
-}
-
-UISurface *UISurface_Create(int cell_count)
-{
-    int c = cell_count;
-    UISurface *surface = malloc(sizeof(UISurface));
-    surface->cells = malloc(sizeof(Cell) * c);
-    return surface;
 }
 
 void UISurface_Destroy(UISurface *s)

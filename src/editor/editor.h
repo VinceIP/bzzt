@@ -1,8 +1,9 @@
 #include <stdbool.h>
+#include "engine.h"
 
 struct Engine;
 struct Cursor;
-struct Input;
+struct InputState;
 
 typedef struct
 {

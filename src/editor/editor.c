@@ -4,6 +4,8 @@
 #include "engine.h"
 #include "input.h"
 #include "ui.h"
+#include "ui_surface.h"
+#include "camera.h"
 
 static void handle_cursor(Engine *e, InputState *in)
 {
@@ -16,10 +18,13 @@ static void handle_cursor(Engine *e, InputState *in)
 
 static void ui_init(Engine *e)
 {
+    // Load sidebar
     char *path = "assets/ui/ui.psci";
     UISurface *surface = UISurface_Load_From_Playscii(path);
     UI *ui = e->ui;
     UI_Add_Surface(ui, surface);
+
+    // Load curs tracker
 }
 
 void Editor_Init(Engine *e)
