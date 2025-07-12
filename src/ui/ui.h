@@ -19,18 +19,6 @@ typedef struct PlaysciiAsset
 } PlaysciiAsset;
 
 /**
- * @brief A surface on which to draw Cells.
- *
- */
-typedef struct UISurface
-{
-    Cell *cells;
-    UIOverlay *overlay;
-    int width, height;
-    int x, y;
-} UISurface;
-
-/**
  * @brief An encapsulated UI which holds all UISurfaces.
  *
  */
@@ -81,10 +69,10 @@ void UI_Set_Visible_Layer(UILayer *, bool show);
  */
 void UI_Print_Screen(UI *ui, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int x, int y, char *fmt, ...);
 
-void UI_Destroy(UI *ui);
-
 UISurface *UISurface_Create(int cell_count);
 
 void UISurface_Destroy(UISurface *surface);
 
 UISurface *UISurface_Load_From_Playscii(const char *filename);
+
+void UI_Add_Surface(UI *, UISurface *s);

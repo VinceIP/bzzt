@@ -1,8 +1,9 @@
 #include "ui.h"
 #include "cJSON.h"
-#include "object.h"
+#include "cell.h"
 #include "color.h"
 #include "ui_layer.h"
+#include "ui_surface.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -61,12 +62,6 @@ void UI_Destroy(UI *ui)
     }
     free(ui->layers);
     free(ui);
-}
-
-void UISurface_Destroy(UISurface *s)
-{
-    free(s->cells);
-    free(s);
 }
 
 cJSON *Playscii_Load(const char *path)
@@ -135,8 +130,8 @@ UISurface *UISurface_Load_From_Playscii(const char *path)
         i++;
     }
 
-    surface->width = width->valueint;
-    surface->height = height->valueint;
+    surface->w = width->valueint;
+    surface->w = height->valueint;
 
     cJSON_Delete(json);
     return surface;
@@ -144,4 +139,11 @@ UISurface *UISurface_Load_From_Playscii(const char *path)
 fail:
     cJSON_Delete(json);
     return NULL;
+}
+
+void UI_Add_Surface(UI *ui, UISurface *s)
+{
+    (void)ui;
+    (void)s;
+    // TODO: Implement layered ui surface management
 }

@@ -6,13 +6,9 @@
 #include "renderer.h"
 #include "engine.h"
 #include "color.h"
-#include "ui.h"
-#include "ui_layer.h"
-#include "ui_surface.h"
-#include "ui_element.h"
-#include "object.h"
-#include "board.h"
 #include "world.h"
+#include "board_renderer.h"
+#include "ui_renderer.h"
 
 #define TRANSPARENT_GLYPH 255
 
@@ -55,7 +51,7 @@ static Rectangle glyph_rec(Renderer *r, unsigned char ascii)
         r->glyph_h};
 }
 
-static void draw_cell(Renderer *r, int cellX, int cellY, unsigned char glyph, Color_Bzzt fg, Color_Bzzt bg)
+void Draw_Cell(Renderer *r, int cellX, int cellY, unsigned char glyph, Color_Bzzt fg, Color_Bzzt bg)
 {
     // Convert to RayLib color
     Color rf = (Color){fg.r, fg.g, fg.b, 255};
@@ -88,86 +84,6 @@ static void draw_splash(Renderer *r, Engine *e)
     draw_text_centered(e->font, r->inStr, c, 25, 0, RAYWHITE);
 }
 
-static void draw_editor(Renderer *r, Engine *e)
-{
-}
-
-static void draw_ui_element(Renderer *r, UIElement *e)
-{
-}
-
-static void draw_ui_surface(Renderer *r, UISurface *s)
-{
-    // Draw all cells in this surface before additional UI element layers
-    int cell_count = s->cell_count;
-    Cell *cells = s->cells;
-    int width = s->w;
-    if (cells && cell_count > 0)
-    {
-        for (int i = 0; i < cell_count; i++)
-        {
-            Cell c = cells[i];
-            if (c.visible)
-            {
-                int x = i % width;
-                int y = i / width;
-                Color_Bzzt fg = c.fg;
-                Color_Bzzt bg = c.bg;
-                uint8_t glyph = c.glyph;
-                if (glyph != 255)
-                    draw_cell(r, x, y, glyph, fg, bg);
-            }
-        }
-    }
-
-    // Draw all sub elements on top
-    int elements_count = s->elements_count;
-    if (elements_count > 0)
-    {
-        for (int i = 0; i < elements_count; ++i)
-        {
-            UIElement *e = s->elements[i];
-            if (e->visible)
-            {
-                draw_ui_element(r, e);
-            }
-        }
-    }
-}
-
-static void draw_ui_layer(Renderer *r, UILayer *l)
-{
-    int surface_count = l->surface_count;
-    for (int i = 0; i < surface_count; ++i)
-    {
-        UISurface *s = l->surfaces[i];
-        if (s->visible)
-        {
-            draw_ui_surface(r, s);
-        }
-    }
-}
-
-/**
- * @brief Draws all UI surfaces to the screen.
- *
- * @param r
- * @param ui
- */
-static void draw_ui(Renderer *r, UI *ui)
-{
-    if (ui->visible)
-    {
-        int layer_count = ui->layer_count;
-        for (int i = 0; i < layer_count; ++i)
-        {
-            UILayer *l = ui->layers[i];
-            if (l->visible)
-                draw_ui_layer(r, l);
-        }
-    }
-}
-
 static void draw_cursor(Renderer *r, Engine *e)
 {
     Cursor *c = &e->cursor;
@@ -181,7 +97,7 @@ static void draw_cursor(Renderer *r, Engine *e)
 
     if (c->visible)
     {
-        draw_cell(r, c->x, c->y, c->glyph, c->color, COLOR_BLACK);
+        Draw_Cell(r, c->x, c->y, c->glyph, c->color, COLOR_BLACK);
     }
 }
 
@@ -196,55 +112,21 @@ void Renderer_Update(Renderer *r, Engine *e)
         break;
 
     case EDIT_MODE:
-        draw_editor(r, e);
         UI *ui = e->ui;
         if (ui)
         {
-            draw_ui(r, ui);
+            Renderer_Draw_UI(r, ui);
         }
         else
+        {
             fprintf(stderr, "Failed to draw UI.");
+        }
         draw_cursor(r, e);
         break;
 
     default:
         break;
     }
-}
-
-void Renderer_Draw_Board(Renderer *r, Board *b)
-{
-    static const Object empty = {
-        0, 0, 0, DIR_NONE, {0, 0, 0}};
-    const Object *grid[b->height][b->width];
-    // Initialize board as empty objects
-    for (int y = 0; y < b->height; ++y)
-    {
-        for (int x = 0; x < b->width; ++x)
-        {
-            grid[y][x] = &empty;
-        }
-    }
-
-    // Overlay live objects on this board
-    for (int i = 0; i < b->object_count; ++i)
-    {
-        Object *o = b->objects[i];
-        grid[o->y][o->x] = o;
-    }
-
-    for (int y = 0; y < b->height; ++y)
-    {
-        for (int x = 0; x < b->width; ++x)
-        {
-            const Object *o = grid[y][x];
-            draw_cell(r, x, y, o->cell.glyph, o->cell.fg, o->cell.bg);
-        }
-    }
-}
-
-void Renderer_Draw_UI(Renderer *r, UI *ui)
-{
 }
 
 void Renderer_Quit(Renderer *r)

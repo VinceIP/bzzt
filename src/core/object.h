@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "color.h"
+#include "cell.h"
 
 typedef enum
 {
@@ -11,13 +12,6 @@ typedef enum
     DIR_LEFT,
     DIR_RIGHT
 } Direction;
-
-typedef struct Cell
-{
-    bool visible;
-    uint8_t glyph;
-    Color_Bzzt fg, bg;
-} Cell;
 
 typedef struct Object
 {

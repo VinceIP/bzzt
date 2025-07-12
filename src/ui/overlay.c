@@ -13,6 +13,7 @@
 #include "color.h"
 #include "text.h"
 #include "ui.h"
+#include "ui_surface.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -29,5 +30,5 @@ void UIOverlay_Print(UIOverlay *ov, Color_Bzzt fg, Color_Bzzt bg, bool wrap, con
     int absY = ov->y;
     UISurface *s = ov->surface;
 
-    UIText_WriteRaw(ov->surface, buffer, absX, absY, fg, bg, wrap, s->width);
+    UIText_WriteRaw(ov->surface, buffer, absX, absY, fg, bg, wrap, s->w);
 }
