@@ -19,7 +19,7 @@ typedef struct PlaysciiAsset
 } PlaysciiAsset;
 
 /**
- * @brief An encapsulated UI which holds all UISurfaces.
+ * @brief An encapsulated UI which holds multiple UI layers.
  *
  */
 typedef struct UI
@@ -28,11 +28,6 @@ typedef struct UI
     int layer_count, layer_cap;
     bool visible;
 } UI;
-
-typedef struct UILayerStack
-{
-    struct UILayer *stack;
-} UILayerStack;
 
 cJSON *Playscii_Load(const char *path);
 void Playscii_Unload(PlaysciiAsset *asset);
@@ -69,10 +64,4 @@ void UI_Set_Visible_Layer(UILayer *, bool show);
  */
 void UI_Print_Screen(UI *ui, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int x, int y, char *fmt, ...);
 
-UISurface *UISurface_Create(int cell_count);
-
-void UISurface_Destroy(UISurface *surface);
-
 UISurface *UISurface_Load_From_Playscii(const char *filename);
-
-void UI_Add_Surface(UI *, UISurface *s);

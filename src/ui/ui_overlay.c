@@ -9,7 +9,7 @@
  *
  */
 
-#include "overlay.h"
+#include "ui_overlay.h"
 #include "color.h"
 #include "text.h"
 #include "ui.h"
@@ -17,6 +17,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 
 void UIOverlay_Print(UIOverlay *ov, Color_Bzzt fg, Color_Bzzt bg, bool wrap, const char *fmt, ...)
 {

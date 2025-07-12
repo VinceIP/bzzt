@@ -14,6 +14,10 @@
 
 typedef struct UISurface UISurface;
 
+/**
+ * @brief A UI layer that holds multiple UI drawing surfaces.
+ *
+ */
 typedef struct UILayer
 {
     bool visible;
@@ -22,6 +26,7 @@ typedef struct UILayer
     int surface_count, surface_cap;
 } UILayer;
 
+UILayer *UILayer_Create();
 UISurface *UILayer_Add_Surface(UILayer *, int w, int h, int x, int y);
 void UILayer_Update(UILayer *);
 void UILayer_Destroy(UILayer *);

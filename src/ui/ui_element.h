@@ -51,6 +51,9 @@ typedef struct UIButton
     void *ud;
 } UIButton;
 
+UIElement *UIElement_Create();
+void UIElement_Update(struct UIElement *);
+
 UIButton *UIButton_Create(int x, int y, const char *caption,
                           UIButtonAction cb, void *ud);
 

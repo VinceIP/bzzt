@@ -13,26 +13,23 @@
 #include "color.h"
 #include <stdbool.h>
 
-typedef struct UISurface UISurface;
+typedef struct UIElement UIElement;
 
 /**
- * @brief A surface to be overlayed on a UISurface and toggled when needed.
- * For printing text to a UI element, etc
+ * @brief A sub surface to be overlayed on a UISurface and toggled when needed.
+ * Can hold generic UI elements such as text fields, buttons, etc
  *
  */
 typedef struct UIOverlay
 {
-    UISurface *surface;
+    UIElement **elements;
     int x, y, z;
     bool visible;
 } UIOverlay;
 
-/**
- * @brief Push a new overlay to a surface.
- *
- * @param surface
- */
-UIOverlay *UIOverlay_Add(UISurface *surface);
+UIOverlay *UIOverlay_Create();
+void UIOverlay_Update(UIOverlay *);
+void UIOverlay_Destroy(UIOverlay *);
 
 /**
  * @brief Print formatted text to a UIOverlay.
