@@ -21,4 +21,4 @@ void Renderer_Draw_Cell(Renderer *r, int x, int y, unsigned char glyph,
                         Color_Bzzt fg, Color_Bzzt bg);
 void Renderer_Draw_Board(Renderer *, const Board *);
 void Renderer_Draw_UI(Renderer *r, const UI *ui);
-void Renderer_Quit(Renderer *)
+void Renderer_Quit(Renderer *);

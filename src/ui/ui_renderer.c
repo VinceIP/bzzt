@@ -5,6 +5,7 @@
 #include "ui_overlay.h"
 #include "ui_element.h"
 #include "text.h"
+#include "code_page_lut.h"
 #include "object.h"
 #include <string.h>
 

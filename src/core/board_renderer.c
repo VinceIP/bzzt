@@ -1,4 +1,5 @@
 #include "board_renderer.h"
+#include "renderer.h"
 #include "board.h"
 #include "object.h"
 

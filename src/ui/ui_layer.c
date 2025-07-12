@@ -9,7 +9,7 @@ UILayer *UILayer_Create()
     if (!l)
     {
         fprintf(stderr, "Error allocationg UILayer.");
-        return;
+        return NULL;
     }
     l->surfaces = NULL;
     l->visible = true;

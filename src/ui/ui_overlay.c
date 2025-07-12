@@ -26,7 +26,7 @@ UIOverlay *UIOverlay_Create()
     if (!o)
     {
         fprintf(stderr, "Error allocating UIOverlay.");
-        return;
+        return NULL;
     }
     o->surface = NULL;
     o->elements = NULL;
