@@ -6,7 +6,17 @@
 void Renderer_Draw_Board(Renderer *r, const Board *b)
 {
     static const Object empty = {
-        0, 0, 0, DIR_NONE, {0, 0, 0}};
+        .id = 0,
+        .x = 0,
+        .y = 0,
+        .dir = DIR_NONE,
+        .cell = {
+            .visible = false,
+            .glyph = 0,
+            .fg = COLOR_BLACK,
+            .bg = COLOR_BLACK,
+        },
+    };
     const Object *grid[b->height][b->width];
     // Initialize board as empty objects
     for (int y = 0; y < b->height; ++y)

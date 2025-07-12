@@ -8,6 +8,7 @@
 #include "code_page_lut.h"
 #include "object.h"
 #include <string.h>
+#include <stdio.h>
 
 static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement *e)
 {
@@ -46,6 +47,7 @@ static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement 
                 }
             }
 
+            printf("\nDrawing text: %s", str);
             Renderer_Draw_Cell(r, x, y, unicode_to_cp437(c), t->fg, t->bg);
             x += 1;
         }
@@ -93,10 +95,13 @@ static void draw_ui_surface(Renderer *r, UISurface *s)
             Cell c = cells[i];
             if (c.visible) // Skip invisible cells
             {
+
                 int x = i % width;
                 int y = i / width;
                 if (c.glyph != 255) // Skip "transparent" glyph
+                {
                     Renderer_Draw_Cell(r, x, y, c.glyph, c.fg, c.bg);
+                }
             }
         }
     }
@@ -117,14 +122,19 @@ static void draw_ui_layer(Renderer *r, UILayer *l)
     {
         UISurface *s = l->surfaces[i];
         if (s->visible) // Skip invisible surfaces
+        {
             draw_ui_surface(r, s);
+        }
     }
 }
 
 void Renderer_Draw_UI(Renderer *r, const UI *ui)
 {
+
     if (!ui || !ui->visible)
+    {
         return; // Skip drawing if UI is NULL or invisible
+    }
 
     // Draw any existing UI layers
     int layer_count = ui->layer_count;

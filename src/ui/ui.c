@@ -214,7 +214,10 @@ void UI_Update(UI *ui)
 void UI_Print_Screen(UI *ui, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int x, int y, char *fmt, ...)
 {
     if (!ui || ui->layer_count == 0)
+    {
+        fprintf(stderr, "ERROR: No UI layers exist.\n");
         return;
+    }
 
     UILayer *layer = ui->layers[0];
     if (layer->surface_count == 0)
@@ -226,6 +229,7 @@ void UI_Print_Screen(UI *ui, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int x, int
     va_start(args, fmt);
     vsnprintf(buffer, sizeof(buffer), fmt, args);
     va_end(args);
+    printf("buffer: %s\n", buffer);
 
     UIText_WriteRaw(surface, buffer, x, y, fg, bg, wrap, surface->w);
 }

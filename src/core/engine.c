@@ -5,6 +5,7 @@
 #include "input.h"
 #include "editor.h"
 #include "ui.h"
+#include "ui_surface.h"
 #include "camera.h"
 #include "color.h"
 
@@ -65,6 +66,8 @@ void Engine_Update(Engine *e, InputState *in)
                 World *w = e->world;
                 w->doUnload = true;
             }
+            e->ui->visible = true;
+            UI_Print_Screen(e->ui, COLOR_RED, COLOR_BLACK, true, 10, 5, "Test text!");
         }
         break;
 

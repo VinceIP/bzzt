@@ -51,7 +51,7 @@ static Rectangle glyph_rec(Renderer *r, unsigned char ascii)
         r->glyph_h};
 }
 
-void Draw_Cell(Renderer *r, int cellX, int cellY, unsigned char glyph, Color_Bzzt fg, Color_Bzzt bg)
+void Renderer_Draw_Cell(Renderer *r, int cellX, int cellY, unsigned char glyph, Color_Bzzt fg, Color_Bzzt bg)
 {
     // Convert to RayLib color
     Color rf = (Color){fg.r, fg.g, fg.b, 255};
@@ -97,7 +97,7 @@ static void draw_cursor(Renderer *r, Engine *e)
 
     if (c->visible)
     {
-        Draw_Cell(r, c->x, c->y, c->glyph, c->color, COLOR_BLACK);
+        Renderer_Draw_Cell(r, c->x, c->y, c->glyph, c->color, COLOR_BLACK);
     }
 }
 
