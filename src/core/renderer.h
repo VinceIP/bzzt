@@ -5,12 +5,6 @@
 #include "world.h"
 #include "engine.h"
 
-typedef struct{
-    uint8_t glyph;
-    Color_Bzzt fg;
-    Color_Bzzt bg;
-} Cell;
-
 typedef struct
 {
     Texture2D font;

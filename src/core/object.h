@@ -1,7 +1,6 @@
 #pragma once
 #include <stdint.h>
 #include "color.h"
-#include "renderer.h"
 
 typedef enum
 {
@@ -11,6 +10,11 @@ typedef enum
     DIR_LEFT,
     DIR_RIGHT
 } Direction;
+
+typedef struct{
+    uint8_t glyph;
+    Color_Bzzt fg, bg;
+} Cell;
 
 typedef struct
 {

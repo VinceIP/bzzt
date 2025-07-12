@@ -1,10 +1,14 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include "raylib.h"
 #include "renderer.h"
 #include "engine.h"
 #include "color.h"
+#include "ui.h"
+
+#define TRANSPARENT_GLYPH 255
 
 bool Renderer_Init(Renderer *r, const char *path)
 {
@@ -80,8 +84,50 @@ static void draw_splash(Renderer *r, Engine *e)
 
 static void draw_editor(Renderer *r, Engine *e)
 {
-    Vector2 c = r->centerCoord;
-    draw_text_centered(e->font, "Edit mode engaged. Press Q to go back to title.", (Vector2){c.x, c.y + 20}, 30, 0, RAYWHITE);
+
+}
+
+/*
+ * @brief Draw a single surface to the screen. x, y indicates top-left corner origin
+ *
+ * @param r Renderer
+ * @param s UISurface
+ * @param x x coord
+ * @param y y coord
+ */
+static void draw_ui_surface(Renderer *r, UISurface *s, int x, int y)
+{
+    int cell_count = s->width * s->height;
+    Vector2 offset = {x, y};
+    for (int i = 0; i < cell_count; ++i)
+    {
+        Cell c = s->cells[i];
+        int cx = i % s->width;
+        int cy = i / s->width;
+        uint8_t glyph = c.glyph;
+        if (glyph == TRANSPARENT_GLYPH)
+            continue;
+        Color_Bzzt fg = c.fg;
+        Color_Bzzt bg = c.bg;
+        draw_cell(r, offset.x + cx, offset.y + cy, glyph, fg, bg);
+    }
+}
+
+/**
+ * @brief Draws all UI surfaces to the screen.
+ *
+ * @param r
+ * @param ui
+ */
+static void draw_ui(Renderer *r, UI *ui)
+{
+    UISurface **surfaces = ui->surfaces;
+    int surface_count = ui->count;
+    for (int i = 0; i < surface_count; ++i)
+    {
+        UISurface *s = surfaces[i];
+        draw_ui_surface(r, s, 0, 0);
+    }
 }
 
 static void draw_cursor(Renderer *r, Engine *e)
@@ -103,7 +149,7 @@ static void draw_cursor(Renderer *r, Engine *e)
 
 void Renderer_Update(Renderer *r, Engine *e)
 {
-    ClearBackground((Color){10, 26, 51, 0});
+    ClearBackground(BLACK);
     switch (e->state)
     {
     case SPLASH_MODE:
@@ -113,6 +159,13 @@ void Renderer_Update(Renderer *r, Engine *e)
 
     case EDIT_MODE:
         draw_editor(r, e);
+        UI *ui = e->ui;
+        if (ui)
+        {
+            draw_ui(r, ui);
+        }
+        else
+            fprintf(stderr, "Failed to draw UI.");
         draw_cursor(r, e);
         break;
 
@@ -147,7 +200,7 @@ void Renderer_DrawBoard(Renderer *r, Board *b)
         for (int x = 0; x < b->width; ++x)
         {
             const Object *o = grid[y][x];
-            draw_cell(r, x, y, o->glyph, o->fg_color, o->bg_color);
+            draw_cell(r, x, y, o->cell.glyph, o->cell.fg, o->cell.bg);
         }
     }
 }

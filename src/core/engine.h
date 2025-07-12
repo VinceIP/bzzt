@@ -3,6 +3,8 @@
 #include "world.h"
 #include "input.h"
 #include "color.h"
+#include "ui.h"
+#include "camera.h"
 
 typedef enum
 {
@@ -32,9 +34,11 @@ typedef struct
 typedef struct
 {
     EState state;
+    UI *ui;
     World *world;
     Font font;
     Cursor cursor;
+    BzztCamera *camera;
     // Renderer renderer;
     // Input input;
     bool running;

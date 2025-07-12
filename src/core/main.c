@@ -22,8 +22,7 @@ int main(void)
 {
     setup_raylib();
     const char *fontPath = ASSET("fonts/Perfect DOS VGA 437 Win.ttf");
-    // Font font = LoadFont(fontPath)
-    Font font = LoadFont(ASSET("fonts/Perfect DOS VGA 437 Win.ttf"));
+    Font font = LoadFont(fontPath);
     Engine e;
     Engine_Init(&e);
     e.font = font;

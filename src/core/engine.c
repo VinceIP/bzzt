@@ -1,10 +1,12 @@
 #include <stdbool.h>
+#include <stdlib.h>
 #include "engine.h"
 #include "editor.h"
 #include "world.h"
 #include "input.h"
 #include "color.h"
 #include "ui.h"
+#include "camera.h"
 
 bool Engine_Init(Engine *e)
 {
@@ -17,6 +19,8 @@ bool Engine_Init(Engine *e)
     e->debugShow = false;
     e->edit_mode_init_done = false;
 
+    e->ui = UI_Create();
+
     Cursor *c = &e->cursor;
     c->x = 0;
     c->y = 0;
@@ -27,14 +31,10 @@ bool Engine_Init(Engine *e)
     c->glyph = '#';
     c->color = COLOR_WHITE;
 
-    char *path = "assets/ui/ui.psci";
-    PlaysciiAsset *ui = Load_Playscii(path);
+    e->camera = malloc(sizeof(BzztCamera));
+    e->camera->viewport.rect = (Rectangle){0,0,0,0};
 
     return true;
-}
-
-static void init_edit_mode(Engine *e)
-{
 }
 
 void Engine_Update(Engine *e, InputState *in)
@@ -65,11 +65,6 @@ void Engine_Update(Engine *e, InputState *in)
         {
             e->state = SPLASH_MODE;
             e->world = world_create("Title Screen");
-        }
-
-        if (!e->edit_mode_init_done)
-        {
-            init_edit_mode(e);
         }
 
         break;
