@@ -28,6 +28,7 @@ UIOverlay *UIOverlay_Create()
         fprintf(stderr, "Error allocating UIOverlay.");
         return;
     }
+    o->surface = NULL;
     o->elements = NULL;
     o->elements_count = o->elements_cap = 0;
     o->visible = true;
@@ -66,6 +67,10 @@ void UIOverlay_Destroy(UIOverlay *o)
         }
         free(o->elements);
     }
+
+    if (o->surface)
+        remove_from_surface(o->surface, o);
+
     free(o);
 }
 

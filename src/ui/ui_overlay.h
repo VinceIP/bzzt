@@ -22,6 +22,7 @@ typedef struct UIElement UIElement;
  */
 typedef struct UIOverlay
 {
+    struct UISurface *surface;
     UIElement **elements;
     int elements_count, elements_cap;
     int x, y, z;

@@ -2,13 +2,81 @@
 #include "ui.h"
 #include "ui_layer.h"
 #include "ui_surface.h"
+#include "ui_overlay.h"
 #include "ui_element.h"
+#include "text.h"
 #include "object.h"
+#include <string.h>
 
-static void draw_ui_element(Renderer *r, UIElement *e)
+static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement *e)
 {
-    (void)r;
-    (void)e;
+    int base_x = s->x + ov->x + e->x;
+    int base_y = s->y + ov->y + e->y;
+
+    switch (e->type)
+    {
+    case UI_ELEM_TEXT:
+    {
+        UIText *t = (UIText *)e;
+        const char *str = t->textCallback(t->ud);
+        int x = base_x;
+        int y = base_y;
+        int maxWidth = t->wrap ? s->w - (x - s->x) : s->w;
+        int len = strlen(str);
+        for (int i = 0; i < len; ++i)
+        {
+            unsigned char c = (unsigned char)str[i];
+            if (c == '\n')
+            {
+                x = base_x;
+                y += 1;
+                continue;
+            }
+            if (x - base_x >= maxWidth)
+            {
+                if (t->wrap)
+                {
+                    x = base_x;
+                    y += 1;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            Renderer_Draw_Cell(r, x, y, unicode_to_cp437(c), t->fg, t->bg);
+            x += 1;
+        }
+        break;
+    }
+    case UI_ELEM_BUTTON:
+    {
+        UIButton *b = (UIButton *)e;
+        const char *caption = b->label->textCallback(b->label->ud);
+        Renderer_Draw_Cell(r, base_x, base_y, '[', b->label->fg, b->label->bg);
+        int x = base_x + 1;
+        int len = strlen(caption);
+        for (int i = 0; i < len; ++i)
+        {
+            Renderer_Draw_Cell(r, x + i, base_y, unicode_to_cp437((unsigned char)caption[i]), b->label->fg, b->label->bg);
+        }
+        Renderer_Draw_Cell(r, base_x + len + 1, base_y, ']', b->label->fg, b->label->bg);
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+static void draw_ui_overlay(Renderer *r, UISurface *s, UIOverlay *o)
+{
+    for (int i = 0; i < o->elements_count; ++i)
+    {
+        UIElement *e = o->elements[i];
+        if (e->visible)
+            draw_ui_element(r, s, o, e);
+    }
 }
 
 static void draw_ui_surface(Renderer *r, UISurface *s)
@@ -32,16 +100,11 @@ static void draw_ui_surface(Renderer *r, UISurface *s)
         }
     }
 
-    // If any sub elements live on this surface, draw them over the cells
-    int elements_count = s->elements_count;
-    if (elements_count > 0)
+    for (int i = 0; i < s->overlays_count; ++i)
     {
-        for (int i = 0; i < elements_count; ++i)
-        {
-            UIElement *e = s->elements[i];
-            if (e->visible) // Skip invisible elements
-                draw_ui_element(r, e);
-        }
+        UIOverlay *o = s->overlays[i];
+        if (o->visible)
+            draw_ui_overlay(r, s, o);
     }
 }
 

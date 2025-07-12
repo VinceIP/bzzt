@@ -23,7 +23,7 @@ UIElement *UIElement_Create()
     return e;
 
 fail:
-    sprintf(stderr, "Error allocating UIElement.");
+    fprintf(stderr, "Error allocating UIElement.");
 }
 
 void UIElement_Destroy(UIElement *e)

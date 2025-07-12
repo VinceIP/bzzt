@@ -141,6 +141,94 @@ fail:
     cJSON_Delete(json);
     return NULL;
 }
+
+void UI_Add_Surface(UI *ui, UISurface *s)
+{
+    if (!ui || !s)
+        return;
+
+    if (ui->layer_count == 0)
+        UI_Add_Layer(ui);
+
+    UILayer *layer = ui->layers[0];
+
+    if (layer->surface_count >= layer->surface_cap)
+    {
+        int new_cap = layer->surface_cap == 0 ? 4 : layer->surface_cap * 2;
+        UISurface **tmp = realloc(layer->surfaces, sizeof(UISurface *) * new_cap);
+        if (!tmp)
+            return;
+        layer->surfaces = tmp;
+        layer->surface_cap = new_cap;
+    }
+
+    layer->surfaces[layer->surface_count++] = s;
+}
+
+static int grow_layers(UI *ui)
+{
+    int new_cap = ui->layer_cap == 0 ? 4 : ui->layer_cap * 2;
+    UILayer **tmp = realloc(ui->layers, sizeof(UILayer *) * new_cap);
+    if (!tmp)
+        return -1;
+    ui->layers = tmp;
+    ui->layer_cap = new_cap;
+    return 0;
+}
+
+UILayer *UI_Add_Layer(UI *ui)
+{
+    if (!ui)
+        return NULL;
+
+    if (ui->layer_count >= ui->layer_cap && grow_layers(ui) != 0)
+        return NULL;
+
+    UILayer *layer = UILayer_Create();
+    if (!layer)
+        return NULL;
+
+    ui->layers[ui->layer_count++] = layer;
+    return layer;
+}
+
+void UI_Set_Visible_Layer(UILayer *l, bool show)
+{
+    if (l)
+        l->visible = show;
+}
+
+void UI_Update(UI *ui)
+{
+    if (!ui || !ui->visible)
+        return;
+
+    for (int i = 0; i < ui->layer_count; ++i)
+    {
+        UILayer *l = ui->layers[i];
+        UILayer_Update(l);
+    }
+}
+
+void UI_Print_Screen(UI *ui, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int x, int y, char *fmt, ...)
+{
+    if (!ui || ui->layer_count == 0)
+        return;
+
+    UILayer *layer = ui->layers[0];
+    if (layer->surface_count == 0)
+        return;
+
+    UISurface *surface = layer->surfaces[0];
+    char buffer[256];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buffer, sizeof(buffer), fmt, args);
+    va_end(args);
+
+    UIText_WriteRaw(surface, buffer, x, y, fg, bg, wrap, surface->w);
+}
+
 void UI_Add_Surface(UI *ui, UISurface *s)
 {
     if (!ui || !s)
