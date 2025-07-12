@@ -7,6 +7,7 @@
 struct Color;
 typedef struct UILayer UILayer;
 typedef struct UIOverlay UIOverlay;
+typedef struct UISurface UISurface;
 typedef struct Cell Cell;
 typedef struct cJSON cJSON;
 
