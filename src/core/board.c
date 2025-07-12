@@ -1,6 +1,8 @@
-#include "board.h"
+
 #include <stdlib.h>
 #include <string.h>
+#include "board.h"
+#include "object.h"
 
 #define START_CAP 64
 

@@ -1,17 +1,19 @@
 #pragma once
-#include "raylib.h"
 
 #define VIEWPORT_DEFAULT_W = 60
 #define VIEWPORT_DEFAULT_H = 25
 
-typedef struct
+struct Rectangle;
+struct Vector2;
+
+typedef struct Viewport
 {
     int x, y;
     Rectangle rect;
     Vector2 origin;
 } Viewport;
 
-typedef struct
+typedef struct BzztCamera
 {
     Viewport viewport;
 } BzztCamera;

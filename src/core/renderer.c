@@ -7,6 +7,9 @@
 #include "engine.h"
 #include "color.h"
 #include "ui.h"
+#include "object.h"
+#include "board.h"
+#include "world.h"
 
 #define TRANSPARENT_GLYPH 255
 
@@ -84,7 +87,6 @@ static void draw_splash(Renderer *r, Engine *e)
 
 static void draw_editor(Renderer *r, Engine *e)
 {
-
 }
 
 /*

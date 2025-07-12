@@ -11,12 +11,13 @@ typedef enum
     DIR_RIGHT
 } Direction;
 
-typedef struct{
+typedef struct Cell
+{
     uint8_t glyph;
     Color_Bzzt fg, bg;
 } Cell;
 
-typedef struct
+typedef struct Object
 {
     int id;
     int x, y;

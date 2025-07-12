@@ -1,10 +1,10 @@
 #pragma once
-#include "object.h"
-
 #define BOARD_DEFAULT_W 80
 #define BOARD_DEFAULT_H 25
 
-typedef struct
+typedef struct Object Object;
+
+typedef struct Board
 {
     int width, height;
 
@@ -17,18 +17,18 @@ typedef struct
 
 /**
  * @brief Create a new board.
- * 
- * @param name 
- * @param w 
- * @param h 
- * @return Board 
+ *
+ * @param name
+ * @param w
+ * @param h
+ * @return Board
  */
 Board *Board_Create(const char *name, int w, int h);
 
 /**
  * @brief Destroy the given board.
- * 
- * @param b 
+ *
+ * @param b Target board.
  */
 void Board_Destroy(Board *b);
 
@@ -55,4 +55,3 @@ void Board_Remove_Obj(Board *b, int id);
  * @return Object* Target object.
  */
 Object *Board_Get_Obj(Board *b, int id);
-

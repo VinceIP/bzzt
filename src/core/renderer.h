@@ -1,11 +1,11 @@
 #pragma once
 #include <stdbool.h>
-#include "raylib.h"
 #include "color.h"
-#include "world.h"
-#include "engine.h"
 
-typedef struct
+struct Texture2D;
+struct Vector2;
+
+typedef struct Renderer
 {
     Texture2D font;
     int glyph_w, glyph_h;

@@ -1,10 +1,11 @@
 #pragma once
 #include "raylib.h"
-#include "world.h"
-#include "input.h"
 #include "color.h"
-#include "ui.h"
-#include "camera.h"
+
+typedef struct World World;
+typedef struct UI UI;
+typedef struct BzztCamera BzztCamera;
+typedef struct InputState InputState;
 
 typedef enum
 {
@@ -13,7 +14,7 @@ typedef enum
     EDIT_MODE
 } EState;
 
-typedef struct
+typedef struct Cursor
 {
     int x, y;
     bool visible;
@@ -31,7 +32,7 @@ typedef struct
     Color_Bzzt color;
 } Cursor;
 
-typedef struct
+typedef struct Engine
 {
     EState state;
     UI *ui;

@@ -1,13 +1,16 @@
 #pragma once
-
-#include <stdint.h>
-#include <stdbool.h>
 #include "board.h"
 #include "input.h"
+#include <stdint.h>
+#include <stdbool.h>
 
 #define MAX_PATH 32
 
-typedef struct
+struct World;
+struct InputState;
+struct Object;
+
+typedef struct World
 {
     char title[64];
     char author[32];

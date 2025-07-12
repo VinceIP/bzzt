@@ -1,12 +1,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include "engine.h"
-#include "editor.h"
 #include "world.h"
 #include "input.h"
-#include "color.h"
+#include "editor.h"
 #include "ui.h"
 #include "camera.h"
+#include "color.h"
 
 bool Engine_Init(Engine *e)
 {
@@ -32,7 +32,8 @@ bool Engine_Init(Engine *e)
     c->color = COLOR_WHITE;
 
     e->camera = malloc(sizeof(BzztCamera));
-    e->camera->viewport.rect = (Rectangle){0,0,0,0};
+    BzztCamera *cam = e->camera;
+    cam->viewport.rect = (Rectangle){0, 0, 0, 0};
 
     return true;
 }
@@ -51,7 +52,8 @@ void Engine_Update(Engine *e, InputState *in)
             Editor_Init(e);
             if (e->world)
             {
-                e->world->doUnload = true;
+                World *w = e->world;
+                w->doUnload = true;
             }
         }
         break;
