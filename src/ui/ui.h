@@ -7,6 +7,7 @@
 struct Color;
 typedef struct UILayer UILayer;
 typedef struct UIOverlay UIOverlay;
+typedef struct UISurface UISurface;
 typedef struct Cell Cell;
 typedef struct cJSON cJSON;
 
@@ -48,6 +49,7 @@ void UI_Destroy(UI *ui);
  * @return UILayer*
  */
 UILayer *UI_Add_Layer(UI *ui);
+void UI_Add_Surface(UI *ui, UISurface *s);
 
 void UI_Set_Visible_Layer(UILayer *, bool show);
 

@@ -28,6 +28,7 @@ UIOverlay *UIOverlay_Create()
         fprintf(stderr, "Error allocating UIOverlay.");
         return;
     }
+    o->surface = NULL;
     o->elements = NULL;
     o->elements_count = o->elements_cap = 0;
     o->visible = true;
@@ -36,13 +37,28 @@ UIOverlay *UIOverlay_Create()
     return o;
 }
 
+static void remove_from_surface(UISurface *s, UIOverlay *o)
+{
+    if (!s)
+        return;
+    for (int i = 0; i < s->overlays_count; ++i)
+    {
+        if (s->overlays[i] == o)
+        {
+            s->overlays[i] = s->overlays[--s->overlays_count];
+            return;
+        }
+    }
+}
+
 void UIOverlay_Destroy(UIOverlay *o)
 {
     if (!o)
         return;
-    UIElement *elements = o->elements;
+
+    UIElement **elements = o->elements;
     int elements_count = o->elements_count;
-    if (elements && o->elements_count > 0)
+    if (elements && elements_count > 0)
     {
         for (int i = 0; i < elements_count; ++i)
         {
@@ -51,6 +67,10 @@ void UIOverlay_Destroy(UIOverlay *o)
         }
         free(o->elements);
     }
+
+    if (o->surface)
+        remove_from_surface(o->surface, o);
+
     free(o);
 }
 
@@ -74,19 +94,28 @@ void UIOverlay_Add_Element(UIOverlay *o, UIElement *e)
     o->elements[o->elements_count++] = e;
 }
 
-/*
+void UIOverlay_Update(UIOverlay *o)
+{
+    if (!o || !o->visible)
+        return;
+
+    for (int i = 0; i < o->elements_count; ++i)
+    {
+        UIElement *e = o->elements[i];
+        UIElement_Update(e);
+    }
+}
+
 void UIOverlay_Print(UIOverlay *ov, Color_Bzzt fg, Color_Bzzt bg, bool wrap, const char *fmt, ...)
 {
-    char buffer[256]; // Increased buffer size for safety
-    va_list args;     // Handle args
+    if (!ov || !ov->surface)
+        return;
+
+    char buffer[256];
+    va_list args;
     va_start(args, fmt);
-    vsnprintf(buffer, sizeof(buffer), fmt, args); // Format text using any args
+    vsnprintf(buffer, sizeof(buffer), fmt, args);
     va_end(args);
 
-    int absX = ov->x;
-    int absY = ov->y;
-    UISurface *s = ov->surface;
-
-    UIText_WriteRaw(ov->surface, buffer, absX, absY, fg, bg, wrap, s->w);
+    UIText_WriteRaw(ov->surface, buffer, ov->x, ov->y, fg, bg, wrap, ov->surface->w);
 }
-    */

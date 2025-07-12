@@ -33,7 +33,7 @@ typedef struct UISurface
     int overlays_count, overlays_cap;
 } UISurface;
 
-UISurface *UISurface_Create();
+UISurface *UISurface_Create(int cell_count);
 void UISurface_Add_Overlay(UISurface *s, UIOverlay *o);
-void UISurface_Update();
+void UISurface_Update(UISurface *s);
 void UISurface_Destroy(UISurface *);

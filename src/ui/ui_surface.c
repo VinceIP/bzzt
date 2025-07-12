@@ -67,5 +67,30 @@ void UISurface_Add_Overlay(UISurface *s, UIOverlay *o)
         s->overlays = new_overlays;
         s->overlays_cap = new_cap;
     }
+    if (s->overlays_count >= s->overlays_cap)
+    {
+        int new_cap = s->overlays_cap == 0 ? 4 : s->overlays_cap * 2;
+        UIOverlay **new_overlays = realloc(s->overlays, sizeof(UIOverlay *) * new_cap);
+        if (!new_overlays)
+        {
+            fprintf(stderr, "Failed to reallocate UIOverlays array.");
+            return;
+        }
+        s->overlays = new_overlays;
+        s->overlays_cap = new_cap;
+    }
+    o->surface = s;
     s->overlays[s->overlays_count++] = o;
+}
+
+void UISurface_Update(UISurface *s)
+{
+    if (!s || !s->visible)
+        return;
+
+    for (int i = 0; i < s->overlays_count; ++i)
+    {
+        UIOverlay *o = s->overlays[i];
+        UIOverlay_Update(o);
+    }
 }
