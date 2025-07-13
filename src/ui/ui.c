@@ -232,5 +232,5 @@ void UI_Print_Screen(UI *ui, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int x, int
     va_end(args);
     printf("buffer: %s\n", buffer);
 
-    UIText_WriteRaw(surface, buffer, x, y, fg, bg, wrap, surface->w);
+    UISurface_DrawText(surface, buffer, x, y, fg, bg, wrap, surface->w);
 }

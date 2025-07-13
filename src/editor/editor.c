@@ -51,10 +51,12 @@ static void ui_init(Engine *e)
     // UIOverlay_Add_Element(o, &t->base);
     // UISurface_Add_Overlay(sidebar, o);
     int x = sidebar->x;
-    int y = 0;
+    int y = sidebar->y;
     int testX = sidebar->x;
     int testY = sidebar->y;
+
     UI_Print_Screen(ui, COLOR_WHITE, COLOR_DARK_GRAY, false, x, y, "Sidebar X: %d\nSidebar Y: %d", testX, testY);
+    UI_Print_Screen(ui, COLOR_WHITE, COLOR_DARK_GRAY, false, x + 10, y + 10, "Hello world world world world world world world world world world world world world", testX, testY);
 }
 
 void Editor_Init(Engine *e)

@@ -8,24 +8,36 @@
 #include <stdint.h>
 #include <string.h>
 
-void UIText_WriteRaw(UISurface *surface, const char *utf8, int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int wrapWidth)
+/**
+ * @brief Parse text and write it to a buffer of cells in a UI surface. Returns true if text overflows
+ *
+ * @param surface
+ * @param utf8
+ * @param x
+ * @param y
+ * @param fg
+ * @param bg
+ * @param wrap
+ * @param wrapWidth
+ */
+bool UISurface_DrawText(UISurface *surface, const char *utf8, int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int wrapWidth)
 {
     int maxWidth = wrap ? (wrapWidth > 0 ? wrapWidth : surface->w) : surface->w; // Set maxWidth to surface width if wrap is false or wrapWidth <= 0
     int maxHeight = surface->h;
     int cursX = x;
     int cursY = y;
     int len = strlen(utf8);
-
     for (int i = 0; i < len; ++i)
     {
         // Handle cursor movement
         uint16_t c = (unsigned char)utf8[i];
-        if (c == '\n')
+        if (c == '\n') // Newline
         {
             cursX = x;
             cursY += 1;
+            continue;
         }
-        if (cursX >= x + maxWidth)
+        if (cursX >= x + surface->w)
         {
             if (wrap)
             {
@@ -34,7 +46,7 @@ void UIText_WriteRaw(UISurface *surface, const char *utf8, int x, int y, Color_B
             }
             else
             {
-                break; // Stop drawing if out of bounds
+                return true; // Stop drawing if out of bounds
             }
         }
         if (cursY >= maxHeight)
@@ -42,9 +54,9 @@ void UIText_WriteRaw(UISurface *surface, const char *utf8, int x, int y, Color_B
             break; // Stop drawing when out of vertical space
         }
         ////
-        uint8_t glyph = unicode_to_cp437(c);  // Get a CP437 glyph
-        int index = cursY * maxWidth + cursX; // Calculate flat array index;
-        Cell *cell = &surface->cells[index];  // Get a cell and set its properties
+        uint8_t glyph = unicode_to_cp437(c);    // Get a CP437 glyph
+        int index = cursY * surface->w + cursX; // Calculate flat array index;
+        Cell *cell = &surface->cells[index];    // Get a cell and set its properties
         cell->glyph = glyph;
         cell->fg = fg;
         cell->bg = bg;
@@ -52,4 +64,5 @@ void UIText_WriteRaw(UISurface *surface, const char *utf8, int x, int y, Color_B
 
         cursX += 1;
     }
+    return false;
 }

@@ -117,5 +117,5 @@ void UIOverlay_Print(UIOverlay *ov, Color_Bzzt fg, Color_Bzzt bg, bool wrap, con
     vsnprintf(buffer, sizeof(buffer), fmt, args);
     va_end(args);
 
-    UIText_WriteRaw(ov->surface, buffer, ov->x, ov->y, fg, bg, wrap, ov->surface->w);
+    UISurface_DrawText(ov->surface, buffer, ov->x, ov->y, fg, bg, wrap, ov->surface->w);
 }

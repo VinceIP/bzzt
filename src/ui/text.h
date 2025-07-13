@@ -15,4 +15,4 @@
 
 typedef struct UISurface UISurface;
 
-void UIText_WriteRaw(UISurface *surface, const char *utf8, int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int wrapWidth);
+bool UISurface_DrawText(UISurface *surface, const char *utf8, int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int wrapWidth);
