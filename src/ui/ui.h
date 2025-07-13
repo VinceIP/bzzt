@@ -38,7 +38,7 @@ void Playscii_Unload(PlaysciiAsset *asset);
  *
  * @return UI*
  */
-UI *UI_Create(void);
+UI *UI_Create();
 void UI_Update(UI *ui);
 void UI_Destroy(UI *ui);
 
@@ -64,6 +64,6 @@ void UI_Set_Visible_Layer(UILayer *, bool show);
  * @param fmt String with/without format specifiers
  * @param ... Formatting args
  */
-void UI_Print_Screen(UI *ui, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int x, int y, char *fmt, ...);
+void UI_Print_Screen(UI *ui, UISurface *s, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int x, int y, char *fmt, ...);
 
 UISurface *UISurface_Load_From_Playscii(const char *filename);

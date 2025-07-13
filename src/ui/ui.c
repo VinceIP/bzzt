@@ -5,18 +5,20 @@
 #include "text.h"
 #include "ui_layer.h"
 #include "ui_surface.h"
+#include "debugger.h"
+#include "engine.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
-#define CHECK_FAIL(cond, label, msg)                            \
-    do                                                          \
-    {                                                           \
-        if (!(cond))                                            \
-        {                                                       \
-            fprintf(stderr, "UISurface load error: %s\n", msg); \
-            goto label;                                         \
-        }                                                       \
+#define CHECK_FAIL(cond, label, msg)                               \
+    do                                                             \
+    {                                                              \
+        if (!(cond))                                               \
+        {                                                          \
+            Debug_Printf(LOG_UI, "UISurface load error: %s", msg); \
+            goto label;                                            \
+        }                                                          \
     } while (0)
 
 static char *read_file(const char *path)
@@ -44,7 +46,7 @@ static char *read_file(const char *path)
     return buf;
 }
 
-UI *UI_Create(void)
+UI *UI_Create()
 {
     UI *ui = malloc(sizeof(UI));
     ui->layer_count = 0;
@@ -75,7 +77,7 @@ cJSON *Playscii_Load(const char *path)
     cJSON *json = cJSON_Parse(text);
     if (!json)
     {
-        fprintf(stderr, "JSON error before: %s\n", cJSON_GetErrorPtr());
+        Debug_Printf(LOG_UI, "JSON error before: %s", cJSON_GetErrorPtr());
         free(text);
         return NULL;
     }
@@ -146,13 +148,18 @@ fail:
 
 void UI_Add_Surface(UI *ui, UISurface *s)
 {
+    int cell_count = s->cell_count;
+    Debug_Printf(LOG_UI, "Adding a surface with %d cells to a UI layer.", cell_count);
     if (!ui || !s)
         return;
 
     if (ui->layer_count == 0)
-        UI_Add_Layer(ui);
+        Debug_Printf(LOG_UI, "UI contains no layers. Adding one now.");
+    UI_Add_Layer(ui);
 
     UILayer *layer = ui->layers[0];
+    if (!layer)
+        Debug_Printf(LOG_UI, "No parent layer detected when adding surface to UI.");
 
     if (layer->surface_count >= layer->surface_cap)
     {
@@ -180,6 +187,7 @@ static int grow_layers(UI *ui)
 
 UILayer *UI_Add_Layer(UI *ui)
 {
+    Debug_Printf(LOG_UI, "Adding a layer to UI.");
     if (!ui)
         return NULL;
 
@@ -212,11 +220,11 @@ void UI_Update(UI *ui)
     }
 }
 
-void UI_Print_Screen(UI *ui, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int x, int y, char *fmt, ...)
+void UI_Print_Screen(UI *ui, UISurface *s, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int x, int y, char *fmt, ...)
 {
     if (!ui || ui->layer_count == 0)
     {
-        fprintf(stderr, "ERROR: No UI layers exist.\n");
+        Debug_Printf(LOG_UI, "UI is null or UI has no layers when trying to print to screen.");
         return;
     }
 
@@ -224,13 +232,12 @@ void UI_Print_Screen(UI *ui, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int x, int
     if (layer->surface_count == 0)
         return;
 
-    UISurface *surface = layer->surfaces[0];
+    // UISurface *surface = layer->surfaces[0];
     char buffer[256];
     va_list args;
     va_start(args, fmt);
     vsnprintf(buffer, sizeof(buffer), fmt, args);
     va_end(args);
-    printf("buffer: %s\n", buffer);
 
-    UISurface_DrawText(surface, buffer, x, y, fg, bg, wrap, surface->w);
+    UISurface_DrawText(s, buffer, x, y, fg, bg, wrap, s->w);
 }

@@ -47,7 +47,6 @@ static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement 
                 }
             }
 
-            printf("\nDrawing text: %s", str);
             Renderer_Draw_Cell(r, x, y, unicode_to_cp437(c), t->fg, t->bg);
             x += 1;
         }
@@ -87,6 +86,7 @@ static void draw_ui_surface(Renderer *r, UISurface *s)
     int cell_count = s->cell_count;
     Cell *cells = s->cells;
     int width = s->w;
+    int height = s->h;
     // If any cells live on this surface, draw them
     if (cells && cell_count > 0)
     {

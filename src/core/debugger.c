@@ -1,14 +1,52 @@
-#include "raylib.h"
-#include "world.h"
-#include "input.h"
+#include "debugger.h"
+#include <stdarg.h>
+#include <stdio.h>
 
-void draw_debug(InputState *s)
+static Debugger *dbg = NULL;
+
+void Debugger_Create()
 {
-    DrawText(TextFormat("FPS:%2d", GetFPS()), 8, 8, 20, RAYWHITE);
-    DrawText(TextFormat("Elapsed time:%.2f", s->elapsedTime), 8, 28, 20, RAYWHITE);
-        DrawText(TextFormat("Delay lock:%d", s->delayLock), 8, 48, 20, RAYWHITE);
-                DrawText(TextFormat("Held frames:%d", s->heldFrames), 8, 68, 20, RAYWHITE);
+    Debugger *d = malloc(sizeof(Debugger));
+    d->enabled = true;
+    if (!d)
+    {
+        fprintf(stderr, "Error creating debugger.");
+        return;
+    }
+    dbg = d;
+}
 
+void Debug_Printf(LogType lt, char *fmt, ...)
+{
+    if (dbg->enabled)
+    {
+        const char *prefix = "";
 
+        switch (lt)
+        {
+        case LOG_ENGINE:
+            prefix = "ENGINE: ";
+            break;
+        case LOG_WORLD:
+            prefix = "WORLD: ";
+            break;
+        case LOG_BOARD:
+            prefix = "BOARD: ";
+            break;
+        case LOG_UI:
+            prefix = "UI: ";
+            break;
+        case LOG_NULL:
+        default:
+            break;
+        }
 
+        fprintf(stderr, "%s", prefix);
+
+        va_list args;
+        va_start(args, fmt);
+        vfprintf(stderr, fmt, args);
+        va_end(args);
+        fprintf(stderr, "\n");
+    }
 }

@@ -22,7 +22,7 @@
  */
 bool UISurface_DrawText(UISurface *surface, const char *utf8, int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int wrapWidth)
 {
-    int maxWidth = wrap ? (wrapWidth > 0 ? wrapWidth : surface->w) : surface->w; // Set maxWidth to surface width if wrap is false or wrapWidth <= 0
+    // int maxWidth = wrap ? (wrapWidth > 0 ? wrapWidth : surface->w) : surface->w; // Set maxWidth to surface width if wrap is false or wrapWidth <= 0
     int maxHeight = surface->h;
     int cursX = x;
     int cursY = y;

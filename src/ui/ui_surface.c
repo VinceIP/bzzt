@@ -1,11 +1,13 @@
 #include "ui_surface.h"
 #include "ui_overlay.h"
 #include "cell.h"
+#include "debugger.h"
 #include <stdlib.h>
 #include <stdio.h>
 
 UISurface *UISurface_Create(int cell_count)
 {
+    Debug_Printf(LOG_UI, "Creating surface with %d cells.", cell_count);
     UISurface *surface = malloc(sizeof(UISurface));
     if (!surface)
         goto fail;
@@ -31,7 +33,7 @@ UISurface *UISurface_Create(int cell_count)
     return surface;
 
 fail:
-    fprintf(stderr, "Error creating surface with %d cells.", cell_count);
+    Debug_Printf(LOG_UI, "Error creating surface with %d cells.", cell_count);
     return NULL;
 }
 
@@ -60,6 +62,7 @@ void UISurface_Destroy(UISurface *s)
 
 void UISurface_Add_Overlay(UISurface *s, UIOverlay *o)
 {
+    Debug_Printf(LOG_UI, "Adding an overlay to a surface.");
     if (!s || !o)
         return;
 
@@ -69,19 +72,7 @@ void UISurface_Add_Overlay(UISurface *s, UIOverlay *o)
         UIOverlay **new_overlays = realloc(s->overlays, sizeof(UIOverlay *) * new_cap);
         if (!new_overlays)
         {
-            fprintf(stderr, "Failed to reallocate UIOverlays array.");
-            return;
-        }
-        s->overlays = new_overlays;
-        s->overlays_cap = new_cap;
-    }
-    if (s->overlays_count >= s->overlays_cap)
-    {
-        int new_cap = s->overlays_cap == 0 ? 4 : s->overlays_cap * 2;
-        UIOverlay **new_overlays = realloc(s->overlays, sizeof(UIOverlay *) * new_cap);
-        if (!new_overlays)
-        {
-            fprintf(stderr, "Failed to reallocate UIOverlays array.");
+            Debug_Printf(LOG_UI, "Error reallocate overlays array when adding an overlay to a surface.");
             return;
         }
         s->overlays = new_overlays;

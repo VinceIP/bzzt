@@ -1,5 +1,6 @@
 #include "ui_layer.h"
 #include "ui_surface.h"
+#include "debugger.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -8,7 +9,7 @@ UILayer *UILayer_Create()
     UILayer *l = malloc(sizeof(UILayer));
     if (!l)
     {
-        fprintf(stderr, "Error allocationg UILayer.");
+        Debug_Printf(LOG_UI, "Error allocating UILayer.");
         return NULL;
     }
     l->surfaces = NULL;

@@ -9,6 +9,7 @@
  *
  */
 
+#include "debugger.h"
 #include "ui_overlay.h"
 #include "color.h"
 #include "text.h"
@@ -22,10 +23,11 @@
 
 UIOverlay *UIOverlay_Create()
 {
+    Debug_Printf(LOG_UI, "Creating a new overlay.");
     UIOverlay *o = malloc(sizeof(UIOverlay));
     if (!o)
     {
-        fprintf(stderr, "Error allocating UIOverlay.");
+        Debug_Printf(LOG_UI, "Error allocating UIOverlay.");
         return NULL;
     }
     o->surface = NULL;
@@ -85,7 +87,7 @@ void UIOverlay_Add_Element(UIOverlay *o, UIElement *e)
         UIElement **new_elements = realloc(o->elements, sizeof(UIElement *) * new_cap);
         if (!new_elements)
         {
-            fprintf(stderr, "Failed to reallocate UIElements array.");
+            Debug_Printf(LOG_UI, "Error allocating UIElements array when adding element to an overlay.");
             return;
         }
         o->elements = new_elements;

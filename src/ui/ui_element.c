@@ -1,6 +1,8 @@
 #include "ui_element.h"
+#include "ui_bindings.h"
 #include "text.h"
 #include "color.h"
+#include "debugger.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -23,7 +25,8 @@ UIElement *UIElement_Create()
     return e;
 
 fail:
-    fprintf(stderr, "Error allocating UIElement.");
+    Debug_Printf(LOG_UI, "Error allocating UIElement.");
+    return NULL;
 }
 
 void UIElement_Destroy(UIElement *e)
@@ -67,7 +70,7 @@ UIText *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg, const char *(*
 {
     UIText *t = malloc(sizeof(UIText));
     if (!t)
-        fprintf(stderr, "Error allocating UIText.");
+        Debug_Printf(LOG_UI, "Error allocating UIText.");
 
     t->base.type = UI_ELEM_TEXT;
     t->base.visible = true;
@@ -84,11 +87,19 @@ UIText *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg, const char *(*
     return t;
 }
 
+UIText *UIText_Create_Bound(int x, int y, Color_Bzzt fg, Color_Bzzt bg, const void *ptr, const void *fmt, BindType type)
+{
+    TextBinding *b = UIBinding_Text_Create(ptr, fmt, type);
+    if (!b)
+        return NULL;
+    return UIText_Create(x, y, fg, bg, UIBinding_Text_Format, b);
+}
+
 UIButton *UIButton_Create(int x, int y, const char *caption, UIButtonAction cb, void *ud)
 {
     UIButton *b = malloc(sizeof(UIButton));
     if (!b)
-        fprintf(stderr, "Error allocating UIButton.");
+        Debug_Printf(LOG_UI, "Error allocating UIButton.");
 
     b->base.type = UI_ELEM_BUTTON;
     b->base.visible = true;

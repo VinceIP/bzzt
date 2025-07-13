@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
+#include "debugger.h"
 #include "engine.h"
 #include "world.h"
 #include "input.h"
@@ -34,6 +35,8 @@ bool Engine_Init(Engine *e)
     if (!e)
         return false;
 
+    Debugger_Create();
+
     e->state = SPLASH_MODE;
     e->world = NULL;
     e->running = true;
@@ -42,7 +45,7 @@ bool Engine_Init(Engine *e)
 
     init_cursor(e);
 
-    e->ui = UI_Create();
+    e->ui = UI_Create(e);
 
     init_camera(e);
 

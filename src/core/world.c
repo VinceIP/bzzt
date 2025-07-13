@@ -57,7 +57,6 @@ void World_Update(World *w, InputState *in)
 
     int *dx = &w->player->x;
     int *dy = &w->player->y;
-    //printf("Player x: %d\nPlayer y: %d\n\n", *dx, *dy);
     Board *b = w->boards[w->boards_current];
     Rectangle bounds = {0, 0, b->width, b->height};
 
