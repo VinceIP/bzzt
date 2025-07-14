@@ -1,0 +1,212 @@
+# bzzt UI Format (`.bui`)
+
+---
+
+## Overview
+A **bzzt UI** file (`*.bui`) is a plain‑text [YAML](https://yaml.org/) document that declares a tree of UI elements that can be shown
+on-screen in the bzzt engine. This documentation will expand later as bzzt is developed.
+
+The bzzt UI engine is comprised of a hierarchy of structures. Each structure in the tree can be toggled on or off to keep your UI grouped and modular.
+Each UI structure has various properties that can be changed. Arrays of a structure type can be created and managed by one parent.
+It will probably be possible for advanced users to manipulate UI layers for non-UI purposes, like large animations and visual effects.
+
+The hierarchy looks like this:
+1. UI - Top-level UI manager that owns everything.
+2. Layer - Master screen-wide layer managing groups of UI components
+3. Surface - A surface to draw glyphs on. Each glyph on the surface can have its own background and foreground color.
+(ex: background layer for a message box, a UI panel, etc)
+4. Overlay - A container component that can store groups of specialized UI elements (see below). All overlays are drawn on top of and relative to their parent surface,
+while retaining any glyphs underneath them.
+5. Element - A pre-built dynamic UI element, such as a text field, button, input field, checkbox, etc. Elements can be bound with data in boop to display live variable values -
+as opposed to surfaces which only hold static glyphs.
+
+Both surfaces and elements can hook into the bzzt event system and respond to actions like mouse-over and key presses.
+
+Each component can be addressed in boop by its name or its unique integer id. Ids of >= 1000 are reserved for the bzzt engine.
+
+Below is an example of how bzzt uses the UI engine to build its own interface.
+
+---
+
+## File Skeleton (annotated)
+
+```yaml
+name: "Main Menu"      # human title
+id: 1001               # numeric handle
+layer: 0               # z‑layer (0–5)
+
+surface:
+  width: 40            # geometry
+  height: 10
+  fg: BLACK            # default cell colours - leave blank for transparent
+  bg: BLUE
+  x: 10                # screen relative position
+  y: 10
+  z: 0                 # local z within layer - adjust to draw surfaces on top of another
+
+  bg-img: |            # optional ASCII art back‑drop
+    ╔════════════════╗
+    ║   B Z Z T !    ║
+    ╚════════════════╝
+
+  events:              #event handlers
+    - type: onKeyPress
+      key: Escape
+      action: closeMenu
+
+  overlays:            # child containers to hold elements
+    - name: "buttons"
+      id: 1002
+      layout: vbox     # vertical box layout style
+      anchor: center   # centers all children of this overlay
+      spacing: 1       # 1 unit of space between each element
+
+      _baseBtn: &btn   # reusable prototype
+        type: Button
+        width: 18
+        height: 3
+        button-fg: WHITE
+        button-bg: DARK_BLUE
+        text-fg: WHITE
+        text-bg: DARK_BLUE
+        border-style: single # draws a one-line border around the element using ASCII characters
+        border-fg: WHITE
+        border-bg: BLUE
+        pad: { left: 1, right: 1 }
+        events:              # enable every button to highlight on mouse over
+          - type: onMouseMove
+            action: highlightButton
+
+      elements:        # concrete buttons, inheriting from base button
+        - <<: *btn
+          id: 1003
+          name: "btnPlay"
+          text: "[P]lay Game"
+          events:
+            - type: onClick
+              action: startGame # broadcasts this action to all boop objects listening for it
+```
+
+---
+
+## Top‑level Keys
+
+| Key       | Type   | Req.? | Description                                  |
+| --------- | ------ | ----- | -------------------------------------------- |
+| `name`    | string | ✓     | Human‑readable title; shown in debuggers.    |
+| `id`      | int    | ✓     | Unique handle so boop can reference this UI. |
+| `layer`   | int    | ✓     | Z‑layer (0–5). Lower numbers render first.   |
+| `surface` | map    | ✓     | Root **UISurface** definition (see below).   |
+
+---
+
+## `surface` Section
+
+### Geometry & Palette
+
+| Key      | Type          | Req.? | Notes                                              |
+| -------- | ------------- | ----- | -------------------------------------------------- |
+| `width`  | int           | ✓     | Columns.                                           |
+| `height` | int           | ✓     | Rows.                                              |
+| `fg`     | enum\|int     | -     | Default foreground (named constant or 0‑15 index). |
+| `bg`     | enum\|int     | -     | Default background.                                |
+| `x`,`y`  | int           | ✓     | Screen-space origin.                               |
+| `z`      | int           | ✓     | Local Z within the chosen `layer`.                 |
+| `bg-img` | multiline str | –     | Literal ASCII art replacing blank cells, optional  |
+
+### Input Events (`events`)
+
+Sequence of maps. Every map must include:
+
+* `type`   — event kind (`onKeyPress`, `onMouseMove`, …)
+* `action` — boop label/function to call when event fires
+
+Extra keys are event‑specific (e.g. `key:` for `onKeyPress`).
+
+### Child Containers (`overlays`)
+
+Sequence of overlay maps (see next section).
+
+---
+
+\## Overlay Containers
+
+| Key        | Type     | Req.? | Description                                     |
+| ---------- | -------- | ----- | ----------------------------------------------- |
+| `name`     | string   | ✓     | Debug/editor name.                              |
+| `id`       | int      | ✓     | Unique numeric handle.                          |
+| `layout`   | enum     | ✓     | Current sample uses `vbox` (vertical stack).    |
+| `anchor`   | enum     | –     | `center`, `topLeft`, `bottomRight`, …           |
+| `spacing`  | int      | –     | Empty rows/cols between auto‑laid children.     |
+| `elements` | sequence | ✓     | List of concrete child elements.                |
+
+---
+
+## UI Elements — **Buttons**
+
+### Prototype via YAML Anchor
+
+```yaml
+_baseBtn: &btn
+  type: Button
+  # …default props…
+```
+
+An element can inherit and override:
+
+```yaml
+- <<: *btn
+  id: 1003
+  name: "btnPlay"
+  text: "Play"
+```
+
+### Button Fields
+
+| Key                       | Type      | Req.? | Description                                 |
+| ------------------------- | --------- | ----- | ------------------------------------------- |
+| `type`                    | string    | ✓     | Widget class (`Button`).                    |
+| `id`                      | int       | ✓     | Numeric handle.                             |
+| `name`                    | string    | ✓     | Unique string ID for scripts.               |
+| `text`                    | string    | ✓     | Visible label (supports CP‑437 glyphs).     |
+| `width`/`height`          | int       | ✓     | Size in cells.                              |
+| `button-fg` / `button-bg` | enum\|int | –     | Colour pair for button surface.             |
+| `text-fg` / `text-bg`     | enum\|int | –     | Colour pair for label characters.           |
+| `border-style`            | enum      | –     | `single`, `double`, or `none`.              |
+| `border-fg` / `border-bg` | enum\|int | –     | Palette for border glyphs.                  |
+| `pad`                     | map       | –     | Padding (`left`, `right`, `top`, `bottom`). |
+| `events`                  | sequence  | –     | Element‑level input handlers.               |
+
+---
+
+\## Event Object Shape
+
+```yaml
+- type: <eventName>   # required
+  action: <boopLabel> # required
+  # extra keys depend on event type
+```
+
+* **`onKeyPress`** — extra key: `key` (string, e.g. `Escape`)
+* **`onMouseMove`**, **`onClick`** — no extra keys used in sample.
+
+---
+
+\## Binding Strategy (Informative)
+
+* `id` and `name` are registered so boop scripts can query elements at runtime.
+* `action` strings directly map to labels or functions inside the VM.
+* Colour names are converted to palette indices during parse, ensuring the renderer only handles integers.
+
+---
+
+\## Roadmap / Potential Extensions
+
+| Idea                               | Purpose                                               |
+| ---------------------------------- | ----------------------------------------------------- |
+| **`schema:`**                      | version the spec so old files keep working.           |
+| **`theme:` / `palette:`**          | swap colour palettes or fonts per world.              |
+| **`animate_in:` / `animate_out:`** | one‑line shorthand for common tweens.                 |
+| **`visible_if:`**                  | conditional display via expression.                   |
+| **`Repeater` element**             | data‑driven lists/grids without manual duplication.   |
+| **Custom widget imports**          | allow worlds to register widgets from boop/Lua files. |
