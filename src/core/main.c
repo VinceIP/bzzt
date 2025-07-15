@@ -26,7 +26,7 @@ int main(void)
     Engine e;
     Engine_Init(&e);
     e.font = font;
-    e.world = world_create("New World");
+    e.world = World_Create("New World");
     Renderer rend;
 
     Renderer_Init(&rend, ASSET("fonts/bzzt_font_8x16.png"));

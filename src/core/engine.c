@@ -54,7 +54,7 @@ bool Engine_Init(Engine *e)
 
 void Engine_Update(Engine *e, InputState *in)
 {
-    Input_Poll(in);
+    Input_Poll(in, e);
     switch (e->state)
     {
     case SPLASH_MODE:
@@ -81,7 +81,7 @@ void Engine_Update(Engine *e, InputState *in)
         if (in->Q_pressed)
         {
             e->state = SPLASH_MODE;
-            e->world = world_create("Title Screen");
+            e->world = World_Create("Title Screen");
         }
 
         break;

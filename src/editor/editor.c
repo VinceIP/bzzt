@@ -37,70 +37,9 @@ static void ui_init(Engine *e)
     UIOverlay *textOverlay = UIOverlay_Create();        // Create a new overlay
     UISurface_Add_Overlay(sidebarSurface, textOverlay); // Add the new overlay to the sidebar surface
     UIOverlay_Add_Element(textOverlay,
-                          (UIElement *)UIText_Create_Bound(0, 0, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor.x, "Cursor x: %d", BIND_INT)); // Create text element that prints cursor x
+                          (UIElement *)UIText_Create_Bound(2, sidebarSurface->h-2, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor.x, "Cursor x: %d", BIND_INT)); // Create text element that prints cursor x
     UIOverlay_Add_Element(textOverlay,
-                          (UIElement *)UIText_Create_Bound(0, 1, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor.y, "Cursor y: %d", BIND_INT));
-
-    /* ------------------------------------------------------------------ */
-    /* 2.  simple blue “message box” with overlayed white text            */
-    /* ------------------------------------------------------------------ */
-    UILayer *layer = UI_Add_Layer(e->ui);
-
-    /* a. make a 20×5 surface at (10,10) and paint every cell blue        */
-    UISurface *box = UILayer_Add_Surface(layer, 20, 10, 20, 5);
-    for (int i = 0; i < box->cell_count; ++i)
-    {
-        box->cells[i].bg = COLOR_BLUE;
-        box->cells[i].fg = COLOR_BLUE;
-        box->cells[i].glyph = 255; /* solid block char */
-    }
-
-    /* b. create an overlay that lives *inside* that surface              */
-    UIOverlay *boxOverlay = UIOverlay_Create();
-    UISurface_Add_Overlay(box, boxOverlay);
-
-    /* c. drop a single static UIText element at (1,1) inside the box     */
-    UIText *msg = UIText_Create(
-        1, 1,                                           /* position relative to the box */
-        COLOR_WHITE, COLOR_BLUE,                        /* fg / bg                       */
-        caption_cb,                                     /* callback: just return ud      */
-        "Hello, world world world world world world!"); /* ud: literal C-string          */
-    msg->wrap = true;
-
-    UIOverlay_Add_Element(boxOverlay, (UIElement *)msg);
-
-    // UI_Add_Surface(e->ui, textLayer);
-
-    // UI_Print_Screen(e->ui, textLayer, COLOR_WHITE, COLOR_DARK_GRAY, true, 0, 25, "%d, %d", cx, cy);
-    //  // Programmatically make a sidebar - not efficent or permananet but cool
-    //  UI *ui = e->ui;
-
-    // // Create a gray bg
-    // int sidebar_w = 20;
-    // int sidebar_h = 25;
-    // UISurface *sidebar = UISurface_Create(sidebar_w * sidebar_h);
-    // sidebar->w = sidebar_w;
-    // sidebar->h = sidebar_h;
-    // sidebar->x = 60;
-    // sidebar->y = 0;
-
-    // for (int i = 0; i < sidebar_w * sidebar_h; ++i)
-    // {
-    //     sidebar->cells[i].bg = COLOR_CYAN;
-    //     sidebar->cells[i].glyph = 255;
-    //     sidebar->cells[i].fg = COLOR_WHITE;
-    //     sidebar->cells[i].visible = true;
-    // }
-
-    // UI_Add_Surface(ui, sidebar);
-
-    // // Show text on it
-    // // UIOverlay *o = UIOverlay_Create();
-    // // UIText *t = UIText_Create(0, 0, COLOR_WHITE, COLOR_DARK_GRAY, "Sample text", NULL);
-    // // UIOverlay_Add_Element(o, &t->base);
-    // // UISurface_Add_Overlay(sidebar, o);
-    // int x = sidebar->x;
-    // int y = sidebar->y;
+                          (UIElement *)UIText_Create_Bound(2, sidebarSurface->h-1, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor.y, "Cursor y: %d", BIND_INT));
 }
 
 void Editor_Init(Engine *e)

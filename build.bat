@@ -3,10 +3,10 @@ setlocal
 rem ------------------------------------------------------------------
 rem Configure + build
 rem ------------------------------------------------------------------
-cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+make clean
 if errorlevel 1 goto :end           rem stop if configure failed
 
-cmake --build build -- -j8
+make
 if errorlevel 1 goto :end           rem stop if compile/link failed
 
 rem ------------------------------------------------------------------

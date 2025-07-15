@@ -1,7 +1,7 @@
 # ─── main_menu.bui ──────────────────────────────────────────
-bzzt-version: 1
-palette: classic
-enable-hot-reload: true
+bzzt-version: 1 #Schema tracker in case UI structuring changes with bzzt versions
+palette: classic #Enable using different palettes
+enable-hot-reload: true #Allow bzzt to re
 # Splash‑screen main menu definition for bzzt
 name: "Main Menu" # human‑readable title
 id: 1001 # unique identifier for this UI tree
@@ -38,6 +38,10 @@ surface:
       _baseBtn: &btn
         type: Button
         name: "prototype"
+        id: 0
+        visible: true
+        x: 0
+        y: 0
         width: 18
         height: 3
         button_fg: WHITE # button surface colours

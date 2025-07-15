@@ -30,6 +30,16 @@ typedef struct UI
     bool visible;
 } UI;
 
+typedef struct UI_Yaml
+{
+    float bzzt_version;
+    int palette;     // Placeholder for palette swap implement
+    bool hot_reload; // Allow hot reloading of the UI on file change
+    char *name;
+    int id;
+    int layer;
+} UI_Yaml;
+
 cJSON *Playscii_Load(const char *path);
 void Playscii_Unload(PlaysciiAsset *asset);
 

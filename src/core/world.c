@@ -8,7 +8,7 @@
 #include "input.h"
 #include "color.h"
 
-World *world_create(char *title)
+World *World_Create(char *title)
 {
     World *w = (World *)malloc(sizeof(World));
     if (!w)

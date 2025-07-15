@@ -25,8 +25,11 @@ typedef enum
 typedef struct UIElement
 {
     ElementType type;
+    char *name;
+    int id;
     bool visible;
     int x, y;
+    int width, height;
     void (*update)(struct UIElement *);
 } UIElement;
 

@@ -32,7 +32,6 @@ const char *UIBinding_Text_Format(void *ud)
     switch (b->type)
     {
     case BIND_INT:
-        Debug_Printf(LOG_UI, "binding int");
         snprintf(b->buf, sizeof b->buf, b->fmt ? b->fmt : "%d", *(const int *)b->ptr); // Format the data if it exists and store it into b->buf
         break;
     case BIND_FLOAT:
@@ -41,7 +40,6 @@ const char *UIBinding_Text_Format(void *ud)
     case BIND_STR:
         snprintf(b->buf, sizeof b->buf, b->fmt ? b->fmt : "%s", (const char *)b->ptr);
     }
-    Debug_Printf(LOG_UI, "Formatted buffer: %s", b->buf);
     return b->buf;
 }
 

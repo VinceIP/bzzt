@@ -4,6 +4,8 @@
 typedef struct InputState
 {
     int dx, dy; // Target input direction
+    int msx, msy;// Mouse coords in screen pixels
+    int mcx, mcy; //Mouse coords in cell coordinates
     bool E_pressed;
     bool L_pressed;
     bool Q_pressed;
