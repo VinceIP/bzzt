@@ -9,6 +9,7 @@
 #include "ui_surface.h"
 #include "camera.h"
 #include "color.h"
+#include "coords.h"
 
 static void init_cursor(Engine *e)
 {
@@ -27,7 +28,7 @@ static void init_camera(Engine *e)
 {
     e->camera = malloc(sizeof(BzztCamera));
     BzztCamera *cam = e->camera;
-    cam->viewport.rect = (Rectangle){0, 0, 0, 0};
+    cam->viewport.rect = (Rectangle){0, 0, 80,25}; //remove magic nums
 }
 
 bool Engine_Init(Engine *e)
@@ -54,7 +55,16 @@ bool Engine_Init(Engine *e)
 
 void Engine_Update(Engine *e, InputState *in)
 {
-    Input_Poll(in, e);
+    Input_Poll(in);
+
+    if(e->cursor.enabled){
+        Vector2 cell = Camera_ScreenToCell(e->camera, in->mouse_screen);
+        if(cell.x >0){
+            e->cursor.x = cell.x;
+            e->cursor.y = cell.y;
+        }
+    }
+
     switch (e->state)
     {
     case SPLASH_MODE:

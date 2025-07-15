@@ -1,31 +1,36 @@
+# ---------- project layout ----------------------------------
+SRC_ROOT := src                                 # recurse only here
+
+# ---------- libraries & toolchain ---------------------------
 RAYLIB_INC  := /ucrt64/include
 RAYLIB_LIB  := /ucrt64/lib
 RAYLIB_DLLS := -lraylib -lwinmm -lgdi32
 
 CC      := gcc
-CFLAGS  := -std=c17 -Wall -Wextra \
-           -I$(RAYLIB_INC) \
-           -Isrc -Isrc/core -Isrc/editor -Isrc/ui -Isrc/utils
+CFLAGS  := -std=c17 -Wall -Wextra -I$(RAYLIB_INC) \
+           $(addprefix -I,$(shell find $(SRC_ROOT) -type d))
 LDFLAGS := -L$(RAYLIB_LIB) $(RAYLIB_DLLS) -lcyaml
 
-SRC := $(shell find . -name '*.c')
-OBJ := $(SRC:%.c=build/%.o)
+# ---------- sources / objects -------------------------------
+SRC := $(shell find $(SRC_ROOT) -type f -name '*.c')
+OBJ := $(patsubst %.c,build/%.o,$(SRC))
 
 TARGET := build/bzzt.exe
 
-# Create the build directory if it doesn't exist
-$(TARGET): | build
-$(OBJ): | build
+# ---------- rules -------------------------------------------
+.PHONY: all clean
+all: $(TARGET)
 
+# Make sure the base build dir exists
+$(TARGET) $(OBJ): | build
 build:
-	mkdir -p build
-	# also make subfolders as needed for objects (recursive, safe)
-	mkdir -p $(sort $(dir $(OBJ)))
+	mkdir -p $@
 
+# Link
 $(TARGET): $(OBJ)
-	$(CC) $(OBJ) -o $@ $(LDFLAGS)
+	$(CC) $^ -o $@ $(LDFLAGS)
 
-# Pattern rule: place .o files in build/ mirroring their source paths
+# Compile; mirrors source tree under build/
 build/%.o: %.c
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@

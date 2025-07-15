@@ -3,9 +3,10 @@
 
 typedef struct InputState
 {
+    Vector2 mouse_screen; // Coords in screen pixels
+    Vector2 mouse_world;  // Coords in world units (glyphs on screen)
+
     int dx, dy; // Target input direction
-    int msx, msy;// Mouse coords in screen pixels
-    int mcx, mcy; //Mouse coords in cell coordinates
     bool E_pressed;
     bool L_pressed;
     bool Q_pressed;

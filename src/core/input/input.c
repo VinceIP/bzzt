@@ -5,6 +5,7 @@
 
 void Input_Poll(InputState *s)
 {
+    s->mouse_screen = GetMousePosition();
     s->dx = (IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT));
     s->dy = (IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP));
     s->E_pressed = IsKeyPressed(KEY_E);
