@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2025
  *
  */
-/*
+
 #include <cyaml/cyaml.h>
 #include "ui.h"
 #include "ui_layer.h"
@@ -75,4 +75,3 @@ static const cyaml_schema_choice_t elem_choices[] = {
     { UI_ELEM_TEXT, &text_schema, { .str = "text"   } },
     { UI_ELEM_BUTTON, &btn_schema, { .str = "button" } },
 };
-*/

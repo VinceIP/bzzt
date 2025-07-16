@@ -68,7 +68,6 @@ static Vector2 handle_key_move(Vector2 pos, Rectangle bounds, InputState *in)
 {
     if (!in->delayLock)
     {
-        Debug_Printf(LOG_ENGINE, "delay lock");
         int newX = pos.x + in->dx;
         int newY = pos.y + in->dy;
 
@@ -77,28 +76,37 @@ static Vector2 handle_key_move(Vector2 pos, Rectangle bounds, InputState *in)
         if (newY >= bounds.y && newY < bounds.y + bounds.height)
             pos.y = newY;
     }
-    else
-    {
-        Debug_Printf(LOG_ENGINE, "no delay lock");
-    }
     return pos;
 }
 
-static Vector2 handle_mouse_move(MouseState *m, BzztCamera *c)
+static Vector2 handle_mouse_move(MouseState *m, BzztCamera *c, Rectangle bounds, Vector2 currentPos)
 {
-    m->worldPosition = Camera_ScreenToCell(c, m->screenPosition);
-    return m->worldPosition;
+    Vector2 pos = Camera_ScreenToCell(c, m->screenPosition); // Translate screen coords to world coords
+
+    // Determine if the cursor would move out of bounds
+    bool invalid = pos.x == -1 || pos.y == -1;
+    if (pos.x < bounds.x || pos.x >= bounds.x + bounds.width)
+        pos.x = currentPos.x;
+
+    if (pos.y < bounds.y || pos.y >= bounds.y + bounds.height)
+        pos.y = currentPos.y;
+
+    if (invalid)
+        pos = currentPos;
+
+    m->worldPosition = pos;
+    return pos;
 }
 
 Vector2 Handle_Cursor_Move(Vector2 currentPos, InputState *in, MouseState *m, BzztCamera *c, Rectangle bounds)
 {
-    if (in->anyDirPressed)
+    if (in->anyDirPressed) // if arrow keys are pressed
     {
         return handle_key_move(currentPos, bounds, in);
     }
-    if (m->moved)
+    if (m->moved) // If the mouse has moved
     {
-        return handle_mouse_move(m, c);
+        return handle_mouse_move(m, c, bounds, currentPos);
     }
     return currentPos;
 }

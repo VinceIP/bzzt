@@ -5,17 +5,25 @@ TARGET        := $(BUILD_DIR)/bzzt.exe
 
 # ---------- toolchain & flags -------------------------------
 CC            := gcc
+
+# Raylib
 RAYLIB_INC    := /ucrt64/include
 RAYLIB_LIB    := /ucrt64/lib
 RAYLIB_LIBS   := -lraylib -lwinmm -lgdi32
 
+# CYAML
+CYAML_INC     := /ucrt64/include
+CYAML_LIB     := /ucrt64/lib
+CYAML_LIBS    := -lcyaml
+
 # Recurse through src/ to build the include-path list
 INC_DIRS      := $(shell find $(SRC_ROOT) -type d)
 CFLAGS        := -std=c17 -Wall -Wextra \
-                 -I$(RAYLIB_INC) \
+                 -I$(RAYLIB_INC) -I$(CYAML_INC) \
                  $(addprefix -I,$(INC_DIRS))
 
-LDFLAGS       := -L$(RAYLIB_LIB) $(RAYLIB_LIBS)
+LDFLAGS       := -L$(RAYLIB_LIB) $(RAYLIB_LIBS) \
+                 -L$(CYAML_LIB)  $(CYAML_LIBS)
 
 # ---------- source & object lists ---------------------------
 SRC           := $(shell find $(SRC_ROOT) -name '*.c')
