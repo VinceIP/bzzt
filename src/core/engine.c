@@ -10,12 +10,12 @@
 #include "camera.h"
 #include "color.h"
 #include "coords.h"
+#include "raylib.h"
 
 static void init_cursor(Engine *e)
 {
     Cursor *c = &e->cursor;
-    c->x = 0;
-    c->y = 0;
+    c->position = (Vector2){0, 0};
     c->visible = true;
     c->enabled = true;
     c->blinkRate = 0.5;
@@ -27,11 +27,10 @@ static void init_cursor(Engine *e)
 static void init_camera(Engine *e)
 {
     e->camera = malloc(sizeof(BzztCamera));
-    BzztCamera *cam = e->camera;
-    cam->viewport.rect = (Rectangle){0, 0, 80,25}; //remove magic nums
-    cam->rect = cam->viewport.rect;
-    cam->cell_width = 16;
-    cam->cell_height = 32;
+    e->camera->viewport.rect = (Rectangle){0, 0, 80, 25}; // remove magic nums
+    e->camera->rect = e->camera->viewport.rect;
+    e->camera->cell_width = 16;
+    e->camera->cell_height = 32;
 }
 
 bool Engine_Init(Engine *e)
@@ -61,14 +60,9 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
     Input_Poll(i);
     Mouse_Poll(m);
 
-    if(e->cursor.enabled){
-        Vector2 cell = Camera_ScreenToCell(e->camera, m->screenPosition);
-        Debug_Printf(LOG_ENGINE, "Mouse in cell: %d,%d", cell.x, cell.y);
-        Debug_Printf(LOG_ENGINE, "Mouse screen: %d,%d", m->screenPosition.x, m->screenPosition.y);
-        if(cell.x >0){
-            e->cursor.x = cell.x;
-            e->cursor.y = cell.y;
-        }
+    if (e->cursor.enabled)
+    {
+        e->cursor.position = Handle_Cursor_Move(i, m, e->camera, e->camera->viewport.rect);
     }
 
     switch (e->state)

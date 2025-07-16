@@ -60,5 +60,5 @@ void World_Update(World *w, InputState *in)
     Board *b = w->boards[w->boards_current];
     Rectangle bounds = {0, 0, b->width, b->height};
 
-    Handle_Key_Move(dx, dy, bounds, in);
+    //Handle_Key_Move(dx, dy, bounds, in);
 }

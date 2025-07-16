@@ -98,7 +98,7 @@ static void draw_cursor(Renderer *r, Engine *e)
 
     if (c->visible)
     {
-        Renderer_Draw_Cell(r, c->x, c->y, c->glyph, c->color, COLOR_BLACK);
+        Renderer_Draw_Cell(r, c->position.x, c->position.y, c->glyph, c->color, COLOR_BLACK);
     }
 }
 

@@ -16,30 +16,19 @@
 
 int testX = 0;
 
-static void handle_cursor(Engine *e, InputState *in)
-{
-    Cursor *c = &e->cursor;
-    int *dx = &c->x;
-    int *dy = &c->y;
-    Rectangle bounds = e->camera->viewport.rect; // Bounds should be viewport Rect
-    Handle_Key_Move(dx, dy, bounds, in);
-}
-
 static const char *caption_cb(void *ud) { return (const char *)ud; }
 
 static void ui_init(Engine *e)
 {
-    int cx = e->cursor.x;
-    // int cy = e->cursor.y;
     UISurface *sidebarSurface = UISurface_Load_From_Playscii("assets\\ui\\sidebar.psci"); // Load up the sidebar
     sidebarSurface->x = 60;
     UI_Add_Surface(e->ui, sidebarSurface);              // Add the surface to the UI
     UIOverlay *textOverlay = UIOverlay_Create();        // Create a new overlay
     UISurface_Add_Overlay(sidebarSurface, textOverlay); // Add the new overlay to the sidebar surface
     UIOverlay_Add_Element(textOverlay,
-                          (UIElement *)UIText_Create_Bound(2, sidebarSurface->h-2, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor.x, "Cursor x: %d", BIND_INT)); // Create text element that prints cursor x
+                          (UIElement *)UIText_Create_Bound(2, sidebarSurface->h-2, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor.position.x, "Cursor x: %d", BIND_INT)); // Create text element that prints cursor x
     UIOverlay_Add_Element(textOverlay,
-                          (UIElement *)UIText_Create_Bound(2, sidebarSurface->h-1, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor.y, "Cursor y: %d", BIND_INT));
+                          (UIElement *)UIText_Create_Bound(2, sidebarSurface->h-1, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor.position.y, "Cursor y: %d", BIND_INT));
 }
 
 void Editor_Init(Engine *e)
@@ -49,8 +38,8 @@ void Editor_Init(Engine *e)
     c->color = COLOR_WHITE;
     c->blinkRate = 0.5;
     c->glyph = 219;
-    c->x = 41;
-    c->y = 14;
+    c->position.x = 41;
+    c->position.y = 14;
     c->visible = true;
     c->enabled = true;
     c->lastBlink = GetTime();
@@ -62,5 +51,5 @@ void Editor_Init(Engine *e)
 
 void Editor_Update(Engine *e, InputState *in)
 {
-    handle_cursor(e, in);
+    
 }

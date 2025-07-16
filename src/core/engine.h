@@ -18,7 +18,7 @@ typedef enum
 
 typedef struct Cursor
 {
-    int x, y;
+    Vector2 position;
     bool visible;
     bool enabled;
     double lastBlink;
