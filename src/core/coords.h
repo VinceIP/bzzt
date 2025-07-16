@@ -42,7 +42,7 @@ static inline Vector2 Camera_ScreenToCell(const BzztCamera *cam, Vector2 p)
     int maxY = cam->viewport.rect.height * cam->cell_height;
 
     if (relX < 0 || relY < 0 || relX >= maxX || relY >= maxY)
-        return (Vector2){-1, -1};
+        return p;
 
     int cellX = cam->rect.x + relX / cam->cell_width;
     int cellY = cam->rect.y + relY / cam->cell_height;

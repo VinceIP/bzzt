@@ -30,4 +30,4 @@ typedef struct MouseState
 void Input_Poll(InputState *out);
 void Mouse_Poll(MouseState *out);
 void Mouse_Reset(MouseState *out);
-Vector2 Handle_Cursor_Move(InputState *in, MouseState *m, BzztCamera *c, Rectangle bounds);
+Vector2 Handle_Cursor_Move(Vector2 currentPos, InputState *in, MouseState *m, BzztCamera *c, Rectangle bounds);

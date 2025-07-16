@@ -62,7 +62,7 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
 
     if (e->cursor.enabled)
     {
-        e->cursor.position = Handle_Cursor_Move(i, m, e->camera, e->camera->viewport.rect);
+        e->cursor.position = Handle_Cursor_Move(e->cursor.position, i, m, e->camera, e->camera->viewport.rect);
     }
 
     switch (e->state)

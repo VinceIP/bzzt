@@ -43,10 +43,7 @@ void Input_Poll(InputState *s)
 
 static bool is_vector2_equal(Vector2 *a, Vector2 *b)
 {
-    if (a->x == b->x && b->x == b->y)
-        return true;
-    else
-        return false;
+    return a->x == b->x && a->y == b->y;
 }
 
 void Mouse_Poll(MouseState *s)
@@ -55,8 +52,7 @@ void Mouse_Poll(MouseState *s)
     s->lastWorldPosition = s->worldPosition;
 
     s->screenPosition = GetMousePosition();
-    s->moved = is_vector2_equal(&s->lastScreenPosition, &s->screenPosition);
-
+    s->moved = !is_vector2_equal(&s->lastScreenPosition, &s->screenPosition);
     s->delta = GetMouseDelta();
 
     s->leftPressed = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
@@ -68,36 +64,41 @@ void Mouse_Poll(MouseState *s)
     s->wheelMove = GetMouseWheelMove();
 }
 
-static Vector2 handle_key_move(int *dx, int *dy, Rectangle bounds, InputState *in)
+static Vector2 handle_key_move(Vector2 pos, Rectangle bounds, InputState *in)
 {
-    int newX = *dx + in->dx;
-    int newY = *dy + in->dy;
+    if (!in->delayLock)
+    {
+        Debug_Printf(LOG_ENGINE, "delay lock");
+        int newX = pos.x + in->dx;
+        int newY = pos.y + in->dy;
 
-    if (newX >= bounds.x && newX < bounds.width && !in->delayLock)
-        *dx = newX;
-    if (newY >= bounds.y && newY < bounds.height && !in->delayLock)
-        *dy = newY;
-    return (Vector2){newX, newY};
+        if (newX >= bounds.x && newX < bounds.x + bounds.width)
+            pos.x = newX;
+        if (newY >= bounds.y && newY < bounds.y + bounds.height)
+            pos.y = newY;
+    }
+    else
+    {
+        Debug_Printf(LOG_ENGINE, "no delay lock");
+    }
+    return pos;
 }
 
 static Vector2 handle_mouse_move(MouseState *m, BzztCamera *c)
 {
-    return Camera_ScreenToCell(c, m->screenPosition);
+    m->worldPosition = Camera_ScreenToCell(c, m->screenPosition);
+    return m->worldPosition;
 }
 
-Vector2 Handle_Cursor_Move(InputState *in, MouseState *m, BzztCamera *c, Rectangle bounds)
+Vector2 Handle_Cursor_Move(Vector2 currentPos, InputState *in, MouseState *m, BzztCamera *c, Rectangle bounds)
 {
-
     if (in->anyDirPressed)
     {
-        if (IsCursorHidden())
-            EnableCursor();
-        return handle_key_move(&in->dx, &in->dy, bounds, in);
+        return handle_key_move(currentPos, bounds, in);
     }
     if (m->moved)
     {
-        if (!IsCursorHidden())
-            DisableCursor();
         return handle_mouse_move(m, c);
     }
+    return currentPos;
 }
