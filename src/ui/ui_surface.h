@@ -1,39 +1,6 @@
-/**
- * @file ui_surface.h
- * @author your name (you@domain.com)
- * @brief
- * @version 0.1
- * @date 2025-07-12
- *
- * @copyright Copyright (c) 2025
- *
- */
-
 #pragma once
-#include <stdint.h>
-#include <stdbool.h>
-#include "color.h"
+/* Wrapper header for backwards compatibility.  All surface definitions now
+ * reside in ui.h. */
 
-typedef struct UIOverlay UIOverlay;
-struct Cell;
-typedef struct Cell Cell;
-/**
- * @brief A drawable UI surface. Can hold a glyph bitmap.
- * Can hold multiple UI overlay containers to be drawn on top of this surface.
- *
- */
-typedef struct UISurface
-{
-    bool visible;
-    int x, y, z;
-    int w, h;
-    Cell *cells;
-    int cell_count;
-    UIOverlay **overlays;
-    int overlays_count, overlays_cap;
-} UISurface;
+#include "ui.h"
 
-UISurface *UISurface_Create(int cell_count);
-void UISurface_Add_Overlay(UISurface *s, UIOverlay *o);
-void UISurface_Update(UISurface *s);
-void UISurface_Destroy(UISurface *);

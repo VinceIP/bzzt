@@ -1,32 +1,7 @@
-/**
- * @file ui_layer.h
- * @author your name (you@domain.com)
- * @brief
- * @version 0.1
- * @date 2025-07-12
- *
- * @copyright Copyright (c) 2025
- *
- */
-
 #pragma once
-#include <stdbool.h>
 
-typedef struct UISurface UISurface;
+/* Legacy wrapper retained for compatibility.  All definitions now live in
+ * ui.h, so including this header simply pulls in the unified interface. */
 
-/**
- * @brief A UI layer that holds multiple UI drawing surfaces.
- *
- */
-typedef struct UILayer
-{
-    bool visible;
-    int z;
-    UISurface **surfaces;
-    int surface_count, surface_cap;
-} UILayer;
+#include "ui.h"
 
-UILayer *UILayer_Create();
-UISurface *UILayer_Add_Surface(UILayer *, int w, int h, int x, int y);
-void UILayer_Update(UILayer *);
-void UILayer_Destroy(UILayer *);
