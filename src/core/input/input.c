@@ -2,10 +2,10 @@
 #include <stdio.h>
 #include "raylib.h"
 #include "input.h"
+#include "debugger.h"
 
 void Input_Poll(InputState *s)
 {
-    s->mouse_screen = GetMousePosition();
     s->dx = (IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT));
     s->dy = (IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP));
     s->E_pressed = IsKeyPressed(KEY_E);
@@ -35,6 +35,20 @@ void Input_Poll(InputState *s)
     }
 
     s->quit = IsKeyPressed(KEY_ESCAPE) || WindowShouldClose();
+}
+
+void Mouse_Poll(MouseState *s)
+{
+    Vector2 prev = s->screenPosition;
+    s->screenPosition = GetMousePosition();
+    s->delta = GetMouseDelta();
+    s->leftPressed = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    s->leftDown = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+    s->rightPressed = IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
+    s->rightDown = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
+    s->middlePressed = IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE);
+    s->middleDown = IsMouseButtonDown(MOUSE_BUTTON_MIDDLE);
+    s->wheelMove = GetMouseWheelMove();
 }
 
 void Handle_Key_Move(int *dx, int *dy, Rectangle bounds, InputState *in)

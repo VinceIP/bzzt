@@ -1,11 +1,9 @@
 #pragma once
 #include <stdbool.h>
+#include "raylib.h"
 
 typedef struct InputState
 {
-    Vector2 mouse_screen; // Coords in screen pixels
-    Vector2 mouse_world;  // Coords in world units (glyphs on screen)
-
     int dx, dy; // Target input direction
     bool E_pressed;
     bool L_pressed;
@@ -17,5 +15,13 @@ typedef struct InputState
     bool delayLock;
 } InputState;
 
+typedef struct MouseState{
+    Vector2 screenPosition, worldPosition, delta;
+    bool leftPressed, rightPressed, middlePressed, leftDown, rightDown, middleDown;
+    float wheelMove;
+}MouseState;
+
 void Input_Poll(InputState *out);
+void Mouse_Poll(MouseState *out);
+void Mouse_Reset(MouseState *out);
 void Handle_Key_Move(int *dx, int *dy, Rectangle bounds, InputState *in);

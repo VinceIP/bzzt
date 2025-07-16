@@ -32,10 +32,11 @@ int main(void)
     Renderer_Init(&rend, ASSET("fonts/bzzt_font_8x16.png"));
 
     InputState in = {0};
+    MouseState mo = {};
 
     while (!in.quit)
     {
-        Engine_Update(&e, &in);
+        Engine_Update(&e, &in, &mo);
         BeginDrawing();
         Renderer_Update(&rend, &e);
         EndDrawing();

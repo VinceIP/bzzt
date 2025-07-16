@@ -29,6 +29,9 @@ static void init_camera(Engine *e)
     e->camera = malloc(sizeof(BzztCamera));
     BzztCamera *cam = e->camera;
     cam->viewport.rect = (Rectangle){0, 0, 80,25}; //remove magic nums
+    cam->rect = cam->viewport.rect;
+    cam->cell_width = 16;
+    cam->cell_height = 32;
 }
 
 bool Engine_Init(Engine *e)
@@ -46,19 +49,22 @@ bool Engine_Init(Engine *e)
 
     init_cursor(e);
 
-    e->ui = UI_Create(e);
+    e->ui = UI_Create();
 
     init_camera(e);
 
     return true;
 }
 
-void Engine_Update(Engine *e, InputState *in)
+void Engine_Update(Engine *e, InputState *i, MouseState *m)
 {
-    Input_Poll(in);
+    Input_Poll(i);
+    Mouse_Poll(m);
 
     if(e->cursor.enabled){
-        Vector2 cell = Camera_ScreenToCell(e->camera, in->mouse_screen);
+        Vector2 cell = Camera_ScreenToCell(e->camera, m->screenPosition);
+        Debug_Printf(LOG_ENGINE, "Mouse in cell: %d,%d", cell.x, cell.y);
+        Debug_Printf(LOG_ENGINE, "Mouse screen: %d,%d", m->screenPosition.x, m->screenPosition.y);
         if(cell.x >0){
             e->cursor.x = cell.x;
             e->cursor.y = cell.y;
@@ -68,9 +74,9 @@ void Engine_Update(Engine *e, InputState *in)
     switch (e->state)
     {
     case SPLASH_MODE:
-        World_Update(e->world, in);
+        World_Update(e->world, i);
 
-        if (in->E_pressed)
+        if (i->E_pressed)
         {
             e->state = EDIT_MODE;
             Editor_Init(e);
@@ -87,8 +93,8 @@ void Engine_Update(Engine *e, InputState *in)
         break;
 
     case EDIT_MODE:
-        Editor_Update(e, in);
-        if (in->Q_pressed)
+        Editor_Update(e, i);
+        if (i->Q_pressed)
         {
             e->state = SPLASH_MODE;
             e->world = World_Create("Title Screen");

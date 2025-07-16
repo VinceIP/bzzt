@@ -1,39 +1,39 @@
 # ---------- project layout ----------------------------------
-SRC_ROOT := src                                 # recurse only here
+SRC_ROOT      := src
+BUILD_DIR     := build
+TARGET        := $(BUILD_DIR)/bzzt.exe
 
-# ---------- libraries & toolchain ---------------------------
-RAYLIB_INC  := /ucrt64/include
-RAYLIB_LIB  := /ucrt64/lib
-RAYLIB_DLLS := -lraylib -lwinmm -lgdi32
+# ---------- toolchain & flags -------------------------------
+CC            := gcc
+RAYLIB_INC    := /ucrt64/include
+RAYLIB_LIB    := /ucrt64/lib
+RAYLIB_LIBS   := -lraylib -lwinmm -lgdi32
 
-CC      := gcc
-CFLAGS  := -std=c17 -Wall -Wextra -I$(RAYLIB_INC) \
-           $(addprefix -I,$(shell find $(SRC_ROOT) -type d))
-LDFLAGS := -L$(RAYLIB_LIB) $(RAYLIB_DLLS) -lcyaml
+# Recurse through src/ to build the include-path list
+INC_DIRS      := $(shell find $(SRC_ROOT) -type d)
+CFLAGS        := -std=c17 -Wall -Wextra \
+                 -I$(RAYLIB_INC) \
+                 $(addprefix -I,$(INC_DIRS))
 
-# ---------- sources / objects -------------------------------
-SRC := $(shell find $(SRC_ROOT) -type f -name '*.c')
-OBJ := $(patsubst %.c,build/%.o,$(SRC))
+LDFLAGS       := -L$(RAYLIB_LIB) $(RAYLIB_LIBS)
 
-TARGET := build/bzzt.exe
+# ---------- source & object lists ---------------------------
+SRC           := $(shell find $(SRC_ROOT) -name '*.c')
+OBJ           := $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRC))
 
-# ---------- rules -------------------------------------------
+# ---------- phony targets -----------------------------------
 .PHONY: all clean
 all: $(TARGET)
 
-# Make sure the base build dir exists
-$(TARGET) $(OBJ): | build
-build:
-	mkdir -p $@
-
-# Link
+# ---------- link step ---------------------------------------
 $(TARGET): $(OBJ)
 	$(CC) $^ -o $@ $(LDFLAGS)
 
-# Compile; mirrors source tree under build/
-build/%.o: %.c
-	mkdir -p $(dir $@)
+# ---------- compile step ------------------------------------
+$(BUILD_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# ---------- clean -------------------------------------------
 clean:
-	rm -rf build
+	$(RM) -r $(BUILD_DIR)

@@ -7,6 +7,7 @@ typedef struct World World;
 typedef struct UI UI;
 typedef struct BzztCamera BzztCamera;
 typedef struct InputState InputState;
+typedef struct MouseState MouseState;
 
 typedef enum
 {
@@ -49,5 +50,5 @@ typedef struct Engine
 } Engine;
 
 bool Engine_Init(Engine *);
-void Engine_Update(Engine *, InputState *);
+void Engine_Update(Engine *, InputState *, MouseState *);
 void Engine_Quit(Engine *);

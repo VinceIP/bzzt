@@ -29,6 +29,7 @@ bool Renderer_Init(Renderer *r, const char *path)
     if (r->font.id == 0)
         return false;
     SetTextureFilter(r->font, TEXTURE_FILTER_POINT);
+    SetTargetFPS(60);
     r->glyph_w = 16;
     r->glyph_h = 32;
 
