@@ -1,11 +1,9 @@
 #pragma once
 #include "camera.h"
+#include "raylib.h"
 
 #define VIEWPORT_DEFAULT_W 60
 #define VIEWPORT_DEFAULT_H 25
-
-struct Rectangle;
-struct Vector2;
 
 typedef struct Viewport
 {

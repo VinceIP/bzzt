@@ -12,27 +12,39 @@
 #include "color.h"
 
 struct Color;
-typedef struct UILayer UILayer;
-typedef struct UIOverlay UIOverlay;
-typedef struct UISurface UISurface;
-typedef struct UIElement UIElement;
-typedef struct UIText UIText;
-typedef struct UIButton UIButton;
+typedef struct Renderer Renderer;
 typedef struct Cell Cell;
 typedef struct cJSON cJSON;
+typedef struct UISurface UISurface;
+typedef struct UIOverlay UIOverlay;
 
-typedef struct PlaysciiAsset {
+typedef struct PlaysciiAsset
+{
     int width, height;
     uint32_t *glyphs;
     uint8_t *fg, *bg;
     Color palette[32];
 } PlaysciiAsset;
 
-/* ------------------------------------------------------------------------- */
-/* UI element types                                                          */
-/* ------------------------------------------------------------------------- */
+typedef enum
+{
+    BIND_INT,
+    BIND_FLOAT,
+    BIND_STR
+} BindType;
 
-typedef enum {
+typedef struct
+{
+    const void *ptr;
+    const char *fmt;
+    BindType type;
+    char buf[32];
+} TextBinding;
+
+/* UI Element types*/
+
+typedef enum
+{
     UI_ELEM_NONE,
     UI_ELEM_TEXT,
     UI_ELEM_BUTTON,
@@ -41,7 +53,8 @@ typedef enum {
 
 typedef void (*UIButtonAction)(void *ud);
 
-struct UIElement {
+typedef struct UIElement
+{
     ElementType type;
     char *name;
     int id;
@@ -49,38 +62,30 @@ struct UIElement {
     int x, y;
     int width, height;
     void (*update)(struct UIElement *);
-};
+} UIElement;
 
-struct UIText {
+typedef struct UIText
+{
     UIElement base;                        /* base element data               */
     const char *(*textCallback)(void *ud); /* callback to provide text        */
     void *ud;                              /* user data for callback          */
     Color_Bzzt fg, bg;                     /* colours for rendering           */
     bool wrap;                             /* enable word wrapping            */
-};
+} UIText;
 
-struct UIButton {
+typedef struct UIButton
+{
     UIElement base;
     UIText *label;
     UIButtonAction onClick;
     void *ud;
-};
+} UIButton;
 
-/* ------------------------------------------------------------------------- */
-/* Overlay / Surface / Layer                                                 */
-/* ------------------------------------------------------------------------- */
+/* Overlay / Surface / Layer*/
 
-struct UIOverlay {
-    UISurface *surface;
-    UIElement **elements;
-    int elements_count, elements_cap;
-    int x, y, z;
-    bool visible;
-    char *name;
-    int id;
-};
 
-struct UISurface {
+typedef struct UISurface
+{
     bool visible;
     int x, y, z;
     int w, h;
@@ -90,28 +95,42 @@ struct UISurface {
     int overlays_count, overlays_cap;
     char *name;
     int id;
-    Color_Bzzt fg, bg;  /* default colours as defined in YAML          */
-    char *bg_img;       /* optional background image path               */
-};
+    Color_Bzzt fg, bg; /* default colours as defined in YAML          */
+    char *bg_img;      /* optional background image path               */
+} UISurface;
 
-struct UILayer {
+typedef struct UIOverlay
+{
+    UISurface *surface;
+    UIElement **elements;
+    int elements_count, elements_cap;
+    int x, y, z;
+    bool visible;
+    char *name;
+    int id;
+} UIOverlay;
+
+typedef struct UILayer
+{
     bool visible;
     int z;
     UISurface **surfaces;
     int surface_count, surface_cap;
     char *name;
     int id;
-};
+} UILayer;
 
-struct UI {
+typedef struct UI
+{
     UILayer **layers;
     int layer_count, layer_cap;
     bool visible;
     char *name;
     int id;
-};
+} UI;
 
-typedef struct UI_Yaml {
+typedef struct UI_Yaml
+{
     float bzzt_version;
     int palette;     /* placeholder for palette swap implement       */
     bool hot_reload; /* allow hot reloading of the UI on file change */
@@ -120,9 +139,6 @@ typedef struct UI_Yaml {
     int layer;
 } UI_Yaml;
 
-/* ------------------------------------------------------------------------- */
-/* Creation / Destruction                                                    */
-/* ------------------------------------------------------------------------- */
 
 cJSON *Playscii_Load(const char *path);
 void Playscii_Unload(PlaysciiAsset *asset);
@@ -134,6 +150,12 @@ void UI_Destroy(UI *ui);
 UILayer *UI_Add_Layer(UI *ui);
 void UI_Add_Surface(UI *ui, UISurface *s);
 void UI_Set_Visible_Layer(UILayer *, bool show);
+
+UILayer *UILayer_Create();
+void UILayer_Destroy(UILayer *l)
+UISurface *UILayer_Add_Surface(UILayer *l, int w, int h, int x, int y);
+void UILayer_Update(UILayer *l);
+
 
 UISurface *UISurface_Create(int cell_count);
 void UISurface_Add_Overlay(UISurface *s, UIOverlay *o);
@@ -166,19 +188,6 @@ void UI_Print_Screen(UI *ui, UISurface *s, Color_Bzzt fg, Color_Bzzt bg,
                      bool wrap, int x, int y, char *fmt, ...);
 
 UISurface *UISurface_Load_From_Playscii(const char *filename);
-
-typedef enum {
-    BIND_INT,
-    BIND_FLOAT,
-    BIND_STR
-} BindType;
-
-typedef struct {
-    const void *ptr;
-    const char *fmt;
-    BindType type;
-    char buf[32];
-} TextBinding;
 
 TextBinding *UIBinding_Text_Create(const void *ptr, const char *fmt,
                                    BindType type);

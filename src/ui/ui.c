@@ -3,8 +3,6 @@
 #include "cell.h"
 #include "color.h"
 #include "text.h"
-#include "ui_layer.h"
-#include "ui_surface.h"
 #include "debugger.h"
 #include "engine.h"
 #include <stdio.h>
