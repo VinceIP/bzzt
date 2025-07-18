@@ -6,11 +6,6 @@
 #include "input.h"
 #include "cell.h"
 #include "ui.h"
-#include "ui_layer.h"
-#include "ui_surface.h"
-#include "ui_overlay.h"
-#include "ui_element.h"
-#include "ui_bindings.h"
 #include "text.h"
 #include "camera.h"
 

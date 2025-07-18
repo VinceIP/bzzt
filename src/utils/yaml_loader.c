@@ -11,10 +11,6 @@
 
 #include <cyaml/cyaml.h>
 #include "ui.h"
-#include "ui_layer.h"
-#include "ui_surface.h"
-#include "ui_overlay.h"
-#include "ui_element.h"
 #include "color.h"
 
 //Define properties shared amongst all UI componenets
@@ -61,17 +57,11 @@ static const cyaml_schema_field_t text_schema = {
 };
 //UIElement - button fields and schema
 static const cyaml_schema_field_t btn_fields[] = {
-    FIELDS_COMMON_RECT(UIButton),
+    FIELDS_COMMON_RECT(UIElement),
     CYAML_FIELD_STRING_PTR("text", CYAML_FLAG_POINTER, UIButton, ud, 0, CYAML_UNLIMITED),
     CYAML_FIELD_END
 };
 
 static const cyaml_schema_value_t btn_schema = {
     CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, UIButton, btn_fields)
-};
-
-//UIElement choice table
-static const cyaml_schema_choice_t elem_choices[] = {
-    { UI_ELEM_TEXT, &text_schema, { .str = "text"   } },
-    { UI_ELEM_BUTTON, &btn_schema, { .str = "button" } },
 };

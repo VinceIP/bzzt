@@ -1,5 +1,4 @@
-#include "ui_surface.h"
-#include "ui_overlay.h"
+#include "ui.h"
 #include "cell.h"
 #include "debugger.h"
 #include <stdlib.h>

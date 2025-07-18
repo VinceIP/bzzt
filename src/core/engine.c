@@ -6,7 +6,6 @@
 #include "input.h"
 #include "editor.h"
 #include "ui.h"
-#include "ui_surface.h"
 #include "camera.h"
 #include "color.h"
 #include "coords.h"

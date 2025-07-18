@@ -6,7 +6,7 @@ rem ------------------------------------------------------------------
 make clean
 if errorlevel 1 goto :end           rem stop if configure failed
 
-make
+make WARN=0
 if errorlevel 1 goto :end           rem stop if compile/link failed
 
 rem ------------------------------------------------------------------

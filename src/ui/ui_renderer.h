@@ -1,5 +1,19 @@
+
+/**
+ * @file ui_renderer.h
+ * @author your name (you@domain.com)
+ * @brief
+ * @version 0.1
+ * @date 2025-07-12
+ *
+ * @copyright Copyright (c) 2025
+ *
+ */
+
 #pragma once
-/* Thin wrapper to maintain include paths; implemented in ui.h. */
 
-#include "ui.h"
+#include "renderer.h"
 
+typedef struct UI UI;
+
+void Renderer_Draw_UI(Renderer *, const UI *);

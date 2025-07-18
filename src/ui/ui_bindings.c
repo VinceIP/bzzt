@@ -9,7 +9,7 @@
  *
  */
 
-#include "ui_bindings.h"
+#include "ui.h"
 #include "debugger.h"
 #include <stdlib.h>
 #include <stdio.h>

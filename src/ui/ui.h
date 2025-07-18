@@ -61,16 +61,16 @@ typedef struct UIElement
     bool visible;
     int x, y;
     int width, height;
-    void (*update)(struct UIElement *);
+    void (*onUpdate)(struct UIElement *);
 } UIElement;
 
 typedef struct UIText
 {
-    UIElement base;                        /* base element data               */
-    const char *(*textCallback)(void *ud); /* callback to provide text        */
-    void *ud;                              /* user data for callback          */
-    Color_Bzzt fg, bg;                     /* colours for rendering           */
-    bool wrap;                             /* enable word wrapping            */
+    UIElement base;                        
+    const char *(*textCallback)(void *ud);
+    void *ud;
+    Color_Bzzt fg, bg;                   
+    bool wrap;
 } UIText;
 
 typedef struct UIButton
@@ -82,7 +82,6 @@ typedef struct UIButton
 } UIButton;
 
 /* Overlay / Surface / Layer*/
-
 
 typedef struct UISurface
 {
@@ -139,7 +138,6 @@ typedef struct UI_Yaml
     int layer;
 } UI_Yaml;
 
-
 cJSON *Playscii_Load(const char *path);
 void Playscii_Unload(PlaysciiAsset *asset);
 
@@ -152,10 +150,9 @@ void UI_Add_Surface(UI *ui, UISurface *s);
 void UI_Set_Visible_Layer(UILayer *, bool show);
 
 UILayer *UILayer_Create();
-void UILayer_Destroy(UILayer *l)
+void UILayer_Destroy(UILayer *l);
 UISurface *UILayer_Add_Surface(UILayer *l, int w, int h, int x, int y);
 void UILayer_Update(UILayer *l);
-
 
 UISurface *UISurface_Create(int cell_count);
 void UISurface_Add_Overlay(UISurface *s, UIOverlay *o);

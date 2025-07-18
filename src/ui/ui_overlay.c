@@ -10,12 +10,9 @@
  */
 
 #include "debugger.h"
-#include "ui_overlay.h"
 #include "color.h"
 #include "text.h"
 #include "ui.h"
-#include "ui_surface.h"
-#include "ui_element.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdarg.h>

@@ -1,6 +1,5 @@
 #include "text.h"
 #include "ui.h"
-#include "ui_surface.h"
 #include "cell.h"
 #include "color.h"
 #include "code_page_lut.h"

@@ -16,9 +16,19 @@ CYAML_INC     := /ucrt64/include
 CYAML_LIB     := /ucrt64/lib
 CYAML_LIBS    := -lcyaml
 
+# ---------- warning control ---------------------------------
+# Pass WARN=0 to silence warnings:   make WARN=0
+# Leave blank or set to 1 to keep them: make (or make WARN=1)
+WARN        ?= 1
+ifeq ($(WARN),1)
+  WARN_FLAGS := -Wall -Wextra
+else
+  WARN_FLAGS := -w          # completely silence GCC
+endif
+
 # Recurse through src/ to build the include-path list
 INC_DIRS      := $(shell find $(SRC_ROOT) -type d)
-CFLAGS        := -std=c17 -Wall -Wextra \
+CFLAGS        := -std=c17 $(WARN_FLAGS) \
                  -I$(RAYLIB_INC) -I$(CYAML_INC) \
                  $(addprefix -I,$(INC_DIRS))
 
