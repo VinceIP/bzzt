@@ -44,13 +44,25 @@ static char *read_file(const char *path)
     return buf;
 }
 
-UI *UI_Create()
+static int grow_layers(UI *ui)
+{
+    int new_cap = ui->layer_cap == 0 ? 4 : ui->layer_cap * 2;
+    UILayer **tmp = realloc(ui->layers, sizeof(UILayer *) * new_cap);
+    if (!tmp)
+        return -1;
+    ui->layers = tmp;
+    ui->layer_cap = new_cap;
+    return 0;
+}
+
+UI *UI_Create(bool visible, bool enabled)
 {
     UI *ui = malloc(sizeof(UI));
+    ui->visible = visible;
+    ui->enabled = enabled;
     ui->layer_count = 0;
     ui->layer_cap = 4;
     ui->layers = malloc(sizeof(UILayer *) * ui->layer_cap);
-    ui->visible = false;
     return ui;
 }
 
@@ -66,6 +78,96 @@ void UI_Destroy(UI *ui)
     free(ui);
 }
 
+void UI_Add_Surface(UI *ui, int targetIndex, UISurface *s)
+{
+    int cell_count = s->cell_count;
+    Debug_Printf(LOG_UI, "Adding a surface with %d cells to a UI layer.", cell_count);
+
+    if (!ui || !s || !l)
+    {
+        Debug_Printf(LOG_UI, "One or more params was NULL on UI_Add_Surface.");
+        return;
+    }
+
+    if (ui->layer_count < targetIndex)
+    {
+        Debug_Printf(LOG_UI, "UI_Add_Surface targeted layer %d, but that layer doesn't exist. Adding it now.", targetIndex);
+        for (int i = ui->layer_count; i < targetIndex; ++i)
+        {
+            UI_Add_New_UILayer(ui);
+        }
+    }
+
+    UILayer *layer = ui->layers[targetIndex];
+    if (!layer)
+        Debug_Printf(LOG_UI, "UI_Add_Surface was unable to target layer at index: %d", targetIndex);
+
+    if (layer->surface_count >= layer->surface_cap)
+    {
+        int new_cap = layer->surface_cap == 0 ? 4 : layer->surface_cap * 2;
+        UISurface **tmp = realloc(layer->surfaces, sizeof(UISurface *) * new_cap);
+        if (!tmp)
+            return;
+        layer->surfaces = tmp;
+        layer->surface_cap = new_cap;
+    }
+
+    layer->surfaces[layer->surface_count++] = s;
+}
+
+UILayer *UI_Add_New_UILayer(UI *ui, bool visible, bool enabled)
+{
+    Debug_Printf(LOG_UI, "Adding a layer to UI.");
+    if (!ui)
+        return NULL;
+
+    if (ui->layer_count >= ui->layer_cap && grow_layers(ui) != 0)
+        return NULL;
+
+    UILayer *layer = UILayer_Create(visible, enabled);
+    if (!layer)
+        return NULL;
+
+    ui->layers[ui->layer_count++] = layer;
+    layer->index = ui->layer_count; // Assign the new layer's index to the current ui layer count
+    return layer;
+}
+
+void UI_Update(UI *ui)
+{
+    if (!ui || !ui->visible)
+        return;
+
+    for (int i = 0; i < ui->layer_count; ++i)
+    {
+        UILayer *l = ui->layers[i];
+        UILayer_Update(l);
+    }
+}
+
+void UI_Print_Screen(UI *ui, UISurface *s, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int x, int y, char *fmt, ...)
+{
+    if (!ui || ui->layer_count == 0)
+    {
+        Debug_Printf(LOG_UI, "UI is null or UI has no layers when trying to print to screen.");
+        return;
+    }
+
+    UILayer *layer = ui->layers[0];
+    if (layer->surface_count == 0)
+        return;
+
+    // UISurface *surface = layer->surfaces[0];
+    char buffer[256];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buffer, sizeof(buffer), fmt, args);
+    va_end(args);
+
+    UISurface_DrawText(s, buffer, x, y, fg, bg, wrap, s->w);
+}
+
+/** old plascii import code */
 cJSON *Playscii_Load(const char *path)
 {
     char *text = read_file(path);
@@ -143,99 +245,4 @@ fail:
     cJSON_Delete(json);
     return NULL;
 }
-
-void UI_Add_Surface(UI *ui, UISurface *s)
-{
-    int cell_count = s->cell_count;
-    Debug_Printf(LOG_UI, "Adding a surface with %d cells to a UI layer.", cell_count);
-    if (!ui || !s)
-        return;
-
-    if (ui->layer_count == 0)
-        Debug_Printf(LOG_UI, "UI contains no layers. Adding one now.");
-    UI_Add_Layer(ui);
-
-    UILayer *layer = ui->layers[0];
-    if (!layer)
-        Debug_Printf(LOG_UI, "No parent layer detected when adding surface to UI.");
-
-    if (layer->surface_count >= layer->surface_cap)
-    {
-        int new_cap = layer->surface_cap == 0 ? 4 : layer->surface_cap * 2;
-        UISurface **tmp = realloc(layer->surfaces, sizeof(UISurface *) * new_cap);
-        if (!tmp)
-            return;
-        layer->surfaces = tmp;
-        layer->surface_cap = new_cap;
-    }
-
-    layer->surfaces[layer->surface_count++] = s;
-}
-
-static int grow_layers(UI *ui)
-{
-    int new_cap = ui->layer_cap == 0 ? 4 : ui->layer_cap * 2;
-    UILayer **tmp = realloc(ui->layers, sizeof(UILayer *) * new_cap);
-    if (!tmp)
-        return -1;
-    ui->layers = tmp;
-    ui->layer_cap = new_cap;
-    return 0;
-}
-
-UILayer *UI_Add_Layer(UI *ui)
-{
-    Debug_Printf(LOG_UI, "Adding a layer to UI.");
-    if (!ui)
-        return NULL;
-
-    if (ui->layer_count >= ui->layer_cap && grow_layers(ui) != 0)
-        return NULL;
-
-    UILayer *layer = UILayer_Create();
-    if (!layer)
-        return NULL;
-
-    ui->layers[ui->layer_count++] = layer;
-    return layer;
-}
-
-void UI_Set_Visible_Layer(UILayer *l, bool show)
-{
-    if (l)
-        l->visible = show;
-}
-
-void UI_Update(UI *ui)
-{
-    if (!ui || !ui->visible)
-        return;
-
-    for (int i = 0; i < ui->layer_count; ++i)
-    {
-        UILayer *l = ui->layers[i];
-        UILayer_Update(l);
-    }
-}
-
-void UI_Print_Screen(UI *ui, UISurface *s, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int x, int y, char *fmt, ...)
-{
-    if (!ui || ui->layer_count == 0)
-    {
-        Debug_Printf(LOG_UI, "UI is null or UI has no layers when trying to print to screen.");
-        return;
-    }
-
-    UILayer *layer = ui->layers[0];
-    if (layer->surface_count == 0)
-        return;
-
-    // UISurface *surface = layer->surfaces[0];
-    char buffer[256];
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(buffer, sizeof(buffer), fmt, args);
-    va_end(args);
-
-    UISurface_DrawText(s, buffer, x, y, fg, bg, wrap, s->w);
-}
+/** -------------- */

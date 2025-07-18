@@ -41,8 +41,6 @@ typedef struct
     char buf[32];
 } TextBinding;
 
-/* UI Element types*/
-
 typedef enum
 {
     UI_ELEM_NONE,
@@ -51,110 +49,191 @@ typedef enum
     UI_ELEM_INPUT
 } ElementType;
 
+typedef enum
+{
+    LAYOUT_NONE,
+    LAYOUT_VBOX,
+    LAYOUT_HBOX
+} OverlayLayout;
+
+typedef enum
+{
+    ANCHOR_NONE,
+    ANCHOR_LEFT,
+    ANCHOR_CENTER,
+    ANCHOR_RIGHT,
+    ANCHOR_TOP,
+    ANCHOR_BOTTOM
+} OverlayAnchor;
+
 typedef void (*UIButtonAction)(void *ud);
 
+// Properties shared by most UI components
+typedef struct UIProperties
+{
+    char *name;
+    int id;
+    int x, y, z, w, h;
+    int padding;
+    bool visible; // Only drawn if visible
+    bool enabled; // If disabled, all drawing and callbacks stop until enabled again
+    void *parent; // Reference to the parent struct
+} UIProperties;
+
+// Base struct of UI elements
 typedef struct UIElement
 {
     ElementType type;
-    char *name;
-    int id;
-    bool visible;
-    int x, y;
-    int width, height;
-    void (*onUpdate)(struct UIElement *);
+    UIProperties properties;
+    void (*update)(struct UIElement *);
 } UIElement;
 
+// A UI text field
 typedef struct UIText
 {
-    UIElement base;                        
+    UIElement base;
     const char *(*textCallback)(void *ud);
     void *ud;
-    Color_Bzzt fg, bg;                   
-    bool wrap;
+    Color_Bzzt fg, bg; // Color of the text to be printed to screen
+    bool wrap;         // Does the text wrap and start a newline if out of bounds
 } UIText;
 
 typedef struct UIButton
 {
-    UIElement base;
-    UIText *label;
-    UIButtonAction onClick;
-    void *ud;
+    UIText uiText; // A button is essentially just a UIText, except it will hook into specific event things below, probably
 } UIButton;
 
 /* Overlay / Surface / Layer*/
 
 typedef struct UISurface
 {
-    bool visible;
-    int x, y, z;
-    int w, h;
-    Cell *cells;
+    UIProperties properties;
+    Cell *cells; // Default cells this surface holds - could be none, could be a background
     int cell_count;
     UIOverlay **overlays;
     int overlays_count, overlays_cap;
-    char *name;
-    int id;
-    Color_Bzzt fg, bg; /* default colours as defined in YAML          */
-    char *bg_img;      /* optional background image path               */
 } UISurface;
 
 typedef struct UIOverlay
 {
-    UISurface *surface;
+    UIProperties properties;
     UIElement **elements;
     int elements_count, elements_cap;
-    int x, y, z;
-    bool visible;
-    char *name;
-    int id;
+    OverlayLayout layout;
+    OverlayAnchor anchor;
+    int spacing;
 } UIOverlay;
 
 typedef struct UILayer
 {
-    bool visible;
-    int z;
-    UISurface **surfaces;
-    int surface_count, surface_cap;
     char *name;
     int id;
+    bool visible, enabled;
+    int index; // The index of this layer in the UI's stack
+    UISurface **surfaces;
+    int surface_count, surface_cap;
 } UILayer;
 
 typedef struct UI
 {
+    bool visible, enabled;
     UILayer **layers;
     int layer_count, layer_cap;
-    bool visible;
-    char *name;
-    int id;
 } UI;
-
-typedef struct UI_Yaml
-{
-    float bzzt_version;
-    int palette;     /* placeholder for palette swap implement       */
-    bool hot_reload; /* allow hot reloading of the UI on file change */
-    char *name;
-    int id;
-    int layer;
-} UI_Yaml;
 
 cJSON *Playscii_Load(const char *path);
 void Playscii_Unload(PlaysciiAsset *asset);
 
-UI *UI_Create();
+/**
+ * @brief Instantiate a new UI.
+ *
+ * @param visible Is visible on creation
+ * @param enabled Is enabled on creation
+ * @return UI*
+ */
+UI *UI_Create(bool visible, bool enabled);
+
+/**
+ * @brief Run update callbacks on UI.
+ *
+ * @param ui
+ */
 void UI_Update(UI *ui);
+
+/**
+ * @brief Free UI and all its components from memory.
+ *
+ * @param ui
+ */
 void UI_Destroy(UI *ui);
 
-UILayer *UI_Add_Layer(UI *ui);
-void UI_Add_Surface(UI *ui, UISurface *s);
-void UI_Set_Visible_Layer(UILayer *, bool show);
+/**
+ * @brief Creates a new UILayer and pushes it to the UI.
+ *
+ * @param ui
+ * @param visible Is visible on creation
+ * @param enabled Is enabled on creation
+ * @return UILayer*
+ */
+UILayer *UI_Add_New_UILayer(UI *ui, bool visible, bool enabled);
 
-UILayer *UILayer_Create();
+/**
+ * @brief Creates a new UILayer.
+ *
+ * @param visible Is visible on creation
+ * @param enabled Is enabled on creation
+ * @return UILayer*
+ */
+UILayer *UILayer_Create(bool visible, bool enabled);
+
+/**
+ * @brief Destroys a UILayer and frees it from memory.
+ *
+ * @param l
+ */
 void UILayer_Destroy(UILayer *l);
-UISurface *UILayer_Add_Surface(UILayer *l, int w, int h, int x, int y);
+
+/**
+ * @brief Creates a new UISurface and pushes it to the target UILayer.
+ * 
+ * @param l Target UILayer
+ * @param name name of new surface
+ * @param id id of new surface
+ * @param visible surface is visible on creation
+ * @param enabled surface is enabled on creation
+ * @param x coordinates in screen-cell units
+ * @param y coordinates in screen-cell units
+ * @param z z layer of new surface, relative to other surfaces on this layer
+ * @param w width of new layer in cell units
+ * @param h height of new layer in cell units
+ * @return UISurface* 
+ */
+UISurface *UILayer_Add_New_Surface(UILayer *l, char *name, int id, bool visible, bool enabled, int x, int y, int z, int w, int h);
+
+/**
+ * @brief Run update callbacks on this UILayer.
+ * 
+ * @param l 
+ */
 void UILayer_Update(UILayer *l);
 
-UISurface *UISurface_Create(int cell_count);
+/**
+ * @brief Create a new UISurface.
+ * 
+ * @param l target layer the new surface is stored on
+ * @param name name of new surface
+ * @param id id of new surface
+ * @param visible is visible on creation
+ * @param enabled is enabled on creation
+ * @param x coordinates in screen-cell units
+ * @param y coordinates in screen-cell units
+ * @param z z layer of new surface, relative to other surfaces on this layer
+ * @param w width of new layer in cell units
+ * @param h height of new layer in cell units
+ * @return UISurface* 
+ */
+UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool enabled, int x, int y, int z, int w, int h);
+
 void UISurface_Add_Overlay(UISurface *s, UIOverlay *o);
 void UISurface_Update(UISurface *s);
 void UISurface_Destroy(UISurface *s);

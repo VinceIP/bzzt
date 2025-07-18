@@ -2,8 +2,9 @@
 #include "debugger.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
-UILayer *UILayer_Create()
+UILayer *UILayer_Create(bool visible, bool enabled, char *name, int id)
 {
     UILayer *l = malloc(sizeof(UILayer));
     if (!l)
@@ -11,11 +12,14 @@ UILayer *UILayer_Create()
         Debug_Printf(LOG_UI, "Error allocating UILayer.");
         return NULL;
     }
-    l->surfaces = NULL;
-    l->visible = true;
-    l->z = 0;
-    l->surface_count = 0;
+    l->visible = visible;
+    l->enabled = enabled;
+    l->id = id;
+    l->name = name;
     l->surface_cap = 0;
+    l->surface_count = 0;
+    l->surfaces = NULL;
+    l->index = -1;
     return l;
 }
 
@@ -45,7 +49,8 @@ static int grow_layer(UILayer *l)
     return 0;
 }
 
-UISurface *UILayer_Add_Surface(UILayer *l, int w, int h, int x, int y)
+// Add a new surface to the target layer l
+UISurface *UILayer_Add_New_Surface(UILayer *l, char *name, int id, bool visible, bool enabled, int x, int y, int z, int w, int h)
 {
     if (!l)
         return NULL;
@@ -53,14 +58,9 @@ UISurface *UILayer_Add_Surface(UILayer *l, int w, int h, int x, int y)
     if (l->surface_count >= l->surface_cap && grow_layer(l) != 0)
         return NULL;
 
-    UISurface *s = UISurface_Create(w * h);
+    UISurface *s = UISurface_Create(l, name, id, visible, enabled, x, y, z, w, h);
     if (!s)
         return NULL;
-
-    s->w = w;
-    s->h = h;
-    s->x = x;
-    s->y = y;
 
     l->surfaces[l->surface_count++] = s;
     return s;

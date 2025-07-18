@@ -4,28 +4,31 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-UISurface *UISurface_Create(int cell_count)
+UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool enabled, int x, int y, int z, int w, int h)
 {
-    Debug_Printf(LOG_UI, "Creating surface with %d cells.", cell_count);
+    Debug_Printf(LOG_UI, "Creating surface.");
     UISurface *surface = malloc(sizeof(UISurface));
     if (!surface)
         goto fail;
 
-    surface->visible = true;
-    surface->x = surface->y = surface->z = 0;
-    surface->w = surface->h = 0;
-    surface->cells = malloc(sizeof(Cell) * cell_count);
+    UIProperties props = {
+        name, id, x, y, z, w, h, 0, visible, enabled, l};
+    surface->properties = props;
+
+    surface->cell_count = w * h;
+    surface->cells = malloc(sizeof(Cell) * surface->cell_count);
     if (!surface->cells)
         goto fail;
-    surface->cell_count = cell_count;
 
-    for (int i = 0; i < cell_count; ++i)
+    // Init empty cells
+    for (int i = 0; i < surface->cell_count; ++i)
     {
-        surface->cells[i].visible = true;
-        surface->cells[i].glyph = 255;
-        surface->cells[i].fg = COLOR_WHITE;
+        surface->cells[i].visible = false;
+        surface->cells[i].glyph = 0;
+        surface->cells[i].fg = COLOR_BLACK;
         surface->cells[i].bg = COLOR_BLACK;
     }
+
     surface->overlays = NULL;
     surface->overlays_count = 0;
     surface->overlays_cap = 0;
