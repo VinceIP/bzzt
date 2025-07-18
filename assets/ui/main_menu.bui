@@ -17,9 +17,6 @@ surface:
   y: 10
   z: 0 # local Z within the layer
 
-  # ── optional ASCII art backdrop (blank if omitted) ─────
-  bg_img:
-
   # ── root-level input events ────────────────────────────
   events:
     - type: onKeyPress

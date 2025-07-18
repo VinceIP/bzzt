@@ -15,7 +15,7 @@ static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement 
     {
     case UI_ELEM_TEXT:
     {
-        UIText *t = (UIText *)e;
+        UIElement_Text *t = (UIElement_Text *)e;
         const char *str = t->textCallback(t->ud);
         int x = base_x;
         int y = base_y;

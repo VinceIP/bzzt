@@ -31,7 +31,7 @@ UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool e
 
     surface->overlays = NULL;
     surface->overlays_count = 0;
-    surface->overlays_cap = 0;
+    surface->overlays_cap = 1;
     return surface;
 
 fail:
@@ -62,13 +62,13 @@ void UISurface_Destroy(UISurface *s)
     free(s);
 }
 
-void UISurface_Add_New_Overlay(UISurface *s, UIOverlay *o)
+void UISurface_Add_New_Overlay(UISurface *s, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, OverlayLayout layout, OverlayAnchor anchor, int spacing)
 {
     Debug_Printf(LOG_UI, "Adding an overlay to a surface.");
     if (!s || !o)
         return;
-
-    if (s->overlays_count >= s->overlays_cap)
+    int overlays_count = s->overlays_count;
+    if (overlays_count >= s->overlays_cap)
     {
         int new_cap = s->overlays_cap == 0 ? 4 : s->overlays_cap * 2;
         UIOverlay **new_overlays = realloc(s->overlays, sizeof(UIOverlay *) * new_cap);
@@ -80,8 +80,9 @@ void UISurface_Add_New_Overlay(UISurface *s, UIOverlay *o)
         s->overlays = new_overlays;
         s->overlays_cap = new_cap;
     }
+    UIOverlay *o = UIOverlay_Create(name, id, x, y, z, w, h, padding, visible, enabled, layout, anchor, spacing);
+    s->overlays[overlays_count++] = o;
     o->surface = s;
-    s->overlays[s->overlays_count++] = o;
 }
 
 void UISurface_Update(UISurface *s)

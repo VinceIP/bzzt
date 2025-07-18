@@ -89,18 +89,21 @@ typedef struct UIElement
 } UIElement;
 
 // A UI text field
-typedef struct UIText
+typedef struct UIElement_Text
 {
     UIElement base;
     const char *(*textCallback)(void *ud);
     void *ud;
     Color_Bzzt fg, bg; // Color of the text to be printed to screen
     bool wrap;         // Does the text wrap and start a newline if out of bounds
-} UIText;
+} UIElement_Text;
 
 typedef struct UIButton
 {
-    UIText uiText; // A button is essentially just a UIText, except it will hook into specific event things below, probably
+    UIElement base;
+    UIButtonAction onClick;
+    void *ud;
+    UIElement_Text *label;
 } UIButton;
 
 /* Overlay / Surface / Layer*/
@@ -116,6 +119,7 @@ typedef struct UISurface
 
 typedef struct UIOverlay
 {
+    UISurface *surface; // parent surface
     UIProperties properties;
     UIElement **elements;
     int elements_count, elements_cap;
@@ -141,9 +145,6 @@ typedef struct UI
     int layer_count, layer_cap;
 } UI;
 
-cJSON *Playscii_Load(const char *path);
-void Playscii_Unload(PlaysciiAsset *asset);
-
 /**
  * @brief Instantiate a new UI.
  *
@@ -161,7 +162,7 @@ UI *UI_Create(bool visible, bool enabled);
 void UI_Update(UI *ui);
 
 /**
- * @brief Free UI and all its components from memory.
+ * @brief Free UI and all its contents from memory.
  *
  * @param ui
  */
@@ -187,7 +188,7 @@ UILayer *UI_Add_New_UILayer(UI *ui, bool visible, bool enabled);
 UILayer *UILayer_Create(bool visible, bool enabled);
 
 /**
- * @brief Destroys a UILayer and frees it from memory.
+ * @brief Destroys a UILayer and frees it and its contents from memory.
  *
  * @param l
  */
@@ -195,7 +196,7 @@ void UILayer_Destroy(UILayer *l);
 
 /**
  * @brief Creates a new UISurface and pushes it to the target UILayer.
- * 
+ *
  * @param l Target UILayer
  * @param name name of new surface
  * @param id id of new surface
@@ -206,20 +207,20 @@ void UILayer_Destroy(UILayer *l);
  * @param z z layer of new surface, relative to other surfaces on this layer
  * @param w width of new layer in cell units
  * @param h height of new layer in cell units
- * @return UISurface* 
+ * @return UISurface*
  */
 UISurface *UILayer_Add_New_Surface(UILayer *l, char *name, int id, bool visible, bool enabled, int x, int y, int z, int w, int h);
 
 /**
  * @brief Run update callbacks on this UILayer.
- * 
- * @param l 
+ *
+ * @param l
  */
 void UILayer_Update(UILayer *l);
 
 /**
  * @brief Create a new UISurface.
- * 
+ *
  * @param l target layer the new surface is stored on
  * @param name name of new surface
  * @param id id of new surface
@@ -230,28 +231,129 @@ void UILayer_Update(UILayer *l);
  * @param z z layer of new surface, relative to other surfaces on this layer
  * @param w width of new layer in cell units
  * @param h height of new layer in cell units
- * @return UISurface* 
+ * @return UISurface*
  */
 UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool enabled, int x, int y, int z, int w, int h);
 
-void UISurface_Add_New_Overlay(UISurface *s, UIOverlay *o);
+/**
+ * @brief Create a new UIOverlay and push it to a UISurface.
+ *
+ * @param s target surface that will own new overlay
+ * @param name name of new overlay
+ * @param id id of new overlay
+ * @param x coordinates in cell units relative to parent surface
+ * @param y coordinates in cell units relative to parent surface
+ * @param z z layer of new overlay, relative to other overlays on this surface
+ * @param w width of new overlay in cell units
+ * @param h height of new overlay in cell units
+ * @param padding padding of this overlay relative to parent surface
+ * @param visible is visible on creation
+ * @param enabled is enabled on creation
+ * @param layout layout of this overlay's contents
+ * @param anchor anchoring of this overlay's contents
+ * @param spacing spacing of this overlay's contents
+ */
+void UISurface_Add_New_Overlay(UISurface *s, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, OverlayLayout layout, OverlayAnchor anchor, int spacing);
+
+/**
+ * @brief Run update callbacks for this surface.
+ *
+ * @param s
+ */
 void UISurface_Update(UISurface *s);
+
+/**
+ * @brief Destroy this surface and free it and its contents from memory.
+ *
+ * @param s
+ */
 void UISurface_Destroy(UISurface *s);
 
-UIOverlay *UIOverlay_Create();
+/**
+ * @brief Create a new UIOverlay
+ *
+ * @param name name of new overlay
+ * @param id id of new overlay
+ * @param x coords in cell units relative to its parent
+ * @param y coords in cell units relative to its parent
+ * @param z z layer of new overlay relative to other overlays on parent surface
+ * @param w widh of new overlay
+ * @param h height of new overlay
+ * @param padding padding of this overlay relative to parent surface
+ * @param visible is visible on creation
+ * @param enabled is enabled on creation
+ * @param layout layout of this overlay's contents
+ * @param anchor anchoring of this overlay's contents
+ * @param spacing spacing of this overlay's contents
+ * @return UIOverlay*
+ */
+UIOverlay *UIOverlay_Create(char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, OverlayLayout layout, OverlayAnchor anchor, int spacing);
+
+/**
+ * @brief Run update callbacks for this overlay.
+ *
+ * @param o
+ */
 void UIOverlay_Update(UIOverlay *o);
+
+/**
+ * @brief Destroy this overlay and free it and its contents from memory.
+ *
+ * @param o
+ */
 void UIOverlay_Destroy(UIOverlay *o);
-void UIOverlay_Add_Element(UIOverlay *o, UIElement *e);
+
+void UIOverlay_Add_New_Element(UIOverlay *o, UIElement *e);
 void UIOverlay_Print(UIOverlay *ov, Color_Bzzt fg, Color_Bzzt bg, bool wrap,
                      const char *fmt, ...);
 
-UIElement *UIElement_Create();
+/**
+ * @brief Create a new UIElement.
+ *
+ * @param o parent overlay
+ * @param name name of new element
+ * @param id id of new element
+ * @param x coords in cell units relative to its parent
+ * @param y coords in cell units relative to its parent
+ * @param z z layer of new element relative to over elements on parent overlay
+ * @param w width of new element
+ * @param h height of new element
+ * @param padding padding of new element
+ * @param visible is visible on creation
+ * @param enabled is enabled on creation
+ * @param type new element's ElementType
+ * @return UIElement*
+ */
+UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, ElementType type);
+
+/**
+ * @brief Run update callbacks for this element.
+ *
+ * @param e
+ */
 void UIElement_Update(UIElement *e);
+
+/**
+ * @brief Destroy this element and free it and its contents from memory.
+ *
+ * @param e
+ */
 void UIElement_Destroy(UIElement *e);
-UIText *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg,
-                      const char *(*cb)(void *), void *ud);
-UIText *UIText_Create_Bound(int x, int y, Color_Bzzt fg, Color_Bzzt bg,
-                            const void *ptr, const void *fmt, BindType type);
+
+/**
+ * @brief Create a new UIText
+ *
+ * @param e base UIElement
+ * @param fg foreground color
+ * @param bg background color
+ * @param wrap wrap to newline if text exceeds parent width
+ * @param cb text callback function
+ * @param ud reference to data this text displays
+ * @return UIElement_Text*
+ */
+UIElement_Text *UIText_Create(UIElement *e, Color_Bzzt fg, Color_Bzzt bg, bool wrap, const char *(*cb)(void *ud), void *ud);
+UIElement_Text *UIText_Create_Bound(int x, int y, Color_Bzzt fg, Color_Bzzt bg,
+                                    const void *ptr, const void *fmt, BindType type);
 UIButton *UIButton_Create(int x, int y, const char *caption,
                           UIButtonAction cb, void *ud);
 

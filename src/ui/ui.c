@@ -83,7 +83,7 @@ void UI_Add_Surface(UI *ui, int targetIndex, UISurface *s)
     int cell_count = s->cell_count;
     Debug_Printf(LOG_UI, "Adding a surface with %d cells to a UI layer.", cell_count);
 
-    if (!ui || !s || !l)
+    if (!ui || !s)
     {
         Debug_Printf(LOG_UI, "One or more params was NULL on UI_Add_Surface.");
         return;
@@ -94,7 +94,7 @@ void UI_Add_Surface(UI *ui, int targetIndex, UISurface *s)
         Debug_Printf(LOG_UI, "UI_Add_Surface targeted layer %d, but that layer doesn't exist. Adding it now.", targetIndex);
         for (int i = ui->layer_count; i < targetIndex; ++i)
         {
-            UI_Add_New_UILayer(ui);
+            UI_Add_New_UILayer(ui, true, true);
         }
     }
 
@@ -164,11 +164,11 @@ void UI_Print_Screen(UI *ui, UISurface *s, Color_Bzzt fg, Color_Bzzt bg, bool wr
     vsnprintf(buffer, sizeof(buffer), fmt, args);
     va_end(args);
 
-    UISurface_DrawText(s, buffer, x, y, fg, bg, wrap, s->w);
+    UISurface_DrawText(s, buffer, x, y, fg, bg, wrap, s->properties.w);
 }
 
 /** old plascii import code */
-cJSON *Playscii_Load(const char *path)
+static cJSON *plascii_load(const char *path)
 {
     char *text = read_file(path);
     if (!text)
@@ -186,14 +186,14 @@ cJSON *Playscii_Load(const char *path)
     return json;
 }
 
-void Playscii_Unload(PlaysciiAsset *asset)
+static void playscii_unload(PlaysciiAsset *asset)
 {
     free(asset);
 }
 
 UISurface *UISurface_Load_From_Playscii(const char *path)
 {
-    cJSON *json = Playscii_Load(path);
+    cJSON *json = plascii_load(path);
     CHECK_FAIL(json, fail, "Failure parsing JSON.");
 
     cJSON *width = cJSON_GetObjectItemCaseSensitive(json, "width");
@@ -219,7 +219,8 @@ UISurface *UISurface_Load_From_Playscii(const char *path)
 
     int cell_count = cJSON_GetArraySize(tiles);
 
-    UISurface *surface = UISurface_Create(cell_count);
+    UISurface *surface = UISurface_Create(NULL, NULL, 0, true, true, 0, 0, 0,
+                                          width->valueint, height->valueint);
 
     cJSON *tile = NULL;
     int i = 0;
@@ -235,8 +236,8 @@ UISurface *UISurface_Load_From_Playscii(const char *path)
         i++;
     }
 
-    surface->w = width->valueint;
-    surface->h = height->valueint;
+    surface->properties.w = width->valueint;
+    surface->properties.h = height->valueint;
 
     cJSON_Delete(json);
     return surface;

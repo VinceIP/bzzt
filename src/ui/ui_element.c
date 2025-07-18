@@ -10,17 +10,28 @@ static const char *pass_through_caption(void *ud)
     return (const char *)ud;
 }
 
-UIElement *UIElement_Create()
+UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, ElementType type)
 {
     UIElement *e = malloc(sizeof(UIElement));
     if (!e)
         goto fail;
 
-    e->type = UI_ELEM_NONE;
-    e->visible = false;
-    e->x = 0;
-    e->y = 0;
-    e->update = NULL;
+    e->properties.name = name;
+    e->properties.id = id;
+    e->properties.x = x;
+    e->properties.y = y;
+    e->properties.z = z;
+    e->properties.w = w;
+    e->properties.h = h;
+    e->properties.padding = padding;
+    e->properties.visible = visible;
+    e->properties.enabled = enabled;
+
+    e->properties.parent = o;
+
+    e->type = type;
+    e->update = NULL; // TBD
+
     return e;
 
 fail:
@@ -65,28 +76,23 @@ void UIElement_Update(UIElement *e)
     }
 }
 
-UIText *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg, const char *(*cb)(void *), void *ud)
+UIElement_Text *UIText_Create(UIElement *e, Color_Bzzt fg, Color_Bzzt bg, bool wrap, const char *(*cb)(void *ud), void *ud)
 {
-    UIText *t = malloc(sizeof(UIText));
+    UIElement_Text *t = malloc(sizeof(UIElement_Text));
     if (!t)
         Debug_Printf(LOG_UI, "Error allocating UIText.");
 
-    t->base.type = UI_ELEM_TEXT;
-    t->base.visible = true;
-    t->base.x = x;
-    t->base.y = y;
-    t->base.update = NULL;
-
-    t->textCallback = cb;
-    t->ud = ud;
+    t->base = e;
     t->fg = fg;
     t->bg = bg;
-    t->wrap = false;
+    t->textCallback = cb;
+    t->ud = ud;
+    t->wrap = wrap;
 
     return t;
 }
 
-UIText *UIText_Create_Bound(int x, int y, Color_Bzzt fg, Color_Bzzt bg, const void *ptr, const void *fmt, BindType type)
+UIElement_Text *UIText_Create_Bound(int x, int y, Color_Bzzt fg, Color_Bzzt bg, const void *ptr, const void *fmt, BindType type)
 {
     TextBinding *b = UIBinding_Text_Create(ptr, fmt, type);
     if (!b)

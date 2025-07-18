@@ -47,7 +47,7 @@ bool Engine_Init(Engine *e)
 
     init_cursor(e);
 
-    e->ui = UI_Create();
+    e->ui = UI_Create(true, true);
 
     init_camera(e);
 

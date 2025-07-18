@@ -18,7 +18,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-UIOverlay *UIOverlay_Create()
+UIOverlay *UIOverlay_Create(char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, OverlayLayout layout, OverlayAnchor anchor, int spacing)
 {
     Debug_Printf(LOG_UI, "Creating a new overlay.");
     UIOverlay *o = malloc(sizeof(UIOverlay));
@@ -27,11 +27,24 @@ UIOverlay *UIOverlay_Create()
         Debug_Printf(LOG_UI, "Error allocating UIOverlay.");
         return NULL;
     }
-    o->surface = NULL;
+    o->properties.name = name;
+    o->properties.id = id;
+    o->properties.x = x;
+    o->properties.y = y;
+    o->properties.z = z;
+    o->properties.w = w;
+    o->properties.h = h;
+    o->properties.padding = padding;
+    o->properties.visible = visible;
+    o->properties.enabled = enabled;
+
+    o->layout = layout;
+    o->anchor = anchor;
+    o->spacing = spacing;
+
     o->elements = NULL;
-    o->elements_count = o->elements_cap = 0;
-    o->visible = true;
-    o->x = o->y = o->z = 0;
+    o->elements_count = 0;
+    o->elements_cap = 1;
 
     return o;
 }
@@ -73,7 +86,7 @@ void UIOverlay_Destroy(UIOverlay *o)
     free(o);
 }
 
-void UIOverlay_Add_Element(UIOverlay *o, UIElement *e)
+void UIOverlay_Add_New_Element(UIOverlay *o, UIElement *e)
 {
     if (!o || !e)
         return;

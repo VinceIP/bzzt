@@ -16,7 +16,7 @@ UILayer *UILayer_Create(bool visible, bool enabled, char *name, int id)
     l->enabled = enabled;
     l->id = id;
     l->name = name;
-    l->surface_cap = 0;
+    l->surface_cap = 1;
     l->surface_count = 0;
     l->surfaces = NULL;
     l->index = -1;
@@ -49,7 +49,6 @@ static int grow_layer(UILayer *l)
     return 0;
 }
 
-// Add a new surface to the target layer l
 UISurface *UILayer_Add_New_Surface(UILayer *l, char *name, int id, bool visible, bool enabled, int x, int y, int z, int w, int h)
 {
     if (!l)
