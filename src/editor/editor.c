@@ -19,7 +19,7 @@ static void ui_init(Engine *e)
     sidebarSurface->x = 60;
     UI_Add_Surface(e->ui, sidebarSurface);              // Add the surface to the UI
     UIOverlay *textOverlay = UIOverlay_Create();        // Create a new overlay
-    UISurface_Add_Overlay(sidebarSurface, textOverlay); // Add the new overlay to the sidebar surface
+    UISurface_Add_New_Overlay(sidebarSurface, textOverlay); // Add the new overlay to the sidebar surface
     UIOverlay_Add_Element(textOverlay,
                           (UIElement *)UIText_Create_Bound(2, sidebarSurface->h-2, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor.position.x, "Cursor x: %d", BIND_INT)); // Create text element that prints cursor x
     UIOverlay_Add_Element(textOverlay,

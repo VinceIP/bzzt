@@ -234,7 +234,7 @@ void UILayer_Update(UILayer *l);
  */
 UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool enabled, int x, int y, int z, int w, int h);
 
-void UISurface_Add_Overlay(UISurface *s, UIOverlay *o);
+void UISurface_Add_New_Overlay(UISurface *s, UIOverlay *o);
 void UISurface_Update(UISurface *s);
 void UISurface_Destroy(UISurface *s);
 

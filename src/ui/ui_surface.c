@@ -62,7 +62,7 @@ void UISurface_Destroy(UISurface *s)
     free(s);
 }
 
-void UISurface_Add_Overlay(UISurface *s, UIOverlay *o)
+void UISurface_Add_New_Overlay(UISurface *s, UIOverlay *o)
 {
     Debug_Printf(LOG_UI, "Adding an overlay to a surface.");
     if (!s || !o)
