@@ -1,5 +1,5 @@
 # bzzt
-A for-fun project meant to create a spiritual successor to Tim Sweeney's ZZT from 1991.
+A for-fun, overly-ambitious project meant to create a spiritual successor to Tim Sweeney's ZZT from 1991.
 
 ## Background
 bzzt is a project meant to satisfy my urge to build something really cool in C and satisfy my passion for weird, old software things.
