@@ -8,6 +8,7 @@
 #include "ui.h"
 #include "text.h"
 #include "camera.h"
+#include "debugger.h"
 
 int testX = 0;
 
@@ -15,7 +16,9 @@ static const char *caption_cb(void *ud) { return (const char *)ud; }
 
 static void ui_init(Engine *e)
 {
-    UISurface *sidebarSurface = UISurface_Load_From_Playscii("assets\\ui\\sidebar.psci"); // Load up the sidebar
+    UISurface *sidebarSurface = UISurface_Load_From_Playscii("assets/ui/sidebar.psci"); // Load up the sidebar
+    if (!sidebarSurface)
+        Debug_Printf(LOG_UI, "Failed to load sidebar surface.");
     sidebarSurface->properties.x = 60;
     UI_Add_Surface(e->ui, 0, sidebarSurface); // Add the surface to the UI layer 0
     UISurface_Add_New_Overlay(sidebarSurface, NULL, 0, 0, 0, 0, 0, 0, 0, true, true, LAYOUT_NONE, ANCHOR_NONE, 0);

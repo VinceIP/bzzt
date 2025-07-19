@@ -9,6 +9,7 @@
 #include "world.h"
 #include "board_renderer.h"
 #include "ui_renderer.h"
+#include "zzt.h"
 
 #define TRANSPARENT_GLYPH 255
 
@@ -36,7 +37,7 @@ bool Renderer_Init(Renderer *r, const char *path)
     Vector2 centerCoord = {(float)GetRenderWidth() / 2, (float)GetRenderHeight() / 2};
     r->centerCoord = centerCoord;
 
-    r->inStr = "\n\nL - load world\nE - editor\nESC - quit";
+    r->inStr = "\n\nP - play town.zzt\nL - load world\nE - editor\nESC - quit";
 
     return true;
 }
@@ -110,6 +111,10 @@ void Renderer_Update(Renderer *r, Engine *e)
     case SPLASH_MODE:
         Renderer_Draw_Board(r, e->world->boards[e->world->boards_current]);
         draw_splash(r, e);
+        break;
+
+    case PLAY_MODE:
+        Renderer_Draw_ZZT_Board(r, e->loadedBlock);
         break;
 
     case EDIT_MODE:

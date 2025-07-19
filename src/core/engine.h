@@ -8,6 +8,7 @@ typedef struct UI UI;
 typedef struct BzztCamera BzztCamera;
 typedef struct InputState InputState;
 typedef struct MouseState MouseState;
+typedef struct ZZTBlock ZZTBlock;
 
 typedef enum
 {
@@ -42,6 +43,7 @@ typedef struct Engine
     Font font;
     Cursor cursor;
     BzztCamera *camera;
+    ZZTBlock *loadedBlock;
     // Renderer renderer;
     // Input input;
     bool running;

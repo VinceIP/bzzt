@@ -2,6 +2,7 @@
 #include "renderer.h"
 #include "board.h"
 #include "object.h"
+#include "zzt.h"
 
 void Renderer_Draw_Board(Renderer *r, const Board *b)
 {
@@ -40,6 +41,20 @@ void Renderer_Draw_Board(Renderer *r, const Board *b)
         {
             const Object *o = grid[y][x];
             Renderer_Draw_Cell(r, x, y, o->cell.glyph, o->cell.fg, o->cell.bg);
+        }
+    }
+}
+
+void Renderer_Draw_ZZT_Board(Renderer *r, ZZTblock *b)
+{
+    for (int y = 0; i < b->height; ++y)
+    {
+        for (int x = 0; x < b->width; ++x)
+        {
+            ZZTtile t = zztTileAt(b, x, y);
+            unint8_t ch = zzt_type_to_cp437(t.type, t.color);
+            Color_Bzzt fg = bzzt_get_color(t.color);
+            Renderer_Draw_Cell(r, x, y, ch, fg, COLOR_BLACK);
         }
     }
 }

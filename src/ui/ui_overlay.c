@@ -42,9 +42,15 @@ UIOverlay *UIOverlay_Create(char *name, int id, int x, int y, int z, int w, int 
     o->anchor = anchor;
     o->spacing = spacing;
 
-    o->elements = NULL;
-    o->elements_count = 0;
     o->elements_cap = 1;
+    o->elements_count = 0;
+    o->elements = malloc(sizeof(UIElement *) * o->elements_cap);
+    if (!o->elements)
+    {
+        free(o);
+        Debug_Printf(LOG_UI, "Error allocating elements array for UIOverlay.");
+        return NULL;
+    }
 
     return o;
 }

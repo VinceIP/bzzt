@@ -29,9 +29,11 @@ UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool e
         surface->cells[i].bg = COLOR_BLACK;
     }
 
-    surface->overlays = NULL;
-    surface->overlays_count = 0;
     surface->overlays_cap = 1;
+    surface->overlays_count = 0;
+    surface->overlays = malloc(sizeof(UIOverlay *) * surface->overlays_cap);
+    if (!surface->overlays)
+        goto fail;
     return surface;
 
 fail:

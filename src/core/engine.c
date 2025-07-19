@@ -9,6 +9,7 @@
 #include "camera.h"
 #include "color.h"
 #include "coords.h"
+#include "zzt.h"
 #include "raylib.h"
 
 static void init_cursor(Engine *e)
@@ -30,6 +31,21 @@ static void init_camera(Engine *e)
     e->camera->rect = e->camera->viewport.rect;
     e->camera->cell_width = 16;
     e->camera->cell_height = 32;
+}
+
+static void play_init(Engine *e)
+{
+    ZZTworld *zztWorld = zztWorldLoad("TOWN.ZZT");
+    if (!zztWorld)
+        Debug_Printf(LOG_ENGINE, "Error loading Town");
+    zztBoardSelect(zztWorld, 0);
+    ZZTblock *zztBlock = zztBoardGetBlock(zztWorld);
+    if (!zztBlock)
+        Debug_Printf(LOG_ENGINE, "Error getting block");
+    char *title = zztWorldGetTitle(zztWorld);
+    char *board_name = (char *)zztBoardGetTitle(zztWorld);
+    Debug_Printf(LOG_ENGINE, "Loaded: %s\nBoard: %s", title, board_name);
+    e->loadedBlock = zztBlock;
 }
 
 bool Engine_Init(Engine *e)
@@ -79,6 +95,15 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
                 w->doUnload = true;
             }
             e->ui->visible = true;
+        }
+        else if (i->P_pressed)
+        {
+            e->state = PLAY_MODE;
+            if (e->world)
+            {
+                e->world->doUnload = true;
+            }
+            play_init(e);
         }
         break;
 

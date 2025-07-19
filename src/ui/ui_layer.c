@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-//fix this
+// fix this
 UILayer *UILayer_Create(bool visible, bool enabled)
 {
     UILayer *l = malloc(sizeof(UILayer));
@@ -19,7 +19,13 @@ UILayer *UILayer_Create(bool visible, bool enabled)
     l->name = NULL;
     l->surface_cap = 1;
     l->surface_count = 0;
-    l->surfaces = NULL;
+    l->surfaces = malloc(sizeof(UISurface *) * l->surface_cap);
+    if (!l->surfaces)
+    {
+        free(l);
+        Debug_Printf(LOG_UI, "Error allocating surfaces array for UILayer.");
+        return NULL;
+    }
     l->index = -1;
     return l;
 }

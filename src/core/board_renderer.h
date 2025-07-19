@@ -13,5 +13,7 @@
 #include "renderer.h"
 
 typedef struct Board Board;
+typedef struct ZZTBlock ZZTBlock;
 
-void Renderer_Draw_Board(Renderer *, const Board *);
+void Renderer_Draw_Board(Renderer *r, const Board *b);
+void Renderer_Draw_ZZT_Board(Renderer *r, ZZTblock *b);
