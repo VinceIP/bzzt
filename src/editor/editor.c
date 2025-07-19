@@ -17,13 +17,13 @@ static void ui_init(Engine *e)
 {
     UISurface *sidebarSurface = UISurface_Load_From_Playscii("assets\\ui\\sidebar.psci"); // Load up the sidebar
     sidebarSurface->properties.x = 60;
-    UI_Add_Surface(e->ui, sidebarSurface);                  // Add the surface to the UI
-    UIOverlay *textOverlay = UIOverlay_Create();            // Create a new overlay
-    UISurface_Add_New_Overlay(sidebarSurface, textOverlay); // Add the new overlay to the sidebar surface
+    UI_Add_Surface(e->ui, 0, sidebarSurface); // Add the surface to the UI layer 0
+    UISurface_Add_New_Overlay(sidebarSurface, NULL, 0, 0, 0, 0, 0, 0, 0, true, true, LAYOUT_NONE, ANCHOR_NONE, 0);
+    UIOverlay *textOverlay = sidebarSurface->overlays[sidebarSurface->overlays_count - 1];
     UIOverlay_Add_New_Element(textOverlay,
-                          (UIElement *)UIText_Create_Bound(2, sidebarSurface->h - 2, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor.position.x, "Cursor x: %d", BIND_INT)); // Create text element that prints cursor x
+                              (UIElement *)UIText_Create_Bound(2, sidebarSurface->properties.h - 2, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor.position.x, "Cursor x: %d", BIND_INT)); // Create text element that prints cursor x
     UIOverlay_Add_New_Element(textOverlay,
-                          (UIElement *)UIText_Create_Bound(2, sidebarSurface->properties.h - 1, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor.position.y, "Cursor y: %d", BIND_INT));
+                              (UIElement *)UIText_Create_Bound(2, sidebarSurface->properties.h - 1, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor.position.y, "Cursor y: %d", BIND_INT));
 }
 
 void Editor_Init(Engine *e)

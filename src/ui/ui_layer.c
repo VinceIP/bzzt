@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-UILayer *UILayer_Create(bool visible, bool enabled, char *name, int id)
+//fix this
+UILayer *UILayer_Create(bool visible, bool enabled)
 {
     UILayer *l = malloc(sizeof(UILayer));
     if (!l)
@@ -14,8 +15,8 @@ UILayer *UILayer_Create(bool visible, bool enabled, char *name, int id)
     }
     l->visible = visible;
     l->enabled = enabled;
-    l->id = id;
-    l->name = name;
+    l->id = 0;
+    l->name = NULL;
     l->surface_cap = 1;
     l->surface_count = 0;
     l->surfaces = NULL;

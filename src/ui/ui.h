@@ -176,7 +176,9 @@ void UI_Destroy(UI *ui);
  * @param enabled Is enabled on creation
  * @return UILayer*
  */
-UILayer *UI_Add_New_UILayer(UI *ui, bool visible, bool enabled);
+UILayer *UI_Add_New_Layer(UI *ui, bool visible, bool enabled);
+
+void UI_Add_Surface(UI *ui, int targetIndex, UISurface *s);
 
 /**
  * @brief Creates a new UILayer.
@@ -351,7 +353,8 @@ void UIElement_Destroy(UIElement *e);
  * @param ud reference to data this text displays
  * @return UIElement_Text*
  */
-UIElement_Text *UIText_Create(UIElement *e, Color_Bzzt fg, Color_Bzzt bg, bool wrap, const char *(*cb)(void *ud), void *ud);
+UIElement_Text *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool wrap, const char *(*cb)(void *ud), void *ud);
+
 UIElement_Text *UIText_Create_Bound(int x, int y, Color_Bzzt fg, Color_Bzzt bg,
                                     const void *ptr, const void *fmt, BindType type);
 UIButton *UIButton_Create(int x, int y, const char *caption,

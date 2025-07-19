@@ -9,6 +9,7 @@
  *
  */
 
+/*
 #include <cyaml/cyaml.h>
 #include "ui.h"
 #include "color.h"
@@ -65,3 +66,5 @@ static const cyaml_schema_field_t btn_fields[] = {
 static const cyaml_schema_value_t btn_schema = {
     CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, UIButton, btn_fields)
 };
+
+*/

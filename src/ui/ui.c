@@ -89,16 +89,22 @@ void UI_Add_Surface(UI *ui, int targetIndex, UISurface *s)
         return;
     }
 
-    if (ui->layer_count < targetIndex)
+    if (ui->layer_count < targetIndex || ui->layer_count == 0)
     {
-        Debug_Printf(LOG_UI, "UI_Add_Surface targeted layer %d, but that layer doesn't exist. Adding it now.", targetIndex);
-        for (int i = ui->layer_count; i < targetIndex; ++i)
+        if (ui->layer_count == 0)
         {
-            UI_Add_New_UILayer(ui, true, true);
+            UI_Add_New_Layer(ui, true, true); // Add initial layer if none exist
+        }
+        Debug_Printf(LOG_UI, "UI_Add_Surface targeted layer %d, but that layer doesn't exist. Adding it now.", targetIndex);
+        for (int i = ui->layer_count; i < targetIndex; ++i) // Runs until we have enough layers to reach the target layer index. This is bad.
+        {
+            UI_Add_New_Layer(ui, true, true);
+            Debug_Printf(LOG_UI, "layer count: %d", ui->layer_count);
         }
     }
 
     UILayer *layer = ui->layers[targetIndex];
+
     if (!layer)
         Debug_Printf(LOG_UI, "UI_Add_Surface was unable to target layer at index: %d", targetIndex);
 
@@ -111,11 +117,10 @@ void UI_Add_Surface(UI *ui, int targetIndex, UISurface *s)
         layer->surfaces = tmp;
         layer->surface_cap = new_cap;
     }
-
     layer->surfaces[layer->surface_count++] = s;
 }
 
-UILayer *UI_Add_New_UILayer(UI *ui, bool visible, bool enabled)
+UILayer *UI_Add_New_Layer(UI *ui, bool visible, bool enabled)
 {
     Debug_Printf(LOG_UI, "Adding a layer to UI.");
     if (!ui)

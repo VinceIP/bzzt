@@ -8,8 +8,8 @@
 
 static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement *e)
 {
-    int base_x = s->x + ov->x + e->x;
-    int base_y = s->y + ov->y + e->y;
+    int base_x = s->properties.x + ov->properties.x + e->properties.x;
+    int base_y = s->properties.y + ov->properties.y + e->properties.y;
 
     switch (e->type)
     {
@@ -19,7 +19,7 @@ static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement 
         const char *str = t->textCallback(t->ud);
         int x = base_x;
         int y = base_y;
-        int maxWidth = t->wrap ? s->w - (x - s->x) : s->w;
+        int maxWidth = t->wrap ? s->properties.w - (x - s->properties.x) : s->properties.w;
         int len = strlen(str);
         for (int i = 0; i < len; ++i)
         {
@@ -72,7 +72,7 @@ static void draw_ui_overlay(Renderer *r, UISurface *s, UIOverlay *o)
     for (int i = 0; i < o->elements_count; ++i)
     {
         UIElement *e = o->elements[i];
-        if (e->visible)
+        if (e->properties.visible)
             draw_ui_element(r, s, o, e);
     }
 }
@@ -81,8 +81,8 @@ static void draw_ui_surface(Renderer *r, UISurface *s)
 {
     int cell_count = s->cell_count;
     Cell *cells = s->cells;
-    int width = s->w;
-    int height = s->h;
+    int width = s->properties.w;
+    int height = s->properties.h;
     // If any cells live on this surface, draw them
     if (cells && cell_count > 0)
     {
@@ -91,8 +91,8 @@ static void draw_ui_surface(Renderer *r, UISurface *s)
             Cell c = cells[i];
             if (c.visible) // Skip invisible cells
             {
-                int x = s->x + (i % width);
-                int y = s->y + (i / width);
+                int x = s->properties.x + (i % width);
+                int y = s->properties.y + (i / width);
                 unsigned char glyph = c.glyph == 255 ? 32 : c.glyph;
                 Renderer_Draw_Cell(r, x, y, glyph, c.fg, c.bg);
             }
@@ -102,7 +102,7 @@ static void draw_ui_surface(Renderer *r, UISurface *s)
     for (int i = 0; i < s->overlays_count; ++i)
     {
         UIOverlay *o = s->overlays[i];
-        if (o->visible)
+        if (o->properties.visible)
             draw_ui_overlay(r, s, o);
     }
 }
@@ -114,7 +114,7 @@ static void draw_ui_layer(Renderer *r, UILayer *l)
     for (int i = 0; i < surface_count; ++i)
     {
         UISurface *s = l->surfaces[i];
-        if (s->visible) // Skip invisible surfaces
+        if (s->properties.visible) // Skip invisible surfaces
         {
             draw_ui_surface(r, s);
         }

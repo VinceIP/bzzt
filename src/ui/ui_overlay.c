@@ -108,7 +108,7 @@ void UIOverlay_Add_New_Element(UIOverlay *o, UIElement *e)
 
 void UIOverlay_Update(UIOverlay *o)
 {
-    if (!o || !o->visible)
+    if (!o || !o->properties.visible)
         return;
 
     for (int i = 0; i < o->elements_count; ++i)
@@ -129,5 +129,6 @@ void UIOverlay_Print(UIOverlay *ov, Color_Bzzt fg, Color_Bzzt bg, bool wrap, con
     vsnprintf(buffer, sizeof(buffer), fmt, args);
     va_end(args);
 
-    UISurface_DrawText(ov->surface, buffer, ov->x, ov->y, fg, bg, wrap, ov->surface->w);
+    UISurface_DrawText(ov->surface, buffer, ov->properties.x, ov->properties.y,
+                       fg, bg, wrap, ov->surface->properties.w);
 }

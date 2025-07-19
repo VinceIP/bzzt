@@ -76,13 +76,27 @@ void UIElement_Update(UIElement *e)
     }
 }
 
-UIElement_Text *UIText_Create(UIElement *e, Color_Bzzt fg, Color_Bzzt bg, bool wrap, const char *(*cb)(void *ud), void *ud)
+// Needs fixed
+UIElement_Text *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool wrap, const char *(*cb)(void *ud), void *ud)
 {
     UIElement_Text *t = malloc(sizeof(UIElement_Text));
     if (!t)
         Debug_Printf(LOG_UI, "Error allocating UIText.");
 
-    t->base = e;
+    // initialize base element
+    t->base.type = UI_ELEM_TEXT;
+    t->base.properties.name = NULL;
+    t->base.properties.id = 0;
+    t->base.properties.x = x;
+    t->base.properties.y = y;
+    t->base.properties.z = 0;
+    t->base.properties.w = 0;
+    t->base.properties.h = 0;
+    t->base.properties.padding = 0;
+    t->base.properties.visible = true;
+    t->base.properties.enabled = true;
+    t->base.properties.parent = NULL;
+    t->base.update = NULL;
     t->fg = fg;
     t->bg = bg;
     t->textCallback = cb;
@@ -92,12 +106,13 @@ UIElement_Text *UIText_Create(UIElement *e, Color_Bzzt fg, Color_Bzzt bg, bool w
     return t;
 }
 
+// needs fixed
 UIElement_Text *UIText_Create_Bound(int x, int y, Color_Bzzt fg, Color_Bzzt bg, const void *ptr, const void *fmt, BindType type)
 {
     TextBinding *b = UIBinding_Text_Create(ptr, fmt, type);
     if (!b)
         return NULL;
-    return UIText_Create(x, y, fg, bg, UIBinding_Text_Format, b);
+    return UIText_Create(x, y, fg, bg, false, UIBinding_Text_Format, b);
 }
 
 UIButton *UIButton_Create(int x, int y, const char *caption, UIButtonAction cb, void *ud)
@@ -107,15 +122,22 @@ UIButton *UIButton_Create(int x, int y, const char *caption, UIButtonAction cb, 
         Debug_Printf(LOG_UI, "Error allocating UIButton.");
 
     b->base.type = UI_ELEM_BUTTON;
-    b->base.visible = true;
-    b->base.x = x;
-    b->base.y = y;
+    b->base.properties.name = NULL;
+    b->base.properties.id = 0;
+    b->base.properties.x = x;
+    b->base.properties.y = y;
+    b->base.properties.z = 0;
+    b->base.properties.w = 0;
+    b->base.properties.h = 0;
+    b->base.properties.padding = 0;
+    b->base.properties.visible = true;
+    b->base.properties.enabled = true;
+    b->base.properties.parent = NULL;
     b->base.update = NULL;
 
     b->onClick = cb;
     b->ud = ud;
 
-    b->label = UIText_Create(0, 0, COLOR_WHITE, COLOR_BLACK, pass_through_caption, (void *)caption);
-
+    b->label = UIText_Create(0, 0, COLOR_WHITE, COLOR_BLACK, false, pass_through_caption, (void *)caption);
     return b;
 }
