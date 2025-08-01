@@ -5,7 +5,7 @@
 
 #define START_CAP 64
 
-Bzzt_Board *Board_Create(const char *name, int w, int h)
+Bzzt_Board *Bzzt_Board_Create(const char *name, int w, int h)
 {
     Bzzt_Board *b = malloc(sizeof(Bzzt_Board));
     if (!b)
@@ -37,7 +37,7 @@ static int board_grow(Bzzt_Board *b)
     return 0;
 }
 
-void Board_Destroy(Bzzt_Board *b)
+void Bzzt_Board_Destroy(Bzzt_Board *b)
 {
     for (int i = 0; i < b->object_count; ++i)
     {
@@ -48,7 +48,7 @@ void Board_Destroy(Bzzt_Board *b)
     free(b);
 }
 
-Bzzt_Object *Board_Add_Obj(Bzzt_Board *b, Bzzt_Object *o)
+Bzzt_Object *Bzzt_Board_Add_Object(Bzzt_Board *b, Bzzt_Object *o)
 {
     if (b->object_count == b->object_cap && board_grow(b) != 0)
         return NULL;
@@ -58,7 +58,7 @@ Bzzt_Object *Board_Add_Obj(Bzzt_Board *b, Bzzt_Object *o)
     return o;
 }
 
-void Board_Remove_Obj(Bzzt_Board *b, int id)
+void Bzzt_Board_Remove_Object(Bzzt_Board *b, int id)
 {
     for (int i = 0; i < b->object_count; ++i)
     {
@@ -71,7 +71,7 @@ void Board_Remove_Obj(Bzzt_Board *b, int id)
     }
 }
 
-Bzzt_Object *Board_Get_Obj(Bzzt_Board *b, int id)
+Bzzt_Object *Bzzt_Board_Get_Object(Bzzt_Board *b, int id)
 {
     for (int i = 0; i < b->object_count; ++i)
     {
@@ -81,4 +81,22 @@ Bzzt_Object *Board_Get_Obj(Bzzt_Board *b, int id)
         }
     }
     return NULL;
+}
+
+Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw)
+{
+    ZZTblock *block = zztBoardGetBlock(zw);
+    ZZTboard *board = zztBoardGetCurPtr(zw);
+    Bzzt_Board *bzztBoard = Bzzt_Board_Create(zztBoardGetTitle(zw), ZZT_BOARD_DEFAULT_W, ZZT_BOARD_DEFAULT_H);
+    for (int y = 0; y < bzztBoard->height; ++y)
+    {
+        for (int x = 0; x < bzztBoard->width; ++x)
+        {
+            ZZTtile *zztTile = zztTileAt(block, x, y);
+            Bzzt_Object *o = Bzzt_Object_From_ZZT_Tile(zztTile, x, y);
+
+            Bzzt_Board_Add_Object(bzztBoard, o);
+        }
+    }
+    return bzztBoard;
 }

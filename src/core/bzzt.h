@@ -12,8 +12,11 @@
 #pragma once
 #include "raylib.h"
 #include "color.h"
+#include "zzt.h"
 #define BZZT_BOARD_DEFAULT_W 80
 #define BZZT_BOARD_DEFAULT_H 25
+#define ZZT_BOARD_DEFAULT_W 60
+#define ZZT_BOARD_DEFAULT_H 25
 #define BZZT_VIEWPORT_DEFAULT_W 60
 #define BZZT_VIEWPORT_DEFAULT_H 25
 #define BZZT_MAX_PATH_LENGTH 32
@@ -104,6 +107,9 @@ Bzzt_Object *Bzzt_Object_Create(uint8_t glyph, Color_Bzzt fg, Color_Bzzt bg, int
 // Destroy a Bzzt_Object
 void Bzzt_Object_Destroy(Bzzt_Object *o);
 
+// Convert a ZZT tile to a Bzzt Object
+Bzzt_Object *Bzzt_Object_From_ZZT_Tile(ZZTtile *zztTile, int x, int y);
+
 /* -- --*/
 
 /* -- Boards --*/
@@ -112,27 +118,34 @@ void Bzzt_Object_Destroy(Bzzt_Object *o);
 Bzzt_Board *Bzzt_Board_Create(const char *name, int w, int h);
 
 // Destroy a Bzzt board.
-void Board_Destroy(Bzzt_Board *b);
+void Bzzt_Board_Destroy(Bzzt_Board *b);
 
 // Add an object to a board's object array.
-Bzzt_Object *Board_Add_Obj(Bzzt_Board *b, Bzzt_Object *o);
+Bzzt_Object *Bzzt_Board_Add_Object(Bzzt_Board *b, Bzzt_Object *o);
 
 // Remove an object from a board by its unique object id.
-void Board_Remove_Obj(Bzzt_Board *b, int id);
+void Bzzt_Board_Remove_Object(Bzzt_Board *b, int id);
 
 // Return a Bzzt object by its unique object id.
-Bzzt_Object *Board_Get_Obj(Bzzt_Board *b, int id);
+Bzzt_Object *Bzzt_Board_Get_Object(Bzzt_Board *b, int id);
+
+// Convert a ZZT block (decompressed board) to a Bzzt board
+Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw);
 
 /* -- --*/
 
 /* -- World --*/
 
 Bzzt_World *Bzzt_World_Create(char *title);
+void Bzzt_World_Add_Board(Bzzt_World *world, Bzzt_Board *board);
 int Bzzt_World_Load(Bzzt_World *w, const char *path);
 int Bzzt_World_Save(Bzzt_World *w, const char *path);
 void Bzzt_World_Unload(Bzzt_World *w);
 
 void Bzzt_World_Update(Bzzt_World *w, InputState *in);
+
+// Convert a ZZT world to a Bzzt world
+Bzzt_World *Bzzt_World_From_ZZT_World(char *file);
 
 /* -- --*/
 
