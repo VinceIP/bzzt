@@ -12,9 +12,9 @@
 #pragma once
 #include "renderer.h"
 
-typedef struct Board Board;
+typedef struct Bzzt_Board Bzzt_Board;
 typedef struct ZZTblock ZZTblock;
 typedef struct ZZTworld ZZTworld;
 
-void Renderer_Draw_Board(Renderer *, const Board *);
+void Renderer_Draw_Board(Renderer *, const Bzzt_Board *);
 void Renderer_Draw_ZZT_Board(Renderer *r, ZZTworld *w, ZZTblock *b);

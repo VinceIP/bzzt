@@ -13,7 +13,7 @@
 
 struct Color;
 typedef struct Renderer Renderer;
-typedef struct Cell Cell;
+typedef struct Bzzt_Cell Bzzt_Cell;
 typedef struct cJSON cJSON;
 typedef struct UISurface UISurface;
 typedef struct UIOverlay UIOverlay;
@@ -111,7 +111,7 @@ typedef struct UIButton
 typedef struct UISurface
 {
     UIProperties properties;
-    Cell *cells; // Default cells this surface holds - could be none, could be a background
+    Bzzt_Cell *cells; // Default cells this surface holds - could be none, could be a background
     int cell_count;
     UIOverlay **overlays;
     int overlays_count, overlays_cap;

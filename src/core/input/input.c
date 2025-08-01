@@ -4,7 +4,7 @@
 #include "input.h"
 #include "debugger.h"
 #include "coords.h"
-#include "camera.h"
+#include "bzzt.h"
 
 void Input_Poll(InputState *s)
 {
@@ -80,7 +80,7 @@ static Vector2 handle_key_move(Vector2 pos, Rectangle bounds, InputState *in)
     return pos;
 }
 
-static Vector2 handle_mouse_move(MouseState *m, BzztCamera *c, Rectangle bounds, Vector2 currentPos)
+static Vector2 handle_mouse_move(MouseState *m, Bzzt_Camera *c, Rectangle bounds, Vector2 currentPos)
 {
     Vector2 pos = Camera_ScreenToCell(c, m->screenPosition); // Translate screen coords to world coords
 
@@ -99,7 +99,7 @@ static Vector2 handle_mouse_move(MouseState *m, BzztCamera *c, Rectangle bounds,
     return pos;
 }
 
-Vector2 Handle_Cursor_Move(Vector2 currentPos, InputState *in, MouseState *m, BzztCamera *c, Rectangle bounds)
+Vector2 Handle_Cursor_Move(Vector2 currentPos, InputState *in, MouseState *m, Bzzt_Camera *c, Rectangle bounds)
 {
     if (in->anyDirPressed) // if arrow keys are pressed
     {

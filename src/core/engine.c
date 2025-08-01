@@ -2,14 +2,13 @@
 #include <stdlib.h>
 #include "debugger.h"
 #include "engine.h"
-#include "world.h"
 #include "input.h"
 #include "editor.h"
 #include "ui.h"
-#include "camera.h"
 #include "color.h"
 #include "coords.h"
 #include "zzt.h"
+#include "bzzt.h"
 #include "raylib.h"
 
 static void init_cursor(Engine *e)
@@ -26,7 +25,7 @@ static void init_cursor(Engine *e)
 
 static void init_camera(Engine *e)
 {
-    e->camera = malloc(sizeof(BzztCamera));
+    e->camera = malloc(sizeof(Bzzt_Camera));
     e->camera->viewport.rect = (Rectangle){0, 0, 80, 25}; // remove magic nums
     e->camera->rect = e->camera->viewport.rect;
     e->camera->cell_width = 16;
@@ -35,7 +34,7 @@ static void init_camera(Engine *e)
 
 static void play_init(Engine *e)
 {
-    ZZTworld *zztWorld = zztWorldLoad("BURGERJ.ZZT");
+    ZZTworld *zztWorld = zztWorldLoad("frost1.zzt");
     e->loadedWorld = zztWorld;
     if (!zztWorld)
         Debug_Printf(LOG_ENGINE, "Error loading Town");
@@ -84,7 +83,7 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
     switch (e->state)
     {
     case SPLASH_MODE:
-        World_Update(e->world, i);
+        Bzzt_World_Update(e->world, i);
 
         if (i->E_pressed)
         {
@@ -92,7 +91,7 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
             Editor_Init(e);
             if (e->world)
             {
-                World *w = e->world;
+                Bzzt_World *w = e->world;
                 w->doUnload = true;
             }
             e->ui->visible = true;
@@ -116,7 +115,7 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
         if (i->Q_pressed)
         {
             e->state = SPLASH_MODE;
-            e->world = World_Create("Title Screen");
+            e->world = Bzzt_World_Create("Title Screen");
         }
 
         break;
@@ -132,7 +131,7 @@ void Engine_Quit(Engine *e)
         return;
     if (e->world)
     {
-        World_Unload(e->world);
+        Bzzt_World_Unload(e->world);
         e->world = NULL;
     }
 }

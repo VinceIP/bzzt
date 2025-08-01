@@ -1,8 +1,7 @@
 #include "ui.h"
 #include "cJSON.h"
-#include "cell.h"
+#include "bzzt.h"
 #include "color.h"
-#include "text.h"
 #include "debugger.h"
 #include "engine.h"
 #include <stdio.h>

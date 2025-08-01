@@ -11,7 +11,6 @@
 
 #include "debugger.h"
 #include "color.h"
-#include "text.h"
 #include "ui.h"
 #include <stdbool.h>
 #include <stdio.h>

@@ -3,9 +3,9 @@
 #include "raylib.h"
 #include "color.h"
 
-typedef struct World World;
+typedef struct Bzzt_World Bzzt_World;
 typedef struct UI UI;
-typedef struct BzztCamera BzztCamera;
+typedef struct Bzzt_Camera Bzzt_Camera;
 typedef struct InputState InputState;
 typedef struct MouseState MouseState;
 typedef struct ZZTblock ZZTblock;
@@ -40,10 +40,10 @@ typedef struct Engine
 {
     EState state;
     UI *ui;
-    World *world;
+    Bzzt_World *world;
     Font font;
     Cursor cursor;
-    BzztCamera *camera;
+    Bzzt_Camera *camera;
     ZZTblock *loadedBlock;
     ZZTworld *loadedWorld;
     // Renderer renderer;

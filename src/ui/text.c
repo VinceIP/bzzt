@@ -1,6 +1,5 @@
-#include "text.h"
 #include "ui.h"
-#include "cell.h"
+#include "bzzt.h"
 #include "color.h"
 #include "code_page_lut.h"
 #include <stdbool.h>
@@ -55,7 +54,7 @@ bool UISurface_DrawText(UISurface *surface, const char *utf8, int x, int y, Colo
         ////
         uint8_t glyph = unicode_to_cp437(c);               // Get a CP437 glyph
         int index = cursY * surface->properties.w + cursX; // Calculate flat array index
-        Cell *cell = &surface->cells[index];               // Get a cell and set its properties
+        Bzzt_Cell *cell = &surface->cells[index];               // Get a cell and set its properties
         cell->glyph = glyph;
         cell->fg = fg;
         cell->bg = bg;

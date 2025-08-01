@@ -6,7 +6,7 @@
 #include "renderer.h"
 #include "engine.h"
 #include "color.h"
-#include "world.h"
+#include "bzzt.h"
 #include "board_renderer.h"
 #include "ui_renderer.h"
 #include "zzt.h"

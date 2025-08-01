@@ -9,7 +9,7 @@
  *
  */
 #pragma once
-#include "camera.h"
+#include "bzzt.h"
 #include "raylib.h"
 
 /**
@@ -20,7 +20,7 @@
  * @return true
  * @return false
  */
-static inline bool Viewport_Contains(const Viewport *vp, Vector2 p)
+static inline bool Viewport_Contains(const Bzzt_Viewport *vp, Vector2 p)
 {
     return p.x >= vp->rect.x && p.x < vp->rect.x + vp->rect.width &&
            p.y >= vp->rect.y && p.y < vp->rect.y + vp->rect.height;
@@ -33,7 +33,7 @@ static inline bool Viewport_Contains(const Viewport *vp, Vector2 p)
  * @param p
  * @return Vector2
  */
-static inline Vector2 Camera_ScreenToCell(const BzztCamera *cam, Vector2 p)
+static inline Vector2 Camera_ScreenToCell(const Bzzt_Camera *cam, Vector2 p)
 {
     int relX = (int)p.x - cam->rect.x;
     int relY = (int)p.y - cam->rect.y;

@@ -662,6 +662,8 @@ extern "C"
 			*bg_idx |= 8; /* bright background / blink flag */
 	}
 
+	ZZTtile _zzt_get_undertile(ZZTtile tile);
+
 #endif /* ZZT_DISPLAY_TABLES_H */
 
 #ifdef __cplusplus

@@ -1,8 +1,7 @@
 #include "ui_renderer.h"
 #include "ui.h"
-#include "text.h"
 #include "code_page_lut.h"
-#include "object.h"
+#include "bzzt.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -80,7 +79,7 @@ static void draw_ui_overlay(Renderer *r, UISurface *s, UIOverlay *o)
 static void draw_ui_surface(Renderer *r, UISurface *s)
 {
     int cell_count = s->cell_count;
-    Cell *cells = s->cells;
+    Bzzt_Cell *cells = s->cells;
     int width = s->properties.w;
     int height = s->properties.h;
     // If any cells live on this surface, draw them
@@ -88,7 +87,7 @@ static void draw_ui_surface(Renderer *r, UISurface *s)
     {
         for (int i = 0; i < cell_count; i++)
         {
-            Cell c = cells[i];
+            Bzzt_Cell c = cells[i];
             if (c.visible) // Skip invisible cells
             {
                 int x = s->properties.x + (i % width);

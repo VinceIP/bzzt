@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include "raylib.h"
 
-typedef struct BzztCamera BzztCamera;
+typedef struct Bzzt_Camera Bzzt_Camera;
 
 typedef struct InputState
 {
@@ -31,4 +31,4 @@ typedef struct MouseState
 void Input_Poll(InputState *out);
 void Mouse_Poll(MouseState *out);
 void Mouse_Reset(MouseState *out);
-Vector2 Handle_Cursor_Move(Vector2 currentPos, InputState *in, MouseState *m, BzztCamera *c, Rectangle bounds);
+Vector2 Handle_Cursor_Move(Vector2 currentPos, InputState *in, MouseState *m, Bzzt_Camera *c, Rectangle bounds);

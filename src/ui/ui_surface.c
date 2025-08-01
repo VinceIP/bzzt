@@ -1,5 +1,5 @@
 #include "ui.h"
-#include "cell.h"
+#include "bzzt.h"
 #include "debugger.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -16,7 +16,7 @@ UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool e
     surface->properties = props;
 
     surface->cell_count = w * h;
-    surface->cells = malloc(sizeof(Cell) * surface->cell_count);
+    surface->cells = malloc(sizeof(Bzzt_Cell) * surface->cell_count);
     if (!surface->cells)
         goto fail;
 

@@ -5,7 +5,7 @@
 
 typedef struct UI UI;
 typedef struct Engine Engine;
-typedef struct Board Board;
+typedef struct Bzzt_Board Bzzt_Board;
 
 typedef struct ZZTblock ZZTblock;
 

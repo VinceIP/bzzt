@@ -4,10 +4,8 @@
 #include "editor.h"
 #include "engine.h"
 #include "input.h"
-#include "cell.h"
+#include "bzzt.h"
 #include "ui.h"
-#include "text.h"
-#include "camera.h"
 #include "debugger.h"
 
 int testX = 0;

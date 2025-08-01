@@ -1,9 +1,9 @@
 #include <stdlib.h>
-#include "object.h"
+#include "bzzt.h"
 
-Object *Object_Create(uint8_t glyph, Color_Bzzt fg, Color_Bzzt bg, int x, int y)
+Bzzt_Object *Bzzt_Object_Create(uint8_t glyph, Color_Bzzt fg, Color_Bzzt bg, int x, int y)
 {
-    Object *o = (Object *)malloc(sizeof(Object));
+    Bzzt_Object *o = (Bzzt_Object *)malloc(sizeof(Bzzt_Object));
     if (!o)
         return NULL;
     o->id = 0;
@@ -16,7 +16,7 @@ Object *Object_Create(uint8_t glyph, Color_Bzzt fg, Color_Bzzt bg, int x, int y)
     return o;
 }
 
-void Object_Destroy(Object *o)
+void Bzzt_Object_Destroy(Bzzt_Object *o)
 {
     if (!o)
         return;

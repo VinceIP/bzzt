@@ -1,20 +1,19 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "board.h"
-#include "object.h"
+#include "bzzt.h"
 
 #define START_CAP 64
 
-Board *Board_Create(const char *name, int w, int h)
+Bzzt_Board *Board_Create(const char *name, int w, int h)
 {
-    Board *b = malloc(sizeof(Board));
+    Bzzt_Board *b = malloc(sizeof(Bzzt_Board));
     if (!b)
         return NULL;
     b->width = w;
     b->height = h;
     b->object_cap = START_CAP;
-    b->objects = malloc(sizeof(Object *) * START_CAP);
+    b->objects = malloc(sizeof(Bzzt_Object *) * START_CAP);
     b->name = strdup(name ? name : "Untitled");
     b->object_count = 0;
     b->object_next_id = 1;
@@ -26,10 +25,10 @@ Board *Board_Create(const char *name, int w, int h)
  *
  * @param b Target board.
  */
-static int board_grow(Board *b)
+static int board_grow(Bzzt_Board *b)
 {
     int new_cap = b->object_cap * 2;
-    Object **tmp = realloc(b->objects, new_cap * sizeof(Object *));
+    Bzzt_Object **tmp = realloc(b->objects, new_cap * sizeof(Bzzt_Object *));
     if (!tmp)
         return -1;
 
@@ -38,18 +37,18 @@ static int board_grow(Board *b)
     return 0;
 }
 
-void Board_Destroy(Board *b)
+void Board_Destroy(Bzzt_Board *b)
 {
     for (int i = 0; i < b->object_count; ++i)
     {
-        Object_Destroy(b->objects[i]);
+        Bzzt_Object_Destroy(b->objects[i]);
     }
     free(b->objects);
     free(b->name);
     free(b);
 }
 
-Object *Board_Add_Obj(Board *b, Object *o)
+Bzzt_Object *Board_Add_Obj(Bzzt_Board *b, Bzzt_Object *o)
 {
     if (b->object_count == b->object_cap && board_grow(b) != 0)
         return NULL;
@@ -59,20 +58,20 @@ Object *Board_Add_Obj(Board *b, Object *o)
     return o;
 }
 
-void Board_Remove_Obj(Board *b, int id)
+void Board_Remove_Obj(Bzzt_Board *b, int id)
 {
     for (int i = 0; i < b->object_count; ++i)
     {
         if (b->objects[i]->id == id)
         {
-            Object_Destroy(b->objects[i]);
+            Bzzt_Object_Destroy(b->objects[i]);
             b->objects[i] = b->objects[--b->object_count];
             return;
         }
     }
 }
 
-Object *Board_Get_Obj(Board *b, int id)
+Bzzt_Object *Board_Get_Obj(Bzzt_Board *b, int id)
 {
     for (int i = 0; i < b->object_count; ++i)
     {

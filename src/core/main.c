@@ -3,7 +3,7 @@
 #include "raylib.h"
 #include "engine.h"
 #include "input.h"
-#include "world.h"
+#include "bzzt.h"
 #include "renderer.h"
 #include "debugger.h"
 
@@ -26,7 +26,7 @@ int main(void)
     Engine e;
     Engine_Init(&e);
     e.font = font;
-    e.world = World_Create("New World");
+    e.world = Bzzt_World_Create("New World");
     Renderer rend;
 
     Renderer_Init(&rend, ASSET("fonts/bzzt_font_8x16.png"));

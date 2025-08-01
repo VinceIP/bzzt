@@ -1,5 +1,4 @@
 #include "ui.h"
-#include "text.h"
 #include "color.h"
 #include "debugger.h"
 #include <stdlib.h>
