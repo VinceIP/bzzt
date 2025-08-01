@@ -29,7 +29,7 @@ int main(void)
     e.world = Bzzt_World_Create("New World");
     Renderer rend;
 
-    Renderer_Init(&rend, ASSET("fonts/bzzt_font_8x16.png"));
+    Renderer_Init(&rend, ASSET("fonts/dos437.png"));
 
     InputState in = {0};
     MouseState mo = {};

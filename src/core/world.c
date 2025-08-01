@@ -84,26 +84,43 @@ void Bzzt_World_Add_Board(Bzzt_World *w, Bzzt_Board *b)
 
 Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
 {
-    ZZTworld zw = zztWorldLoad(file);
     if (!file)
-        Debug_Printf(LOG_ENGINE, "Invalid or unprovided ZZT filename.");
-    if (!zw)
-        Debug_Printf(LOG_ENGINE, "Error loading ZZT world %s", file);
-
-    Bzzt_World *bw = Bzzt_World_Create(zw.filename);
-    bw->file_path = file;
-    bw->author = "Blank";
-
-    int boardCount = zw.header->boardcount;
-
-    for (int i = 0; i < boardCount; ++i)
     {
-        Bzzt_Board *b;
-        ZZTblock *block;
-        block = zztBoardGetBlock(zw);
-        b = Bzzt_Board_From_ZZT_Board(block);
+        Debug_Printf(LOG_ENGINE, "Invalid or unprovided ZZT filename.");
+        return NULL;
+    }
+
+    ZZTworld *zw = zztWorldLoad(file);
+    if (!zw)
+    {
+        Debug_Printf(LOG_ENGINE, "Error loading ZZT world %s", file);
+        return NULL;
+    }
+
+    Bzzt_World *bw = Bzzt_World_Create((char *)zztWorldGetTitle(zw));
+    strncpy(bw->file_path, file, sizeof(bw->file_path) - 1);
+    strncpy(bw->author, "Blank", sizeof(bw->author) - 1);
+
+    // Remove default title screen created by Bzzt_World_Create
+    if (bw->boards_count > 0 && bw->boards[0])
+    {
+        Bzzt_Board_Destroy(bw->boards[0]);
+        bw->boards[0] = NULL;
+        bw->boards_count = 0;
+        bw->boards_current = 0;
+        bw->player = NULL;
+    }
+
+    int boartCount = zztWorldGetBoardcount(zw);
+
+    for (int i = 0; i < boartCount; ++i)
+    {
+        zztBoardSelect(zw, i);
+        Bzzt_Board *b = Bzzt_Board_From_ZZT_Board(zw);
         Bzzt_World_Add_Board(bw, b);
     }
+
+    bw->boards_current = (int)zztWorldGetStartboard(zw);
 
     zztWorldFree(zw);
 

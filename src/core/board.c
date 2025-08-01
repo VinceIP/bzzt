@@ -86,17 +86,15 @@ Bzzt_Object *Bzzt_Board_Get_Object(Bzzt_Board *b, int id)
 Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw)
 {
     ZZTblock *block = zztBoardGetBlock(zw);
-    ZZTboard *board = zztBoardGetCurPtr(zw);
-    Bzzt_Board *bzztBoard = Bzzt_Board_Create(zztBoardGetTitle(zw), ZZT_BOARD_DEFAULT_W, ZZT_BOARD_DEFAULT_H);
+    Bzzt_Board *bzztBoard = Bzzt_Board_Create(zztBoardGetTitle(zw), block->width, block->height);
     for (int y = 0; y < bzztBoard->height; ++y)
     {
         for (int x = 0; x < bzztBoard->width; ++x)
         {
-            ZZTtile *zztTile = zztTileAt(block, x, y);
-            Bzzt_Object *o = Bzzt_Object_From_ZZT_Tile(zztTile, x, y);
-
+            Bzzt_Object *o = Bzzt_Object_From_ZZT_Tile(block, x, y);
             Bzzt_Board_Add_Object(bzztBoard, o);
         }
     }
+
     return bzztBoard;
 }

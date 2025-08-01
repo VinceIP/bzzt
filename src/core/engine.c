@@ -7,7 +7,6 @@
 #include "ui.h"
 #include "color.h"
 #include "coords.h"
-#include "zzt.h"
 #include "bzzt.h"
 #include "raylib.h"
 
@@ -34,18 +33,11 @@ static void init_camera(Engine *e)
 
 static void play_init(Engine *e)
 {
-    ZZTworld *zztWorld = zztWorldLoad("frost1.zzt");
-    e->loadedWorld = zztWorld;
-    if (!zztWorld)
-        Debug_Printf(LOG_ENGINE, "Error loading Town");
-    zztBoardSelect(zztWorld, 0);
-    ZZTblock *zztBlock = zztBoardGetBlock(zztWorld);
-    if (!zztBlock)
-        Debug_Printf(LOG_ENGINE, "Error getting block");
-    char *title = zztWorldGetTitle(zztWorld);
-    char *board_name = (char *)zztBoardGetTitle(zztWorld);
-    Debug_Printf(LOG_ENGINE, "Loaded: %s\nBoard: %s", title, board_name);
-    e->loadedBlock = zztBlock;
+    char *file = "town.zzt";
+    e->world = Bzzt_World_From_ZZT_World(file);
+    if (!e->world)
+        Debug_Printf(LOG_ENGINE, "Error loading ZZT world %s", file);
+    e->world->boards_current = 1;
 }
 
 bool Engine_Init(Engine *e)

@@ -9,7 +9,6 @@
 #include "bzzt.h"
 #include "board_renderer.h"
 #include "ui_renderer.h"
-#include "zzt.h"
 
 #define TRANSPARENT_GLYPH 255
 
@@ -31,8 +30,8 @@ bool Renderer_Init(Renderer *r, const char *path)
         return false;
     SetTextureFilter(r->font, TEXTURE_FILTER_POINT);
     SetTargetFPS(60);
-    r->glyph_w = 16;
-    r->glyph_h = 32;
+    r->glyph_w = 9;
+    r->glyph_h = 16;
 
     Vector2 centerCoord = {(float)GetRenderWidth() / 2, (float)GetRenderHeight() / 2};
     r->centerCoord = centerCoord;
@@ -114,7 +113,7 @@ void Renderer_Update(Renderer *r, Engine *e)
         break;
 
     case PLAY_MODE:
-        Renderer_Draw_ZZT_Board(r, e->loadedWorld, e->loadedBlock);
+        Renderer_Draw_Board(r, e->world->boards[e->world->boards_current]);
         break;
 
     case EDIT_MODE:

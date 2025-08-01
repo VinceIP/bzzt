@@ -107,8 +107,8 @@ Bzzt_Object *Bzzt_Object_Create(uint8_t glyph, Color_Bzzt fg, Color_Bzzt bg, int
 // Destroy a Bzzt_Object
 void Bzzt_Object_Destroy(Bzzt_Object *o);
 
-// Convert a ZZT tile to a Bzzt Object
-Bzzt_Object *Bzzt_Object_From_ZZT_Tile(ZZTtile *zztTile, int x, int y);
+// Convert a tile in a ZZT block to a Bzzt Object
+Bzzt_Object *Bzzt_Object_From_ZZT_Tile(ZZTblock *block, int x, int y);
 
 /* -- --*/
 
@@ -129,7 +129,7 @@ void Bzzt_Board_Remove_Object(Bzzt_Board *b, int id);
 // Return a Bzzt object by its unique object id.
 Bzzt_Object *Bzzt_Board_Get_Object(Bzzt_Board *b, int id);
 
-// Convert a ZZT block (decompressed board) to a Bzzt board
+// Convert the currently selected board in a ZZT world to a Bzzt board
 Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw);
 
 /* -- --*/

@@ -24,10 +24,10 @@ void Bzzt_Object_Destroy(Bzzt_Object *o)
     free(o);
 }
 
-Bzzt_Object *Bzzt_Object_From_ZZT_Tile(ZZTtile *zztTile, int x, int y)
+Bzzt_Object *Bzzt_Object_From_ZZT_Tile(ZZTblock *block, int x, int y)
 {
-    unsigned char ch = zztGetDisplayChar(w, x, y);
-    uint8_t attr = zztGetDisplayColor(w, x, y);
+    unsigned char ch = zztTileGetDisplayChar(block, x, y);
+    uint8_t attr = zztTileGetDisplayColor(block, x, y);
     uint8_t fg_idx = attr & 0x0F;
     uint8_t bg_idx = (attr >> 4) & 0x0F;
 
