@@ -7,7 +7,7 @@ typedef struct UI UI;
 typedef struct Engine Engine;
 typedef struct Board Board;
 
-typedef struct ZZTBlock ZZTBlock;
+typedef struct ZZTblock ZZTblock;
 
 typedef struct Renderer
 {
@@ -18,9 +18,8 @@ typedef struct Renderer
 } Renderer;
 
 bool Renderer_Init(Renderer *, const char *fontPath);
-void Renderer_Update(Renderer *r, Engine *e, ZZTBlock *);
+void Renderer_Update(Renderer *r, Engine *e);
 void Renderer_Draw_Cell(Renderer *r, int x, int y, unsigned char glyph,
                         Color_Bzzt fg, Color_Bzzt bg);
-void Renderer_Draw_Board(Renderer *, ZZTBlock *);
 void Renderer_Draw_UI(Renderer *r, const UI *ui);
 void Renderer_Quit(Renderer *);

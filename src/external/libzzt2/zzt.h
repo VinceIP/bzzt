@@ -29,20 +29,6 @@
 #ifndef ZZT_DISPLAY_TABLES_H
 #define ZZT_DISPLAY_TABLES_H
 
-extern const uint8_t _zzt_display_char_table[];
-extern const uint8_t _zzt_display_char_line_table[];
-
-static inline uint8_t zzt_type_to_cp437(uint8_t type, uint8_t color)
-{
-	if (type == ZZT_LINE)
-		return _zzt_display_char_line_table[(color >> 4) & 0x0F];
-
-	/* Out-of-range safety */
-	return _zzt_display_char_table[type < zzt_TILE_COUNT ? type : 0];
-}
-
-#endif /* ZZT_DISPLAY_TABLES_H */
-
 #ifndef LIBZZT2_ZZT_H
 #define LIBZZT2_ZZT_H
 
@@ -634,6 +620,49 @@ extern "C"
 #define ZZT_BPURPLETEXT 0x3B
 #define ZZT_BYELLOWTEXT 0x3C
 #define ZZT_BWHITETEXT 0x3D
+
+#ifndef ZZT_LINE
+#define ZZT_LINE 0x1F
+#endif
+#ifndef zzt_TILE_COUNT
+#define zzt_TILE_COUNT 0x36
+#endif
+
+	extern const uint8_t _zzt_display_char_table[];
+	extern const uint8_t _zzt_display_char_line_table[];
+
+	static inline uint8_t zzt_type_to_cp437(uint8_t type, uint8_t color)
+	{
+		if (type == ZZT_LINE)
+			return _zzt_display_char_line_table[(color >> 4) & 0x0F];
+
+		return _zzt_display_char_table[type < zzt_TILE_COUNT ? type : 0];
+	}
+
+	static inline void zzt_decode_visual(ZZTtile t,
+										 uint8_t *glyph,
+										 uint8_t *fg_idx,
+										 uint8_t *bg_idx)
+	{
+		/* 7 standard coloured-text tiles */
+		if (t.type >= ZZT_BLUETEXT && t.type <= ZZT_WHITETEXT)
+		{
+			static const uint8_t bg_table[] = {1, 2, 3, 4, 5, 6, 0}; /* see table above */
+			*glyph = t.color;										 /* character itself */
+			*fg_idx = 15;											 /* bright white */
+			*bg_idx = bg_table[t.type - ZZT_BLUETEXT];
+			return;
+		}
+
+		/* everything else – original logic */
+		*glyph = zzt_type_to_cp437(t.type, t.color);
+		*fg_idx = t.color & 0x0F;
+		*bg_idx = (t.color >> 4) & 0x07;
+		if (t.color & 0x80)
+			*bg_idx |= 8; /* bright background / blink flag */
+	}
+
+#endif /* ZZT_DISPLAY_TABLES_H */
 
 #ifdef __cplusplus
 }

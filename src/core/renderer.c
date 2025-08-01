@@ -114,7 +114,7 @@ void Renderer_Update(Renderer *r, Engine *e)
         break;
 
     case PLAY_MODE:
-        Renderer_Draw_ZZT_Board(r, e->loadedBlock);
+        Renderer_Draw_ZZT_Board(r, e->loadedWorld, e->loadedBlock);
         break;
 
     case EDIT_MODE:

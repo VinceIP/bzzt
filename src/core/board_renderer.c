@@ -45,16 +45,20 @@ void Renderer_Draw_Board(Renderer *r, const Board *b)
     }
 }
 
-void Renderer_Draw_ZZT_Board(Renderer *r, ZZTblock *b)
+void Renderer_Draw_ZZT_Board(Renderer *r, ZZTworld *w, ZZTblock *b)
 {
-    for (int y = 0; i < b->height; ++y)
+    for (int y = 0; y < b->height; ++y)
     {
         for (int x = 0; x < b->width; ++x)
         {
             ZZTtile t = zztTileAt(b, x, y);
-            unint8_t ch = zzt_type_to_cp437(t.type, t.color);
-            Color_Bzzt fg = bzzt_get_color(t.color);
-            Renderer_Draw_Cell(r, x, y, ch, fg, COLOR_BLACK);
+
+            uint8_t ch = zztGetDisplayChar(w, x, y);
+
+            Color_Bzzt fg = bzzt_get_color(fg);
+            Color_Bzzt bg = bzzt_get_color(bg);
+
+            Renderer_Draw_Cell(r, x, y, ch, fg, bg);
         }
     }
 }

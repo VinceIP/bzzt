@@ -35,7 +35,8 @@ static void init_camera(Engine *e)
 
 static void play_init(Engine *e)
 {
-    ZZTworld *zztWorld = zztWorldLoad("TOWN.ZZT");
+    ZZTworld *zztWorld = zztWorldLoad("BURGERJ.ZZT");
+    e->loadedWorld = zztWorld;
     if (!zztWorld)
         Debug_Printf(LOG_ENGINE, "Error loading Town");
     zztBoardSelect(zztWorld, 0);
