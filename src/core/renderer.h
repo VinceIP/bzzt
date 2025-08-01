@@ -11,7 +11,9 @@ typedef struct ZZTblock ZZTblock;
 
 typedef struct Renderer
 {
-    int glyph_w, glyph_h, src_w, src_h;
+    int glyph_w, glyph_h; // rendered glyph size (in pixels)
+    int src_w, src_h;     // source glyph size on texture
+    float scale;          // scaling factor applied to glyphs
     const char *inStr;
     Texture2D font;
     Vector2 centerCoord;

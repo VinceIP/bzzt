@@ -21,6 +21,7 @@ bool Renderer_Init(Renderer *r, const char *path)
         return false;
     }
     ImageFormat(&img, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+    ImageColorReplace(&img, (Color){168, 168, 168, 255}, (Color){255, 255, 255, 255});
     ImageColorReplace(&img, (Color){0, 0, 0, 255}, BLANK);
     ImageColorReplace(&img, (Color){8, 8, 8, 255}, BLANK);
     ImageColorReplace(&img, (Color){16, 16, 16, 255}, BLANK);
@@ -30,8 +31,22 @@ bool Renderer_Init(Renderer *r, const char *path)
         return false;
     SetTextureFilter(r->font, TEXTURE_FILTER_POINT);
     SetTargetFPS(60);
-    r->glyph_w = 9;
-    r->glyph_h = 16;
+
+    r->src_w = 9;
+    r->src_h = 16;
+
+    float desired = 8.0f;
+    int screenW = GetScreenWidth();
+    int screenH = GetScreenHeight();
+    if (BZZT_BOARD_DEFAULT_W * r->src_w * desired > screenW || BZZT_BOARD_DEFAULT_H * r->src_h * desired > screenH)
+    {
+        float scaleW = (float)screenW / (BZZT_BOARD_DEFAULT_W * r->src_w);
+        float scaleH = (float)screenH / (BZZT_BOARD_DEFAULT_H * r->src_h);
+        desired = scaleW < scaleH ? scaleW : scaleH;
+    }
+    r->scale = desired;
+    r->glyph_w = (int)(r->src_w * r->scale);
+    r->glyph_h = (int)(r->src_h * r->scale);
 
     Vector2 centerCoord = {(float)GetRenderWidth() / 2, (float)GetRenderHeight() / 2};
     r->centerCoord = centerCoord;
@@ -46,10 +61,10 @@ static Rectangle glyph_rec(Renderer *r, unsigned char ascii)
     int col = ascii % 32;
     int row = ascii / 32;
     return (Rectangle){
-        col * r->glyph_w,
-        row * r->glyph_h,
-        r->glyph_w,
-        r->glyph_h};
+        col * r->src_w,
+        row * r->src_h,
+        r->src_w,
+        r->src_h};
 }
 
 void Renderer_Draw_Cell(Renderer *r, int cellX, int cellY, unsigned char glyph, Color_Bzzt fg, Color_Bzzt bg)
@@ -58,17 +73,16 @@ void Renderer_Draw_Cell(Renderer *r, int cellX, int cellY, unsigned char glyph, 
     Color rf = (Color){fg.r, fg.g, fg.b, 255};
     Color rb = (Color){bg.r, bg.g, bg.b, 255};
 
+    Rectangle src = glyph_rec(r, glyph);
     Rectangle dst = {
         cellX * r->glyph_w,
         cellY * r->glyph_h,
-        r->glyph_w,
-        r->glyph_h};
+        (float)r->glyph_w,
+        (float)r->glyph_h};
 
-    // Fill bg
-    DrawRectangle(dst.x, dst.y, dst.width, dst.height, rb);
+    DrawRectangle((int)dst.x, (int)dst.y, (int)dst.width, (int)dst.height, rb);
 
-    // Draw fg
-    DrawTextureRec(r->font, glyph_rec(r, glyph), (Vector2){dst.x, dst.y}, rf);
+    DrawTexturePro(r->font, src, dst, (Vector2){0, 0}, 0.0f, rf);
 }
 
 static void draw_text_centered(Font f, const char *msg, Vector2 center, float size, float spacing, Color tint)
