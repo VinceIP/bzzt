@@ -19,7 +19,7 @@ typedef struct Renderer
     Vector2 centerCoord;
 } Renderer;
 
-bool Renderer_Init(Renderer *, const char *fontPath);
+bool Renderer_Init(Renderer *, Engine *e, const char *fontPath);
 void Renderer_Update(Renderer *r, Engine *e);
 void Renderer_Draw_Cell(Renderer *r, int x, int y, unsigned char glyph,
                         Color_Bzzt fg, Color_Bzzt bg);

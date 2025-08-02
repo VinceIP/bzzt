@@ -21,7 +21,7 @@ static void setup_raylib()
 int main(void)
 {
     setup_raylib();
-    const char *fontPath = ASSET("fonts/Perfect DOS VGA 437 Win.ttf");
+    const char *fontPath = ASSET("fonts/default.bzc");
     Font font = LoadFont(fontPath);
     Engine e;
     Engine_Init(&e);
@@ -29,7 +29,7 @@ int main(void)
     e.world = Bzzt_World_Create("New World");
     Renderer rend;
 
-    Renderer_Init(&rend, ASSET("fonts/dos437.png"));
+    Renderer_Init(&rend, e, ASSET("fonts/default.bzc"));
 
     InputState in = {0};
     MouseState mo = {};

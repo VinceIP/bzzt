@@ -2,6 +2,7 @@
 #pragma once
 #include "raylib.h"
 #include "color.h"
+#include "bz_char.h"
 
 typedef struct Bzzt_World Bzzt_World;
 typedef struct UI UI;
@@ -42,6 +43,7 @@ typedef struct Engine
     Font font;
     Cursor cursor;
     Bzzt_Camera *camera;
+    BzztCharset *charsets; //Loaded charsets
     // Renderer renderer;
     // Input input;
     bool running;

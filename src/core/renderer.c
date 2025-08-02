@@ -9,44 +9,36 @@
 #include "bzzt.h"
 #include "board_renderer.h"
 #include "ui_renderer.h"
+#include "bz_char.h"
 
 #define TRANSPARENT_GLYPH 255
 
-bool Renderer_Init(Renderer *r, const char *path)
+bool Renderer_Init(Renderer *r, Engine *e, const char *path)
 {
-    Image img = LoadImage(path);
-    if (!img.data)
-    {
-        TraceLog(LOG_ERROR, "Failed to load glyph sheet: %s", path);
-        return false;
-    }
-    ImageFormat(&img, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
-    ImageColorReplace(&img, (Color){168, 168, 168, 255}, (Color){255, 255, 255, 255});
-    ImageColorReplace(&img, (Color){0, 0, 0, 255}, BLANK);
-    ImageColorReplace(&img, (Color){8, 8, 8, 255}, BLANK);
-    ImageColorReplace(&img, (Color){16, 16, 16, 255}, BLANK);
-    r->font = LoadTextureFromImage(img);
-    UnloadImage(img);
-    if (r->font.id == 0)
-        return false;
+
+    static BzztCharset defaultCharset;
+    BZC_Load(path, &defaultCharset);
+    e->charsets[0] = &defaultCharset;
+
     SetTextureFilter(r->font, TEXTURE_FILTER_POINT);
     SetTargetFPS(60);
 
     r->src_w = 9;
     r->src_h = 16;
 
-    float desired = 8.0f;
+    float desired = 2.75f;
     int screenW = GetScreenWidth();
     int screenH = GetScreenHeight();
-    if (BZZT_BOARD_DEFAULT_W * r->src_w * desired > screenW || BZZT_BOARD_DEFAULT_H * r->src_h * desired > screenH)
+    if (BZZT_BOARD_DEFAULT_W * r->src_w * desired > screenW ||
+        BZZT_BOARD_DEFAULT_H * r->src_h * desired > screenH)
     {
         float scaleW = (float)screenW / (BZZT_BOARD_DEFAULT_W * r->src_w);
         float scaleH = (float)screenH / (BZZT_BOARD_DEFAULT_H * r->src_h);
         desired = scaleW < scaleH ? scaleW : scaleH;
     }
     r->scale = desired;
-    r->glyph_w = (int)(r->src_w * r->scale);
-    r->glyph_h = (int)(r->src_h * r->scale);
+    r->glyph_w = r->src_w * r->scale;
+    r->glyph_h = r->src_h * r->scale;
 
     Vector2 centerCoord = {(float)GetRenderWidth() / 2, (float)GetRenderHeight() / 2};
     r->centerCoord = centerCoord;
@@ -77,11 +69,13 @@ void Renderer_Draw_Cell(Renderer *r, int cellX, int cellY, unsigned char glyph, 
     Rectangle dst = {
         cellX * r->glyph_w,
         cellY * r->glyph_h,
-        (float)r->glyph_w,
-        (float)r->glyph_h};
+        r->glyph_w,
+        r->glyph_h};
 
-    DrawRectangle((int)dst.x, (int)dst.y, (int)dst.width, (int)dst.height, rb);
+    // Fill bg
+    DrawRectangleRec(dst, rb);
 
+    // Draw fg
     DrawTexturePro(r->font, src, dst, (Vector2){0, 0}, 0.0f, rf);
 }
 
