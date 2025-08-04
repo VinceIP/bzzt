@@ -63,9 +63,12 @@ void UIElement_Destroy(UIElement *e)
 
     case UI_ELEM_TEXT:
     {
+        UIElement_Text *t = (UIElement_Text *)e;
+        if (t->ud)
+            free(t->ud);
         if (e->properties.name)
             free(e->properties.name);
-        free(e);
+        free(t);
         break;
     }
     default:

@@ -3,8 +3,8 @@ surfaces:
     layer: 0
     width: 12
     height: 2
-    fg: cyan
-    bg: cyan
+    fg: light_blue
+    bg: light_blue
     x: 37
     y: 8
     z: 0
