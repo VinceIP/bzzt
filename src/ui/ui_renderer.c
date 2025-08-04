@@ -22,7 +22,7 @@ static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement 
     {
         UIButton *b = (UIButton *)e;
         const char *caption = b->label->textCallback(b->label->ud);
-        elem_width = strlen(caption) + 2; // brackets
+        elem_width = strlen(caption); // brackets
     }
 
     int anchor_offset = 0;
@@ -31,7 +31,7 @@ static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement 
     else if (ov->anchor == ANCHOR_RIGHT)
         anchor_offset = ov->properties.w - elem_width;
     base_x += anchor_offset;
-    // --
+    //
 
     switch (e->type)
     {
@@ -74,14 +74,12 @@ static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement 
     {
         UIButton *b = (UIButton *)e;
         const char *caption = b->label->textCallback(b->label->ud);
-        Renderer_Draw_Cell(r, base_x, base_y, '[', b->label->fg, b->label->bg);
-        int x = base_x + 1;
+        int x = base_x;
         int len = strlen(caption);
         for (int i = 0; i < len; ++i)
         {
             Renderer_Draw_Cell(r, x + i, base_y, unicode_to_cp437((unsigned char)caption[i]), b->label->fg, b->label->bg);
         }
-        Renderer_Draw_Cell(r, base_x + len + 1, base_y, ']', b->label->fg, b->label->bg);
         break;
     }
     default:

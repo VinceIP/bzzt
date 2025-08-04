@@ -14,13 +14,13 @@ surface:
     - name: "menu"
       id: 1
       layout: vbox
-      anchor: center
+      anchor: right
       spacing: 2
       elements:
         - type: Button
           name: "btnPlay"
           id: 1
-          text: "[P]lay"
+          text: "Play"
         - type: Button
           name: "btnEditor"
           id: 2
