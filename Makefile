@@ -14,7 +14,7 @@ RAYLIB_LIBS   := -lraylib -lwinmm -lgdi32
 # CYAML
 CYAML_INC     := /ucrt64/include
 CYAML_LIB     := /ucrt64/lib
-CYAML_LIBS    := -lcyaml
+CYAML_LIBS    := -lcyaml -lyaml
 
 # ---------- warning control ---------------------------------
 # Pass WARN=0 to silence warnings:   make WARN=0
