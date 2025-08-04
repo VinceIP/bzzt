@@ -36,11 +36,12 @@ static void measure_text(const char *str, int *w, int *h)
             *h = 0;
         return;
     }
-    for (int i = 0; str[i];)
+    for (int i = 0; i < strlen(str); ++i)
     {
         if (str[i] == '\\')
         {
-            if (str[i + 1] == 'n')
+            char next = str[i + 1];
+            if (next == 'n')
             {
                 if (cur_w > max_w)
                     max_w = cur_w;
@@ -49,13 +50,22 @@ static void measure_text(const char *str, int *w, int *h)
                 i += 2;
                 continue;
             }
-            else if ((str[i + 1] == 'f' && str[i + 2] == 'g') || (str[i + 1] == 'b' && str[i + 2] == 'g'))
+            else if (next == 'f' || next == 'b')
             {
-                i += 3;
+                i += 2;
                 while (str[i] && isdigit((unsigned char)str[i]))
                     i++;
                 continue;
             }
+        }
+        else if (str[i] == '\n')
+        {
+            if (cur_w > max_w)
+                max_w = cur_w;
+            cur_w = 0;
+            lines++;
+            i++;
+            continue;
         }
         cur_w++;
         i++;

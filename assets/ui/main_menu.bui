@@ -6,16 +6,16 @@ surfaces:
     fg: light_blue
     bg: light_blue
     x: 37
-    y: 8
+    y: 5
     z: 0
     overlays:
       - name: "banner text"
-        anchor: center
+        anchor: left
         elements:
           - type: button
             name: "banner text"
             expand: true
-            value: "bzzt"
+            value: "\f15bzzt version 0.1"
   - name: "Main Menu"
     layer: 0
     width: 10
@@ -28,7 +28,7 @@ surfaces:
     overlays:
       - name: "menu"
         layout: vbox
-        anchor: right
+        anchor: left
         spacing: 2
         elements:
           - type: Button

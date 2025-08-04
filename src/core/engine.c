@@ -34,11 +34,11 @@ static void init_camera(Engine *e)
 
 static void play_init(Engine *e)
 {
-    char *file = "frost1.zzt";
+    char *file = "burglar1.zzt";
     e->world = Bzzt_World_From_ZZT_World(file);
     if (!e->world)
         Debug_Printf(LOG_ENGINE, "Error loading ZZT world %s", file);
-    e->world->boards_current = 7;
+    e->world->boards_current = 8;
 }
 
 bool Engine_Init(Engine *e)
