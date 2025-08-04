@@ -12,7 +12,7 @@ surfaces:
       - name: "banner text"
         anchor: center
         elements:
-          - type: text
+          - type: button
             name: "banner text"
             expand: true
             value: "bzzt"

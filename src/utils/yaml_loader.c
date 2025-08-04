@@ -335,12 +335,16 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                                       0, true, true, layout, anchor, yo->spacing);
             UIOverlay *ov = surface->overlays[surface->overlays_count - 1];
             int y_cursor = 0;
+
             // Elements
             for (unsigned ei = 0; ei < yo->elements_count && ok; ++ei)
             {
                 YamlElement *ye = &yo->elements[ei];
                 if (!ye->text && ye->value)
+                {
                     ye->text = ye->value;
+                    ye->value = NULL;
+                }
                 if (!ye->type)
                     continue;
                 int eid;
