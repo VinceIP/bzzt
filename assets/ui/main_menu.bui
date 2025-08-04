@@ -1,83 +1,31 @@
-# ─── main_menu.bui ──────────────────────────────────────────
-bzzt-version: 1 #Schema tracker in case UI structuring changes with bzzt versions
-palette: classic #Enable using different palettes
-enable-hot-reload: true #Allow bzzt to re
-# Splash‑screen main menu definition for bzzt
-name: "Main Menu" # human‑readable title
-id: 1001 # unique identifier for this UI tree
-layer: 0 # layer index in the engine stack
+name: "Main Menu"
+id: 1
+layer: 0
 
 surface:
-  # ── geometry & palette ──────────────────────────────────
-  width: 40
-  height: 10
-  fg: BLACK # default foreground for empty cells
-  bg: BLUE # default background for empty cells
-  x: 10 # board‑space origin
-  y: 10
-  z: 0 # local Z within the layer
-
-  # ── root-level input events ────────────────────────────
-  events:
-    - type: onKeyPress
-      key: Escape
-      action: closeMenu # boop label / function
-
-  # ── child overlay containers ───────────────────────────
+  width: 80
+  height: 25
+  fg: white
+  bg: blue
+  x: 0
+  y: 0
+  z: 0
   overlays:
-    - name: "buttons" # group of vertically stacked buttons
-      id: 1002
+    - name: "menu"
+      id: 1
       layout: vbox
       anchor: center
       spacing: 1
-
-      # ----- reusable button prototype ------------------
-      _baseBtn: &btn
-        type: Button
-        name: "prototype"
-        id: 0
-        visible: true
-        x: 0
-        y: 0
-        width: 18
-        height: 3
-        button_fg: WHITE # button surface colours
-        button_bg: DARK_BLUE
-        text_fg: WHITE # text overlay colours
-        text_bg: DARK_BLUE
-        border_style: single # draw a single-line ASCII border around each button
-        border_fg: WHITE
-        border_bg: BLUE
-        pad: { left: 1, right: 1 }
-        events:
-          - type: onMouseMove
-            action: highlightButton
-
-      # ----- concrete buttons inheriting & overriding ----
       elements:
-        - <<: *btn
-          id: 1003
+        - type: Button
           name: "btnPlay"
-          text: "[P]lay Game"
-          events:
-            - type: onClick
-              action: startGame
-
-        - <<: *btn
-          id: 1004
+          id: 1
+          text: "[P]lay"
+        - type: Button
           name: "btnEditor"
-          text: "World [E]ditor"
-          events:
-            - type: onClick
-              action: startEditor
-
-        - <<: *btn
-          id: 1005
+          id: 2
+          text: "[E]ditor"
+        - type: Button
           name: "btnQuit"
-          text: "[Q]uit Bzzt"
-          # give the quit button a distinct colour theme
-          button_bg: DARK_RED
-          text_bg: DARK_RED
-          events:
-            - type: onClick
-              action: quitBzzt
+          id: 3
+          text: "[Q]uit"

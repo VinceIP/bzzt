@@ -3,6 +3,7 @@
 #include "debugger.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 static const char *pass_through_caption(void *ud)
 {
@@ -49,18 +50,28 @@ void UIElement_Destroy(UIElement *e)
     {
         UIButton *b = (UIButton *)e;
         if (b->label)
+        {
+            if (b->label->ud)
+                free(b->label->ud);
             UIElement_Destroy((UIElement *)b->label);
+        }
+        if (e->properties.name)
+            free(e->properties.name);
         free(b);
         break;
     }
 
     case UI_ELEM_TEXT:
     {
+        if (e->properties.name)
+            free(e->properties.name);
         free(e);
         break;
     }
     default:
     {
+        if (e->properties.name)
+            free(e->properties.name);
         free(e);
         break;
     }
@@ -137,6 +148,7 @@ UIButton *UIButton_Create(int x, int y, const char *caption, UIButtonAction cb, 
     b->onClick = cb;
     b->ud = ud;
 
-    b->label = UIText_Create(0, 0, COLOR_WHITE, COLOR_BLACK, false, pass_through_caption, (void *)caption);
+    char *dup = caption ? strdup(caption) : strdup("");
+    b->label = UIText_Create(0, 0, COLOR_WHITE, COLOR_BLACK, false, pass_through_caption, dup);
     return b;
 }

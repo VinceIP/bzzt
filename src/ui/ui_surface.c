@@ -61,6 +61,9 @@ void UISurface_Destroy(UISurface *s)
         free(s->overlays);
     }
 
+    if (s->properties.name)
+        free(s->properties.name);
+
     free(s);
 }
 

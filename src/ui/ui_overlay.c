@@ -88,6 +88,9 @@ void UIOverlay_Destroy(UIOverlay *o)
     if (o->surface)
         remove_from_surface(o->surface, o);
 
+    if (o->properties.name)
+        free(o->properties.name);
+
     free(o);
 }
 
