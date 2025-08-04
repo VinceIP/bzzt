@@ -3,16 +3,17 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+
 #include "raylib.h"
-#include "renderer.h"
-#include "engine.h"
-#include "color.h"
-#include "bzzt.h"
+
 #include "board_renderer.h"
-#include "ui_renderer.h"
 #include "bz_char.h"
+#include "bzzt.h"
+#include "color.h"
+#include "engine.h"
+#include "renderer.h"
 #include "ui_renderer.h"
-#include "bz_char.h"
+#include "debugger.h"
 
 #define TRANSPARENT_GLYPH 255
 
@@ -20,30 +21,33 @@ static BzztCharset defaultCharset;
 
 static Texture2D texture_from_charset(BzztCharset *c)
 {
-    int cols = 32;
-    int rows = (c->header.glyph_count + cols - 1);
-    int width = c->header.glyph_w * cols;
-    int height = c->header.glyph_h * rows;
+    const int cols = 32;
+    const int rows = (c->header.glyph_count + cols - 1) / cols;
+    const int width = c->header.glyph_w * cols;
+    const int height = c->header.glyph_h * rows;
 
-    unsigned char *data = malloc(width * height);
-    memset(data, 0, width * height);
+    unsigned char *data = calloc(width * height, sizeof(unsigned char));
+    if (!data)
+        return (Texture2D){0};
 
-    size_t bits_per_row = c->header.glyph_w * c->header.bpp;
-    size_t bytes_per_row = (bits_per_row * 7) / 8;
-    size_t glyph_bytes = bytes_per_row * c->header.glyph_h;
+    const size_t bits_per_row = c->header.glyph_w * c->header.bpp;
+    const size_t bytes_per_row = (bits_per_row + 7) / 8;
+    const size_t glyph_bytes = bytes_per_row * c->header.glyph_h;
 
     for (int g = 0; g < c->header.glyph_count; ++g)
     {
         int gx = g % cols;
         int gy = g / cols;
         unsigned char *glyph = c->pixels + glyph_bytes * g;
+
         for (int y = 0; y < c->header.glyph_h; ++y)
         {
             for (int x = 0; x < c->header.glyph_w; ++x)
             {
-                size_t byte_index = y * bytes_per_row;
+                size_t byte_index = y * bytes_per_row + (x / 8);
                 int bit_index = 7 - (x % 8);
-                unsigned char bit = (glyph[byte_index] >> bit_index) & 1;
+                unsigned char bit = (glyph[byte_index] >> bit_index) & 1u;
+
                 int tx = gx * c->header.glyph_w + x;
                 int ty = gy * c->header.glyph_h + y;
                 data[ty * width + tx] = bit ? 255 : 0;
@@ -59,7 +63,7 @@ static Texture2D texture_from_charset(BzztCharset *c)
         .format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE};
 
     Texture2D tex = LoadTextureFromImage(img);
-    UnloadImage(img);
+    UnloadImage(img); // frees data
     return tex;
 }
 
@@ -67,7 +71,10 @@ bool Renderer_Init(Renderer *r, Engine *e, const char *path)
 {
 
     if (!BZC_Load(path, &defaultCharset))
+    {
+        Debug_Printf(LOG_ENGINE, "Error loading charset.");
         return false;
+    }
 
     // Build texture from charset
     r->font = texture_from_charset(&defaultCharset);

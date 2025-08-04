@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "bz_char.h"
+#include "debugger.h"
 
 static bool bzc_read_header(FILE *fp, BZCHeader *h)
 {
@@ -61,6 +62,7 @@ bool BZC_Load(const char *path, BzztCharset *out)
     }
     fclose(fp);
 
+    Debug_Printf(LOG_ENGINE, "Loaded charset.");
     return true;
     // Could turn this data into a Raylib Image here
 }
