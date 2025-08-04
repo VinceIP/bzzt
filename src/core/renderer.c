@@ -88,7 +88,7 @@ bool Renderer_Init(Renderer *r, Engine *e, const char *path)
     r->src_w = defaultCharset.header.glyph_w;
     r->src_h = defaultCharset.header.glyph_h;
 
-    float desired = 2;
+    float desired = 2.0f;
     int screenW = GetScreenWidth();
     int screenH = GetScreenHeight();
     int maxScaleW = screenW / (BZZT_BOARD_DEFAULT_W * r->src_w);
@@ -104,8 +104,6 @@ bool Renderer_Init(Renderer *r, Engine *e, const char *path)
 
     Vector2 centerCoord = {(float)GetRenderWidth() / 2, (float)GetRenderHeight() / 2};
     r->centerCoord = centerCoord;
-
-    r->inStr = "\n\nP - play town.zzt\nL - load world\nE - editor\nESC - quit";
 
     return true;
 }
@@ -143,20 +141,6 @@ void Renderer_Draw_Cell(Renderer *r, int cellX, int cellY, unsigned char glyph, 
     EndShaderMode();
 }
 
-static void draw_text_centered(Font f, const char *msg, Vector2 center, float size, float spacing, Color tint)
-{
-    Vector2 ext = MeasureTextEx(f, msg, size, spacing);
-    Vector2 origin = {ext.x * 0.5f, ext.y * 0.5f};
-    DrawTextPro(f, msg, center, origin, 0.0f, size, spacing, tint);
-}
-
-static void draw_splash(Renderer *r, Engine *e)
-{
-    Vector2 c = r->centerCoord;
-    draw_text_centered(e->font, "bzzt!", (Vector2){c.x, c.y - 60}, 60, 0, RAYWHITE);
-    draw_text_centered(e->font, r->inStr, c, 25, 0, RAYWHITE);
-}
-
 static void draw_cursor(Renderer *r, Engine *e)
 {
     Cursor *c = &e->cursor;
@@ -181,9 +165,11 @@ void Renderer_Update(Renderer *r, Engine *e)
     {
     case SPLASH_MODE:
         Renderer_Draw_Board(r, e->world->boards[e->world->boards_current]);
-        draw_splash(r, e);
+        if (e->ui)
+        {
+            Renderer_Draw_UI(r, e->ui);
+        }
         break;
-
     case PLAY_MODE:
         Renderer_Draw_Board(r, e->world->boards[e->world->boards_current]);
         break;

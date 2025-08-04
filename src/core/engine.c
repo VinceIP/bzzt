@@ -5,6 +5,7 @@
 #include "input.h"
 #include "editor.h"
 #include "ui.h"
+#include "yaml_loader.h"
 #include "color.h"
 #include "coords.h"
 #include "bzzt.h"
@@ -33,11 +34,11 @@ static void init_camera(Engine *e)
 
 static void play_init(Engine *e)
 {
-    char *file = "town.zzt";
+    char *file = "frost1.zzt";
     e->world = Bzzt_World_From_ZZT_World(file);
     if (!e->world)
         Debug_Printf(LOG_ENGINE, "Error loading ZZT world %s", file);
-    e->world->boards_current = 1;
+    e->world->boards_current = 7;
 }
 
 bool Engine_Init(Engine *e)
@@ -56,10 +57,11 @@ bool Engine_Init(Engine *e)
     init_cursor(e);
 
     e->ui = UI_Create(true, true);
+    UI_Load_From_BUI(e->ui, "assets/ui/main_menu.bui");
 
     init_camera(e);
 
-    //Populate empty charsets
+    // Populate empty charsets
     for (int i = 0; i < 8; ++i)
         e->charsets[i] = NULL;
 
