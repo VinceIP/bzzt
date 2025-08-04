@@ -3,12 +3,12 @@ id: 1
 layer: 0
 
 surface:
-  width: 80
-  height: 25
-  fg: white
+  width: 10
+  height: 4
+  fg: blue
   bg: blue
-  x: 0
-  y: 0
+  x: 35
+  y: 10
   z: 0
   overlays:
     - name: "menu"

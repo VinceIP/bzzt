@@ -22,7 +22,8 @@ typedef enum
     BZ_LIGHT_RED,
     BZ_LIGHT_MAGENTA,
     BZ_YELLOW,
-    BZ_WHITE
+    BZ_WHITE,
+    BZ_TRANSPARENT
 } BzztColor;
 
 static const Color_Bzzt COLOR_BLACK = {0, 0, 0};
@@ -41,8 +42,9 @@ static const Color_Bzzt COLOR_LIGHT_RED = {255, 85, 85};
 static const Color_Bzzt COLOR_LIGHT_MAGENTA = {255, 85, 255};
 static const Color_Bzzt COLOR_YELLOW = {255, 255, 85};
 static const Color_Bzzt COLOR_WHITE = {255, 255, 255};
+static const Color_Bzzt COLOR_TRANSPARENT = {0, 35, 0};
 
-static const Color_Bzzt BZZT_PALETTE[16] = {
+static const Color_Bzzt BZZT_PALETTE[17] = {
     COLOR_BLACK,
     COLOR_BLUE,
     COLOR_GREEN,
@@ -58,7 +60,8 @@ static const Color_Bzzt BZZT_PALETTE[16] = {
     COLOR_LIGHT_RED,
     COLOR_LIGHT_MAGENTA,
     COLOR_YELLOW,
-    COLOR_WHITE};
+    COLOR_WHITE,
+    COLOR_TRANSPARENT};
 
 static inline Color_Bzzt bzzt_get_color(uint8_t idx)
 {

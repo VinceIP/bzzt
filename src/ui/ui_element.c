@@ -149,6 +149,6 @@ UIButton *UIButton_Create(int x, int y, const char *caption, UIButtonAction cb, 
     b->ud = ud;
 
     char *dup = caption ? strdup(caption) : strdup("");
-    b->label = UIText_Create(0, 0, COLOR_WHITE, COLOR_BLACK, false, pass_through_caption, dup);
+    b->label = UIText_Create(0, 0, COLOR_WHITE, COLOR_MAGENTA, false, pass_through_caption, dup);
     return b;
 }

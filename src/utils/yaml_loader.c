@@ -149,7 +149,7 @@ static const cyaml_schema_field_t root_fields[] = {
     CYAML_FIELD_END};
 
 static const cyaml_schema_value_t root_schema = {
-    CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, YamlUIRoot, root_fields)};
+    CYAML_VALUE_MAPPING(CYAML_FLAG_POINTER, YamlUIRoot, root_fields)};
 
 // --- Loader --------------------------------------------------------
 
@@ -171,6 +171,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
     cyaml_err_t err = cyaml_load_file(path, &config, &root_schema, (cyaml_data_t **)&root, NULL);
     if (err != CYAML_OK)
     {
+        Debug_Printf(LOG_UI, "Failed loading YAML. Err: %s", cyaml_strerror(err));
         return false;
     }
 
