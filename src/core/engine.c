@@ -59,6 +59,10 @@ bool Engine_Init(Engine *e)
 
     init_camera(e);
 
+    //Populate empty charsets
+    for (int i = 0; i < 8; ++i)
+        e->charsets[i] = NULL;
+
     return true;
 }
 

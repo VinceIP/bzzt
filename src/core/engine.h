@@ -43,7 +43,7 @@ typedef struct Engine
     Font font;
     Cursor cursor;
     Bzzt_Camera *camera;
-    BzztCharset *charsets; //Loaded charsets
+    BzztCharset *charsets[8]; // Loaded charsets (slot 0 = default)
     // Renderer renderer;
     // Input input;
     bool running;

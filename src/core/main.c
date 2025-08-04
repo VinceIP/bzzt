@@ -22,14 +22,13 @@ int main(void)
 {
     setup_raylib();
     const char *fontPath = ASSET("fonts/default.bzc");
-    Font font = LoadFont(fontPath);
     Engine e;
     Engine_Init(&e);
-    e.font = font;
+    e.font = GetFontDefault();
     e.world = Bzzt_World_Create("New World");
     Renderer rend;
 
-    Renderer_Init(&rend, e, ASSET("fonts/default.bzc"));
+    Renderer_Init(&rend, &e, fontPath);
 
     InputState in = {0};
     MouseState mo = {};

@@ -17,6 +17,7 @@ typedef struct Renderer
     const char *inStr;
     Texture2D font;
     Vector2 centerCoord;
+    Shader glyphShader;
 } Renderer;
 
 bool Renderer_Init(Renderer *, Engine *e, const char *fontPath);

@@ -38,11 +38,11 @@ bool BZC_Load(const char *path, BzztCharset *out)
         return false;
     }
 
-    size_t bytes =
-        out->header.glyph_count *
-        out->header.glyph_h *
-        out->header.glyph_w *
-        out->header.bpp / 8;
+    size_t bits_per_row = out->header.glyph_w * out->header.bpp;
+    size_t bytes_per_row = (bits_per_row + 7) / 8;
+    size_t bytes = out->header.glyph_count *
+                   out->header.glyph_h *
+                   bytes_per_row;
 
     out->pixels = malloc(bytes);
 
@@ -52,7 +52,13 @@ bool BZC_Load(const char *path, BzztCharset *out)
         return false;
     }
 
-    fread(out->pixels, bytes, 1, fp);
+    if (fread(out->pixels, bytes, 1, fp) != 1)
+    {
+        free(out->pixels);
+        out->pixels = NULL;
+        fclose(fp);
+        return false;
+    }
     fclose(fp);
 
     return true;
@@ -66,9 +72,11 @@ bool BZC_Save(const char *path, BzztCharset *in)
         return false;
 
     fwrite(&in->header, sizeof(BZCHeader), 1, fp);
+    size_t bits_per_row = in->header.glyph_w * in->header.bpp;
+    size_t bytes_per_row = (bits_per_row + 7) / 8;
     size_t bytes = in->header.glyph_count *
                    in->header.glyph_h *
-                   in->header.glyph_w * in->header.bpp / 8;
+                   bytes_per_row;
 
     fwrite(in->pixels, bytes, 1, fp);
     fclose(fp);

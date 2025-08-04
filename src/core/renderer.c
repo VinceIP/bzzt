@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include "raylib.h"
 #include "renderer.h"
 #include "engine.h"
@@ -10,35 +11,88 @@
 #include "board_renderer.h"
 #include "ui_renderer.h"
 #include "bz_char.h"
+#include "ui_renderer.h"
+#include "bz_char.h"
 
 #define TRANSPARENT_GLYPH 255
+
+static BzztCharset defaultCharset;
+
+static Texture2D texture_from_charset(BzztCharset *c)
+{
+    int cols = 32;
+    int rows = (c->header.glyph_count + cols - 1);
+    int width = c->header.glyph_w * cols;
+    int height = c->header.glyph_h * rows;
+
+    unsigned char *data = malloc(width * height);
+    memset(data, 0, width * height);
+
+    size_t bits_per_row = c->header.glyph_w * c->header.bpp;
+    size_t bytes_per_row = (bits_per_row * 7) / 8;
+    size_t glyph_bytes = bytes_per_row * c->header.glyph_h;
+
+    for (int g = 0; g < c->header.glyph_count; ++g)
+    {
+        int gx = g % cols;
+        int gy = g / cols;
+        unsigned char *glyph = c->pixels + glyph_bytes * g;
+        for (int y = 0; y < c->header.glyph_h; ++y)
+        {
+            for (int x = 0; x < c->header.glyph_w; ++x)
+            {
+                size_t byte_index = y * bytes_per_row;
+                int bit_index = 7 - (x % 8);
+                unsigned char bit = (glyph[byte_index] >> bit_index) & 1;
+                int tx = gx * c->header.glyph_w + x;
+                int ty = gy * c->header.glyph_h + y;
+                data[ty * width + tx] = bit ? 255 : 0;
+            }
+        }
+    }
+
+    Image img = {
+        .data = data,
+        .width = width,
+        .height = height,
+        .mipmaps = 1,
+        .format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE};
+
+    Texture2D tex = LoadTextureFromImage(img);
+    UnloadImage(img);
+    return tex;
+}
 
 bool Renderer_Init(Renderer *r, Engine *e, const char *path)
 {
 
-    static BzztCharset defaultCharset;
-    BZC_Load(path, &defaultCharset);
-    e->charsets[0] = &defaultCharset;
+    if (!BZC_Load(path, &defaultCharset))
+        return false;
 
+    // Build texture from charset
+    r->font = texture_from_charset(&defaultCharset);
     SetTextureFilter(r->font, TEXTURE_FILTER_POINT);
+
+    r->glyphShader = LoadShader("assets/shaders/glyph.vs", "assets/shaders/glyph.fs");
+
     SetTargetFPS(60);
 
-    r->src_w = 9;
-    r->src_h = 16;
+    r->src_w = defaultCharset.header.glyph_w;
+    r->src_h = defaultCharset.header.glyph_h;
 
-    float desired = 2.75f;
+    float desired = 2;
     int screenW = GetScreenWidth();
     int screenH = GetScreenHeight();
-    if (BZZT_BOARD_DEFAULT_W * r->src_w * desired > screenW ||
-        BZZT_BOARD_DEFAULT_H * r->src_h * desired > screenH)
-    {
-        float scaleW = (float)screenW / (BZZT_BOARD_DEFAULT_W * r->src_w);
-        float scaleH = (float)screenH / (BZZT_BOARD_DEFAULT_H * r->src_h);
-        desired = scaleW < scaleH ? scaleW : scaleH;
-    }
-    r->scale = desired;
-    r->glyph_w = r->src_w * r->scale;
-    r->glyph_h = r->src_h * r->scale;
+    int maxScaleW = screenW / (BZZT_BOARD_DEFAULT_W * r->src_w);
+    int maxeScaleH = screenH / (BZZT_BOARD_DEFAULT_H * r->src_h);
+    int maxScale = maxScaleW < maxeScaleH ? maxScaleW : maxeScaleH;
+    if (desired > maxScale)
+        desired = maxScale;
+    if (desired < 1)
+        desired = 1;
+    r->scale = (float)desired;
+    r->glyph_w = r->src_w * desired;
+    r->glyph_h = r->src_h * desired;
 
     Vector2 centerCoord = {(float)GetRenderWidth() / 2, (float)GetRenderHeight() / 2};
     r->centerCoord = centerCoord;
@@ -76,7 +130,9 @@ void Renderer_Draw_Cell(Renderer *r, int cellX, int cellY, unsigned char glyph, 
     DrawRectangleRec(dst, rb);
 
     // Draw fg
+    BeginShaderMode(r->glyphShader);
     DrawTexturePro(r->font, src, dst, (Vector2){0, 0}, 0.0f, rf);
+    EndShaderMode();
 }
 
 static void draw_text_centered(Font f, const char *msg, Vector2 center, float size, float spacing, Color tint)
@@ -145,4 +201,10 @@ void Renderer_Update(Renderer *r, Engine *e)
 void Renderer_Quit(Renderer *r)
 {
     UnloadTexture(r->font);
+    UnloadShader(r->glyphShader);
+    if (defaultCharset.pixels)
+    {
+        free(defaultCharset.pixels);
+        defaultCharset.pixels = NULL;
+    }
 }
