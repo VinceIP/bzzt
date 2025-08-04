@@ -3,16 +3,14 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-
 #include "raylib.h"
-
-#include "board_renderer.h"
-#include "bz_char.h"
-#include "bzzt.h"
-#include "color.h"
-#include "engine.h"
 #include "renderer.h"
+#include "engine.h"
+#include "color.h"
+#include "bzzt.h"
+#include "board_renderer.h"
 #include "ui_renderer.h"
+#include "bz_char.h"
 #include "debugger.h"
 
 #define TRANSPARENT_GLYPH 255
@@ -81,6 +79,9 @@ bool Renderer_Init(Renderer *r, Engine *e, const char *path)
     SetTextureFilter(r->font, TEXTURE_FILTER_POINT);
 
     r->glyphShader = LoadShader("assets/shaders/glyph.vs", "assets/shaders/glyph.fs");
+    r->glyphShader.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(r->glyphShader, "mvp");
+    r->glyphShader.locs[SHADER_LOC_MAP_DIFFUSE] = GetShaderLocation(r->glyphShader, "texture0");
+    SetShaderValueTexture(r->glyphShader, r->glyphShader.locs[SHADER_LOC_MAP_DIFFUSE], r->font);
 
     SetTargetFPS(60);
 
