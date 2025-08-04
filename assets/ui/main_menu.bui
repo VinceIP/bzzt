@@ -13,8 +13,9 @@ surfaces:
         anchor: center
         elements:
           - type: text
+            name: "banner text"
             expand: true
-            value: "\\fg16\\bg17bzzt\\nversion \\fg150.1"
+            value: "bzzt"
   - name: "Main Menu"
     layer: 0
     width: 10
@@ -32,10 +33,10 @@ surfaces:
         elements:
           - type: Button
             name: "btnPlay"
-            text: "[\\fg15P\\fg16]lay"
+            text: "Play"
           - type: Button
             name: "btnEditor"
-            text: "[\\fg15E\\fg16]ditor"
+            text: "Editor"
           - type: Button
             name: "btnQuit"
-            text: "[\\fg15Q\\fg16]uit"
+            text: "Quit"

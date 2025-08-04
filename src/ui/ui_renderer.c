@@ -2,6 +2,7 @@
 #include "ui.h"
 #include "code_page_lut.h"
 #include "bzzt.h"
+#include "debugger.h"
 #include <string.h>
 #include <ctype.h>
 
@@ -249,6 +250,7 @@ void Renderer_Draw_UI(Renderer *r, const UI *ui)
     }
 
     // Draw any existing UI layers
+
     int layer_count = ui->layer_count;
     for (int i = 0; i < layer_count; ++i)
     {

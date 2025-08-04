@@ -79,18 +79,8 @@ typedef struct
     char *value;
     char *fg;
     char *bg;
-    int expand;
+    bool expand;
 } YamlElement;
-
-typedef struct
-{
-    char *type;
-    char *name;
-    int id;
-    int x, y, z, w, h;
-    int padding;
-    char *text;
-} YamlButton;
 
 typedef struct
 {
@@ -99,7 +89,7 @@ typedef struct
     char *layout;
     char *anchor;
     int spacing;
-    YamlButton *elements;
+    YamlElement *elements;
     unsigned elements_count;
 } YamlOverlay;
 
@@ -195,7 +185,7 @@ static const cyaml_schema_field_t overlay_fields[] = {
     CYAML_FIELD_STRING_PTR("anchor", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, anchor, 0, CYAML_UNLIMITED),
     CYAML_FIELD_INT("spacing", CYAML_FLAG_OPTIONAL, YamlOverlay, spacing),
     CYAML_FIELD_SEQUENCE("elements", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, elements, &element_schema, 0, CYAML_UNLIMITED),
-        CYAML_FIELD_END};
+    CYAML_FIELD_END};
 
 static const cyaml_schema_value_t overlay_schema = {
     CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, YamlOverlay, overlay_fields)};
@@ -427,7 +417,6 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
             UISurface_Destroy(surface);
         }
     }
-
     cyaml_free(&config, &root_schema, root, 0);
     return ok;
 }
