@@ -1,31 +1,30 @@
-name: "Main Menu"
-id: 1
-layer: 0
-
-surface:
-  width: 10
-  height: 7
-  fg: blue
-  bg: blue
-  x: 35
-  y: 10
-  z: 0
-  overlays:
-    - name: "menu"
-      id: 1
-      layout: vbox
-      anchor: right
-      spacing: 2
-      elements:
-        - type: Button
-          name: "btnPlay"
-          id: 1
-          text: "Play"
-        - type: Button
-          name: "btnEditor"
-          id: 2
-          text: "[E]ditor"
-        - type: Button
-          name: "btnQuit"
-          id: 3
-          text: "[Q]uit"
+surfaces:
+  - name: "Main Menu"
+    id: 1
+    layer: 0
+    width: 10
+    height: 7
+    fg: blue
+    bg: blue
+    x: 35
+    y: 10
+    z: 0
+    overlays:
+      - name: "menu"
+        id: 1
+        layout: vbox
+        anchor: right
+        spacing: 2
+        elements:
+          - type: Button
+            name: "btnPlay"
+            id: 1
+            text: "Play"
+          - type: Button
+            name: "btnEditor"
+            id: 2
+            text: "[E]ditor"
+          - type: Button
+            name: "btnQuit"
+            id: 3
+            text: "[Q]uit"

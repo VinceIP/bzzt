@@ -1,6 +1,6 @@
 /**
  * @file yaml_loader.c
- * @author your name (you@domain.com)
+ * @author Vince Patterson (vinceip532@gmail.com)
  * @brief
  * @version 0.1
  * @date 2025-07-15
@@ -18,8 +18,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-
-// --- YAML <-> struct definitions ---------------------------------
 
 typedef struct
 {
@@ -44,6 +42,9 @@ typedef struct
 
 typedef struct
 {
+    char *name;
+    int id;
+    int layer;
     int width;
     int height;
     char *fg;
@@ -57,10 +58,8 @@ typedef struct
 
 typedef struct
 {
-    char *name;
-    int id;
-    int layer;
-    YamlSurface surface;
+    YamlSurface *surfaces;
+    unsigned surfaces_count;
 } YamlUIRoot;
 
 // --- Color helpers -------------------------------------------------
@@ -87,6 +86,7 @@ static const ColorMap color_map[] = {
     {"light_magenta", BZ_LIGHT_MAGENTA},
     {"yellow", BZ_YELLOW},
     {"white", BZ_WHITE},
+    {"transparent", BZ_TRANSPARENT},
 };
 #define COLOR_MAP_COUNT (sizeof(color_map) / sizeof(color_map[0]))
 
@@ -112,8 +112,8 @@ static const cyaml_schema_field_t button_fields[] = {
     CYAML_FIELD_INT("x", CYAML_FLAG_OPTIONAL, YamlButton, x),
     CYAML_FIELD_INT("y", CYAML_FLAG_OPTIONAL, YamlButton, y),
     CYAML_FIELD_INT("z", CYAML_FLAG_OPTIONAL, YamlButton, z),
-    CYAML_FIELD_INT("w", CYAML_FLAG_OPTIONAL, YamlButton, w),
-    CYAML_FIELD_INT("h", CYAML_FLAG_OPTIONAL, YamlButton, h),
+    CYAML_FIELD_INT("width", CYAML_FLAG_OPTIONAL, YamlButton, w),
+    CYAML_FIELD_INT("height", CYAML_FLAG_OPTIONAL, YamlButton, h),
     CYAML_FIELD_INT("padding", CYAML_FLAG_OPTIONAL, YamlButton, padding),
     CYAML_FIELD_STRING_PTR("text", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlButton, text, 0, CYAML_UNLIMITED),
     CYAML_FIELD_END};
@@ -123,7 +123,7 @@ static const cyaml_schema_value_t button_schema = {
 
 static const cyaml_schema_field_t overlay_fields[] = {
     CYAML_FIELD_STRING_PTR("name", CYAML_FLAG_POINTER, YamlOverlay, name, 0, CYAML_UNLIMITED),
-    CYAML_FIELD_INT("id", CYAML_FLAG_DEFAULT, YamlOverlay, id),
+    CYAML_FIELD_INT("id", CYAML_FLAG_OPTIONAL, YamlOverlay, id),
     CYAML_FIELD_STRING_PTR("layout", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, layout, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("anchor", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, anchor, 0, CYAML_UNLIMITED),
     CYAML_FIELD_INT("spacing", CYAML_FLAG_OPTIONAL, YamlOverlay, spacing),
@@ -134,6 +134,9 @@ static const cyaml_schema_value_t overlay_schema = {
     CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, YamlOverlay, overlay_fields)};
 
 static const cyaml_schema_field_t surface_fields[] = {
+    CYAML_FIELD_STRING_PTR("name", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlSurface, name, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_INT("id", CYAML_FLAG_OPTIONAL, YamlSurface, id),
+    CYAML_FIELD_INT("layer", CYAML_FLAG_DEFAULT, YamlSurface, layer),
     CYAML_FIELD_INT("width", CYAML_FLAG_DEFAULT, YamlSurface, width),
     CYAML_FIELD_INT("height", CYAML_FLAG_DEFAULT, YamlSurface, height),
     CYAML_FIELD_STRING_PTR("fg", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlSurface, fg, 0, CYAML_UNLIMITED),
@@ -145,10 +148,7 @@ static const cyaml_schema_field_t surface_fields[] = {
     CYAML_FIELD_END};
 
 static const cyaml_schema_field_t root_fields[] = {
-    CYAML_FIELD_STRING_PTR("name", CYAML_FLAG_POINTER, YamlUIRoot, name, 0, CYAML_UNLIMITED),
-    CYAML_FIELD_INT("id", CYAML_FLAG_DEFAULT, YamlUIRoot, id),
-    CYAML_FIELD_INT("layer", CYAML_FLAG_DEFAULT, YamlUIRoot, layer),
-    CYAML_FIELD_MAPPING("surface", CYAML_FLAG_DEFAULT, YamlUIRoot, surface, surface_fields),
+    CYAML_FIELD_SEQUENCE("surfaces", CYAML_FLAG_DEFAULT | CYAML_FLAG_POINTER, YamlUIRoot, surfaces, &surface_schema, 0, CYAML_UNLIMITED),
     CYAML_FIELD_END};
 
 static const cyaml_schema_value_t root_schema = {
@@ -178,73 +178,156 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
         return false;
     }
 
-    YamlSurface *ys = &root->surface;
+    bool ok = true;
 
-    char *surface_name = root->name ? strdup(root->name) : NULL;
-    UISurface *surface = UISurface_Create(NULL, surface_name, root->id, true, true,
-                                          ys->x, ys->y, ys->z, ys->width, ys->height);
-    if (!surface)
+    // Surfaces
+    for (unsigned si = 0; si < root->surfaces_count && ok; ++si)
     {
-        Debug_Printf(LOG_UI, "No surface.");
-        cyaml_free(&config, &root_schema, root, 0);
-        return false;
-    }
-
-    Color_Bzzt fg = color_from_string(ys->fg, COLOR_WHITE);
-    Color_Bzzt bg = color_from_string(ys->bg, COLOR_TRANSPARENT);
-    for (int i = 0; i < surface->cell_count; ++i)
-    {
-        surface->cells[i].visible = true;
-        surface->cells[i].glyph = 255;
-        surface->cells[i].fg = fg;
-        surface->cells[i].bg = bg;
-    }
-
-    UI_Add_Surface(ui, root->layer, surface);
-
-    // Overlays
-    for (unsigned oi = 0; oi < ys->overlays_count; ++oi)
-    {
-        YamlOverlay *yo = &ys->overlays[oi];
-        OverlayLayout layout = LAYOUT_NONE;
-        if (yo->layout && strcasecmp(yo->layout, "vbox") == 0)
-            layout = LAYOUT_VBOX;
-        OverlayAnchor anchor = ANCHOR_NONE;
-        if (yo->anchor)
+        YamlSurface *ys = &root->surfaces[si];
+        char *surface_name = ys->name ? strdup(ys->name) : NULL;
+        int sid;
+        if (ys->id > 0)
         {
-            if (strcasecmp(yo->anchor, "center") == 0)
-                anchor = ANCHOR_CENTER;
-            else if (strcasecmp(yo->anchor, "left") == 0)
-                anchor = ANCHOR_LEFT;
-            else if (strcasecmp(yo->anchor, "right") == 0)
-                anchor = ANCHOR_RIGHT;
-        }
-        char *overlay_name = yo->name ? strdup(yo->name) : NULL;
-        UISurface_Add_New_Overlay(surface, overlay_name, yo->id, 0, 0, 0,
-                                  surface->properties.w, surface->properties.h,
-                                  0, true, true, layout, anchor, yo->spacing);
-        UIOverlay *ov = surface->overlays[surface->overlays_count - 1];
-        int y_cursor = 0;
-        // Elements
-        for (unsigned ei = 0; ei < yo->elements_count; ++ei)
-        {
-            YamlButton *yb = &yo->elements[ei];
-            if (yb->type && strcasecmp(yb->type, "Button") == 0)
+            sid = ys->id;
+            if (!UI_ID_Register(sid))
             {
-                UIButton *btn = UIButton_Create(0, y_cursor, yb->text ? yb->text : "", NULL, NULL);
-                btn->base.properties.name = yb->name ? strdup(yb->name) : NULL;
-                btn->base.properties.id = yb->id;
-                if (yb->w > 0)
-                    btn->base.properties.w = yb->w;
-                if (yb->h > 0)
-                    btn->base.properties.h = yb->h;
-                UIOverlay_Add_New_Element(ov, (UIElement *)btn);
-                int step = (btn->base.properties.h > 0 ? btn->base.properties.h : 1) + yo->spacing;
-                y_cursor += step;
+                Debug_Printf(LOG_UI, "Invalid or duplicate surface id %d", sid);
+                ok = false;
+                if (surface_name)
+                    free(surface_name);
+                break;
             }
+        }
+        else
+        {
+            sid = UI_ID_Next();
+            if (sid < 0)
+            {
+                Debug_Printf(LOG_UI, "Unable to allocate surface id");
+                ok = false;
+                if (surface_name)
+                    free(surface_name);
+                break;
+            }
+        }
+        UISurface *surface = UISurface_Create(NULL, surface_name, sid, true, true,
+                                              ys->x, ys->y, ys->z, ys->width, ys->height);
+        if (!surface)
+        {
+            Debug_Printf(LOG_UI, "No surface.");
+            ok = false;
+            break;
+        }
+
+        Color_Bzzt fg = color_from_string(ys->fg, COLOR_WHITE);
+        Color_Bzzt bg = color_from_string(ys->bg, COLOR_TRANSPARENT);
+        for (int i = 0; i < surface->cell_count; ++i)
+        {
+            surface->cells[i].visible = true;
+            surface->cells[i].glyph = 255;
+            surface->cells[i].fg = fg;
+            surface->cells[i].bg = bg;
+        }
+
+        // Overlays
+        for (unsigned oi = 0; oi < ys->overlays_count && ok; ++oi)
+        {
+            YamlOverlay *yo = &ys->overlays[oi];
+            OverlayLayout layout = LAYOUT_NONE;
+            if (yo->layout && strcasecmp(yo->layout, "vbox") == 0)
+                layout = LAYOUT_VBOX;
+            OverlayAnchor anchor = ANCHOR_NONE;
+            if (yo->anchor)
+            {
+                if (strcasecmp(yo->anchor, "center") == 0)
+                    anchor = ANCHOR_CENTER;
+                else if (strcasecmp(yo->anchor, "left") == 0)
+                    anchor = ANCHOR_LEFT;
+                else if (strcasecmp(yo->anchor, "right") == 0)
+                    anchor = ANCHOR_RIGHT;
+            }
+            char *overlay_name = yo->name ? strdup(yo->name) : NULL;
+            int oid;
+            if (yo->id > 0)
+            {
+                oid = yo->id;
+                if (!UI_ID_Register(oid))
+                {
+                    Debug_Printf(LOG_UI, "Invalid or duplicate overlay id %d", oid);
+                    if (overlay_name)
+                        free(overlay_name);
+                    ok = false;
+                    break;
+                }
+            }
+            else
+            {
+                oid = UI_ID_Next();
+                if (oid < 0)
+                {
+                    Debug_Printf(LOG_UI, "Unable to allocate overlay id");
+                    if (overlay_name)
+                        free(overlay_name);
+                    ok = false;
+                    break;
+                }
+            }
+            UISurface_Add_New_Overlay(surface, overlay_name, oid, 0, 0, 0,
+                                      surface->properties.w, surface->properties.h,
+                                      0, true, true, layout, anchor, yo->spacing);
+            UIOverlay *ov = surface->overlays[surface->overlays_count - 1];
+            int y_cursor = 0;
+            // Elements
+            for (unsigned ei = 0; ei < yo->elements_count && ok; ++ei)
+            {
+                YamlButton *yb = &yo->elements[ei];
+                if (yb->type && strcasecmp(yb->type, "Button") == 0)
+                {
+                    int bid;
+                    if (yb->id > 0)
+                    {
+                        bid = yb->id;
+                        if (!UI_ID_Register(bid))
+                        {
+                            Debug_Printf(LOG_UI, "Invalid or duplicate element id %d", bid);
+                            ok = false;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        bid = UI_ID_Next();
+                        if (bid < 0)
+                        {
+                            Debug_Printf(LOG_UI, "Unable to allocate element id");
+                            ok = false;
+                            break;
+                        }
+                    }
+                    UIButton *btn = UIButton_Create(0, y_cursor, yb->text ? yb->text : "", NULL, NULL);
+                    btn->base.properties.name = yb->name ? strdup(yb->name) : NULL;
+                    btn->base.properties.id = bid;
+                    if (yb->w > 0)
+                        btn->base.properties.w = yb->w;
+                    if (yb->h > 0)
+                        btn->base.properties.h = yb->h;
+                    UIOverlay_Add_New_Element(ov, (UIElement *)btn);
+                    int step = (btn->base.properties.h > 0 ? btn->base.properties.h : 1) + yo->spacing;
+                    y_cursor += step;
+                }
+            }
+        }
+
+        if (ok)
+        {
+            UI_Add_Surface(ui, ys->layer, surface);
+        }
+        else
+        {
+            UISurface_Destroy(surface);
         }
     }
 
     cyaml_free(&config, &root_schema, root, 0);
-    return true;
+    return ok;
 }

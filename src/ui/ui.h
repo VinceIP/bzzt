@@ -180,6 +180,10 @@ UILayer *UI_Add_New_Layer(UI *ui, bool visible, bool enabled);
 
 void UI_Add_Surface(UI *ui, int targetIndex, UISurface *s);
 
+bool UI_ID_Is_Valid(int id);
+bool UI_ID_Register(int id);
+int UI_ID_Next(void);
+
 /**
  * @brief Creates a new UILayer.
  *
