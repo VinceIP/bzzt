@@ -26,9 +26,9 @@ typedef struct
     char *type;
     char *name;
     int id;
+    int x, y, z, w, h;
+    int padding;
     char *text;
-    int width;
-    int height;
 } YamlButton;
 
 typedef struct
@@ -90,10 +90,10 @@ static const ColorMap color_map[] = {
 };
 #define COLOR_MAP_COUNT (sizeof(color_map) / sizeof(color_map[0]))
 
-static Color_Bzzt color_from_string(const char *s)
+static Color_Bzzt color_from_string(const char *s, Color_Bzzt default_color)
 {
     if (!s)
-        return COLOR_BLACK;
+        return default_color;
     for (size_t i = 0; i < COLOR_MAP_COUNT; ++i)
     {
         if (strcasecmp(s, color_map[i].str) == 0)
@@ -101,18 +101,21 @@ static Color_Bzzt color_from_string(const char *s)
             return bzzt_get_color(color_map[i].val);
         }
     }
-    return COLOR_BLACK;
+    return default_color;
 }
-
 // --- CYAML schema --------------------------------------------------
 
 static const cyaml_schema_field_t button_fields[] = {
     CYAML_FIELD_STRING_PTR("type", CYAML_FLAG_POINTER, YamlButton, type, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("name", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlButton, name, 0, CYAML_UNLIMITED),
     CYAML_FIELD_INT("id", CYAML_FLAG_OPTIONAL, YamlButton, id),
+    CYAML_FIELD_INT("x", CYAML_FLAG_OPTIONAL, YamlButton, x),
+    CYAML_FIELD_INT("y", CYAML_FLAG_OPTIONAL, YamlButton, y),
+    CYAML_FIELD_INT("z", CYAML_FLAG_OPTIONAL, YamlButton, z),
+    CYAML_FIELD_INT("w", CYAML_FLAG_OPTIONAL, YamlButton, w),
+    CYAML_FIELD_INT("h", CYAML_FLAG_OPTIONAL, YamlButton, h),
+    CYAML_FIELD_INT("padding", CYAML_FLAG_OPTIONAL, YamlButton, padding),
     CYAML_FIELD_STRING_PTR("text", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlButton, text, 0, CYAML_UNLIMITED),
-    CYAML_FIELD_INT("width", CYAML_FLAG_OPTIONAL, YamlButton, width),
-    CYAML_FIELD_INT("height", CYAML_FLAG_OPTIONAL, YamlButton, height),
     CYAML_FIELD_END};
 
 static const cyaml_schema_value_t button_schema = {
@@ -187,8 +190,8 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
         return false;
     }
 
-    Color_Bzzt fg = color_from_string(ys->fg);
-    Color_Bzzt bg = color_from_string(ys->bg);
+    Color_Bzzt fg = color_from_string(ys->fg, COLOR_WHITE);
+    Color_Bzzt bg = color_from_string(ys->bg, COLOR_TRANSPARENT);
     for (int i = 0; i < surface->cell_count; ++i)
     {
         surface->cells[i].visible = true;
@@ -199,6 +202,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
 
     UI_Add_Surface(ui, root->layer, surface);
 
+    // Overlays
     for (unsigned oi = 0; oi < ys->overlays_count; ++oi)
     {
         YamlOverlay *yo = &ys->overlays[oi];
@@ -206,14 +210,22 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
         if (yo->layout && strcasecmp(yo->layout, "vbox") == 0)
             layout = LAYOUT_VBOX;
         OverlayAnchor anchor = ANCHOR_NONE;
-        if (yo->anchor && strcasecmp(yo->anchor, "center") == 0)
-            anchor = ANCHOR_CENTER;
+        if (yo->anchor)
+        {
+            if (strcasecmp(yo->anchor, "center") == 0)
+                anchor = ANCHOR_CENTER;
+            else if (strcasecmp(yo->anchor, "left") == 0)
+                anchor = ANCHOR_LEFT;
+            else if (strcasecmp(yo->anchor, "right") == 0)
+                anchor = ANCHOR_RIGHT;
+        }
         char *overlay_name = yo->name ? strdup(yo->name) : NULL;
         UISurface_Add_New_Overlay(surface, overlay_name, yo->id, 0, 0, 0,
                                   surface->properties.w, surface->properties.h,
                                   0, true, true, layout, anchor, yo->spacing);
         UIOverlay *ov = surface->overlays[surface->overlays_count - 1];
         int y_cursor = 0;
+        // Elements
         for (unsigned ei = 0; ei < yo->elements_count; ++ei)
         {
             YamlButton *yb = &yo->elements[ei];
@@ -222,8 +234,12 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                 UIButton *btn = UIButton_Create(0, y_cursor, yb->text ? yb->text : "", NULL, NULL);
                 btn->base.properties.name = yb->name ? strdup(yb->name) : NULL;
                 btn->base.properties.id = yb->id;
+                if (yb->w > 0)
+                    btn->base.properties.w = yb->w;
+                if (yb->h > 0)
+                    btn->base.properties.h = yb->h;
                 UIOverlay_Add_New_Element(ov, (UIElement *)btn);
-                int step = (yb->height > 0 ? yb->height : 1) + yo->spacing;
+                int step = (btn->base.properties.h > 0 ? btn->base.properties.h : 1) + yo->spacing;
                 y_cursor += step;
             }
         }

@@ -137,8 +137,11 @@ UIButton *UIButton_Create(int x, int y, const char *caption, UIButtonAction cb, 
     b->base.properties.x = x;
     b->base.properties.y = y;
     b->base.properties.z = 0;
-    b->base.properties.w = 0;
-    b->base.properties.h = 0;
+
+    int len = caption ? (int)strlen(caption) : 0;
+    b->base.properties.w = len + 2;
+    b->base.properties.h = 1;
+
     b->base.properties.padding = 0;
     b->base.properties.visible = true;
     b->base.properties.enabled = true;
@@ -149,6 +152,7 @@ UIButton *UIButton_Create(int x, int y, const char *caption, UIButtonAction cb, 
     b->ud = ud;
 
     char *dup = caption ? strdup(caption) : strdup("");
-    b->label = UIText_Create(0, 0, COLOR_WHITE, COLOR_MAGENTA, false, pass_through_caption, dup);
+    b->label = UIText_Create(0, 0, COLOR_WHITE, COLOR_TRANSPARENT, false, pass_through_caption, dup);
+    b->label->base.properties.parent = b;
     return b;
 }

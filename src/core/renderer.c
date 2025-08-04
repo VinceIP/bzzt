@@ -133,11 +133,16 @@ void Renderer_Draw_Cell(Renderer *r, int cellX, int cellY, unsigned char glyph, 
         r->glyph_h};
 
     // Fill bg
-    DrawRectangleRec(dst, rb);
 
     // Draw fg
     BeginShaderMode(r->glyphShader);
+
+    if (!(bg.r == COLOR_TRANSPARENT.r && bg.g == COLOR_TRANSPARENT.g && bg.b == COLOR_TRANSPARENT.b))
+    {
+        DrawRectangleRec(dst, rb);
+    }
     DrawTexturePro(r->font, src, dst, (Vector2){0, 0}, 0.0f, rf);
+
     EndShaderMode();
 }
 

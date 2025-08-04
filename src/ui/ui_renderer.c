@@ -10,6 +10,29 @@ static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement 
     int base_x = s->properties.x + ov->properties.x + e->properties.x;
     int base_y = s->properties.y + ov->properties.y + e->properties.y;
 
+    // Handle anchoring
+    int elem_width = 0;
+    if (e->type == UI_ELEM_TEXT)
+    {
+        UIElement_Text *t = (UIElement_Text *)e;
+        const char *str = t->textCallback(t->ud);
+        elem_width = strlen(str);
+    }
+    else if (e->type == UI_ELEM_BUTTON)
+    {
+        UIButton *b = (UIButton *)e;
+        const char *caption = b->label->textCallback(b->label->ud);
+        elem_width = strlen(caption) + 2; // brackets
+    }
+
+    int anchor_offset = 0;
+    if (ov->anchor == ANCHOR_CENTER)
+        anchor_offset = (ov->properties.w - elem_width) / 2;
+    else if (ov->anchor == ANCHOR_RIGHT)
+        anchor_offset = ov->properties.w - elem_width;
+    base_x += anchor_offset;
+    // --
+
     switch (e->type)
     {
     case UI_ELEM_TEXT:

@@ -25,8 +25,8 @@ UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool e
     {
         surface->cells[i].visible = false;
         surface->cells[i].glyph = 0;
-        surface->cells[i].fg = COLOR_BLACK;
-        surface->cells[i].bg = COLOR_BLACK;
+        surface->cells[i].fg = COLOR_WHITE;
+        surface->cells[i].bg = COLOR_TRANSPARENT;
     }
 
     surface->overlays_cap = 1;

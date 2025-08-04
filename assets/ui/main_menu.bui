@@ -4,7 +4,7 @@ layer: 0
 
 surface:
   width: 10
-  height: 4
+  height: 7
   fg: blue
   bg: blue
   x: 35
@@ -15,7 +15,7 @@ surface:
       id: 1
       layout: vbox
       anchor: center
-      spacing: 1
+      spacing: 2
       elements:
         - type: Button
           name: "btnPlay"
