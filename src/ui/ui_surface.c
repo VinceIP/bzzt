@@ -12,7 +12,7 @@ UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool e
         goto fail;
 
     UIProperties props = {
-        name, id, x, y, z, w, h, 0, visible, enabled, l};
+        name, id, x, y, z, w, h, 0, visible, enabled, false, l};
     surface->properties = props;
 
     surface->cell_count = w * h;
@@ -87,6 +87,7 @@ void UISurface_Add_New_Overlay(UISurface *s, char *name, int id, int x, int y, i
     UIOverlay *o = UIOverlay_Create(name, id, x, y, z, w, h, padding, visible, enabled, layout, anchor, spacing);
     s->overlays[s->overlays_count++] = o;
     o->surface = s;
+    o->properties.parent = s;
 }
 void UISurface_Update(UISurface *s)
 {

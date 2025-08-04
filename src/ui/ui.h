@@ -77,6 +77,7 @@ typedef struct UIProperties
     int padding;
     bool visible; // Only drawn if visible
     bool enabled; // If disabled, all drawing and callbacks stop until enabled again
+    bool expand;  // Expands to fit content
     void *parent; // Reference to the parent struct
 } UIProperties;
 
@@ -330,8 +331,7 @@ void UIOverlay_Print(UIOverlay *ov, Color_Bzzt fg, Color_Bzzt bg, bool wrap,
  * @param type new element's ElementType
  * @return UIElement*
  */
-UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, ElementType type);
-
+UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, bool expand, ElementType type);
 /**
  * @brief Run update callbacks for this element.
  *

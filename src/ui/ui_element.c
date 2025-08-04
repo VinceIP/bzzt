@@ -10,7 +10,7 @@ static const char *pass_through_caption(void *ud)
     return (const char *)ud;
 }
 
-UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, ElementType type)
+UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, bool expand, ElementType type)
 {
     UIElement *e = malloc(sizeof(UIElement));
     if (!e)
@@ -26,7 +26,7 @@ UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int 
     e->properties.padding = padding;
     e->properties.visible = visible;
     e->properties.enabled = enabled;
-
+    e->properties.expand = expand;
     e->properties.parent = o;
 
     e->type = type;
@@ -105,6 +105,7 @@ UIElement_Text *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool w
     t->base.properties.padding = 0;
     t->base.properties.visible = true;
     t->base.properties.enabled = true;
+    t->base.properties.expand = false;
     t->base.properties.parent = NULL;
     t->base.update = NULL;
     t->fg = fg;
@@ -145,6 +146,7 @@ UIButton *UIButton_Create(int x, int y, const char *caption, UIButtonAction cb, 
     b->base.properties.padding = 0;
     b->base.properties.visible = true;
     b->base.properties.enabled = true;
+    b->base.properties.expand = false;
     b->base.properties.parent = NULL;
     b->base.update = NULL;
 

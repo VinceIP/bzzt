@@ -1,6 +1,21 @@
 surfaces:
+  - name: "Banner"
+    layer: 0
+    width: 12
+    height: 2
+    fg: cyan
+    bg: cyan
+    x: 37
+    y: 8
+    z: 0
+    overlays:
+      - name: "banner text"
+        anchor: center
+        elements:
+          - type: text
+            expand: true
+            value: "\\fg16\\bg17bzzt\\nversion \\fg150.1"
   - name: "Main Menu"
-    id: 1
     layer: 0
     width: 10
     height: 7
@@ -11,20 +26,16 @@ surfaces:
     z: 0
     overlays:
       - name: "menu"
-        id: 1
         layout: vbox
         anchor: right
         spacing: 2
         elements:
           - type: Button
             name: "btnPlay"
-            id: 1
-            text: "Play"
+            text: "[\\fg15P\\fg16]lay"
           - type: Button
             name: "btnEditor"
-            id: 2
-            text: "[E]ditor"
+            text: "[\\fg15E\\fg16]ditor"
           - type: Button
             name: "btnQuit"
-            id: 3
-            text: "[Q]uit"
+            text: "[\\fg15Q\\fg16]uit"

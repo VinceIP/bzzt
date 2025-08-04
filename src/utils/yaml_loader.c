@@ -18,6 +18,69 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <ctype.h>
+
+static const char *pass_through(void *ud)
+{
+    return (const char *)ud;
+}
+
+static void measure_text(const char *str, int *w, int *h)
+{
+    int max_w = 0, cur_w = 0, lines = 1;
+    if (!str)
+    {
+        if (w)
+            *w = 0;
+        if (h)
+            *h = 0;
+        return;
+    }
+    for (int i = 0; str[i];)
+    {
+        if (str[i] == '\\')
+        {
+            if (str[i + 1] == 'n')
+            {
+                if (cur_w > max_w)
+                    max_w = cur_w;
+                cur_w = 0;
+                lines++;
+                i += 2;
+                continue;
+            }
+            else if ((str[i + 1] == 'f' && str[i + 2] == 'g') || (str[i + 1] == 'b' && str[i + 2] == 'g'))
+            {
+                i += 3;
+                while (str[i] && isdigit((unsigned char)str[i]))
+                    i++;
+                continue;
+            }
+        }
+        cur_w++;
+        i++;
+    }
+    if (cur_w > max_w)
+        max_w = cur_w;
+    if (w)
+        *w = max_w;
+    if (h)
+        *h = lines;
+}
+
+typedef struct
+{
+    char *type;
+    char *name;
+    int id;
+    int x, y, z, w, h;
+    int padding;
+    char *text;
+    char *value;
+    char *fg;
+    char *bg;
+    int expand;
+} YamlElement;
 
 typedef struct
 {
@@ -105,21 +168,25 @@ static Color_Bzzt color_from_string(const char *s, Color_Bzzt default_color)
 }
 // --- CYAML schema --------------------------------------------------
 
-static const cyaml_schema_field_t button_fields[] = {
-    CYAML_FIELD_STRING_PTR("type", CYAML_FLAG_POINTER, YamlButton, type, 0, CYAML_UNLIMITED),
-    CYAML_FIELD_STRING_PTR("name", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlButton, name, 0, CYAML_UNLIMITED),
-    CYAML_FIELD_INT("id", CYAML_FLAG_OPTIONAL, YamlButton, id),
-    CYAML_FIELD_INT("x", CYAML_FLAG_OPTIONAL, YamlButton, x),
-    CYAML_FIELD_INT("y", CYAML_FLAG_OPTIONAL, YamlButton, y),
-    CYAML_FIELD_INT("z", CYAML_FLAG_OPTIONAL, YamlButton, z),
-    CYAML_FIELD_INT("width", CYAML_FLAG_OPTIONAL, YamlButton, w),
-    CYAML_FIELD_INT("height", CYAML_FLAG_OPTIONAL, YamlButton, h),
-    CYAML_FIELD_INT("padding", CYAML_FLAG_OPTIONAL, YamlButton, padding),
-    CYAML_FIELD_STRING_PTR("text", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlButton, text, 0, CYAML_UNLIMITED),
+static const cyaml_schema_field_t element_fields[] = {
+    CYAML_FIELD_STRING_PTR("type", CYAML_FLAG_POINTER, YamlElement, type, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_STRING_PTR("name", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, name, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_INT("id", CYAML_FLAG_OPTIONAL, YamlElement, id),
+    CYAML_FIELD_INT("x", CYAML_FLAG_OPTIONAL, YamlElement, x),
+    CYAML_FIELD_INT("y", CYAML_FLAG_OPTIONAL, YamlElement, y),
+    CYAML_FIELD_INT("z", CYAML_FLAG_OPTIONAL, YamlElement, z),
+    CYAML_FIELD_INT("width", CYAML_FLAG_OPTIONAL, YamlElement, w),
+    CYAML_FIELD_INT("height", CYAML_FLAG_OPTIONAL, YamlElement, h),
+    CYAML_FIELD_INT("padding", CYAML_FLAG_OPTIONAL, YamlElement, padding),
+    CYAML_FIELD_STRING_PTR("text", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, text, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_STRING_PTR("value", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, value, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_STRING_PTR("fg", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, fg, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_STRING_PTR("bg", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, bg, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_BOOL("expand", CYAML_FLAG_OPTIONAL, YamlElement, expand),
     CYAML_FIELD_END};
 
-static const cyaml_schema_value_t button_schema = {
-    CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, YamlButton, button_fields)};
+static const cyaml_schema_value_t element_schema = {
+    CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, YamlElement, element_fields)};
 
 static const cyaml_schema_field_t overlay_fields[] = {
     CYAML_FIELD_STRING_PTR("name", CYAML_FLAG_POINTER, YamlOverlay, name, 0, CYAML_UNLIMITED),
@@ -127,8 +194,8 @@ static const cyaml_schema_field_t overlay_fields[] = {
     CYAML_FIELD_STRING_PTR("layout", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, layout, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("anchor", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, anchor, 0, CYAML_UNLIMITED),
     CYAML_FIELD_INT("spacing", CYAML_FLAG_OPTIONAL, YamlOverlay, spacing),
-    CYAML_FIELD_SEQUENCE("elements", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, elements, &button_schema, 0, CYAML_UNLIMITED),
-    CYAML_FIELD_END};
+    CYAML_FIELD_SEQUENCE("elements", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, elements, &element_schema, 0, CYAML_UNLIMITED),
+        CYAML_FIELD_END};
 
 static const cyaml_schema_value_t overlay_schema = {
     CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, YamlOverlay, overlay_fields)};
@@ -147,9 +214,10 @@ static const cyaml_schema_field_t surface_fields[] = {
     CYAML_FIELD_SEQUENCE("overlays", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlSurface, overlays, &overlay_schema, 0, CYAML_UNLIMITED),
     CYAML_FIELD_END};
 
-static const cyaml_schema_field_t root_fields[] = {
-    CYAML_FIELD_SEQUENCE("surfaces", CYAML_FLAG_DEFAULT | CYAML_FLAG_POINTER, YamlUIRoot, surfaces, &surface_schema, 0, CYAML_UNLIMITED),
-    CYAML_FIELD_END};
+static const cyaml_schema_value_t surface_schema = {
+    CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, YamlSurface, surface_fields)};
+
+static const cyaml_schema_field_t root_fields[] = {CYAML_FIELD_SEQUENCE("surfaces", CYAML_FLAG_DEFAULT | CYAML_FLAG_POINTER, YamlUIRoot, surfaces, &surface_schema, 0, CYAML_UNLIMITED), CYAML_FIELD_END};
 
 static const cyaml_schema_value_t root_schema = {
     CYAML_VALUE_MAPPING(CYAML_FLAG_POINTER, YamlUIRoot, root_fields)};
@@ -280,39 +348,71 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
             // Elements
             for (unsigned ei = 0; ei < yo->elements_count && ok; ++ei)
             {
-                YamlButton *yb = &yo->elements[ei];
-                if (yb->type && strcasecmp(yb->type, "Button") == 0)
+                YamlElement *ye = &yo->elements[ei];
+                if (!ye->text && ye->value)
+                    ye->text = ye->value;
+                if (!ye->type)
+                    continue;
+                int eid;
+                if (ye->id > 0)
                 {
-                    int bid;
-                    if (yb->id > 0)
+                    eid = ye->id;
+                    if (!UI_ID_Register(eid))
                     {
-                        bid = yb->id;
-                        if (!UI_ID_Register(bid))
-                        {
-                            Debug_Printf(LOG_UI, "Invalid or duplicate element id %d", bid);
-                            ok = false;
-                            break;
-                        }
+                        Debug_Printf(LOG_UI, "Invalid or duplicate element id %d", eid);
+                        ok = false;
+                        break;
                     }
-                    else
+                }
+                else
+                {
+                    eid = UI_ID_Next();
+                    if (eid < 0)
                     {
-                        bid = UI_ID_Next();
-                        if (bid < 0)
-                        {
-                            Debug_Printf(LOG_UI, "Unable to allocate element id");
-                            ok = false;
-                            break;
-                        }
+                        Debug_Printf(LOG_UI, "Unable to allocate element id");
+                        ok = false;
+                        break;
                     }
-                    UIButton *btn = UIButton_Create(0, y_cursor, yb->text ? yb->text : "", NULL, NULL);
-                    btn->base.properties.name = yb->name ? strdup(yb->name) : NULL;
-                    btn->base.properties.id = bid;
-                    if (yb->w > 0)
-                        btn->base.properties.w = yb->w;
-                    if (yb->h > 0)
-                        btn->base.properties.h = yb->h;
+                }
+
+                Color_Bzzt elem_fg = color_from_string(ye->fg, COLOR_WHITE);
+                Color_Bzzt elem_bg = color_from_string(ye->bg, COLOR_TRANSPARENT);
+
+                if (strcasecmp(ye->type, "Button") == 0)
+                {
+                    UIButton *btn = UIButton_Create(ye->x, y_cursor + ye->y, ye->text ? ye->text : "", NULL, NULL);
+                    btn->base.properties.name = ye->name ? strdup(ye->name) : NULL;
+                    btn->base.properties.id = eid;
+                    btn->base.properties.z = ye->z;
+                    btn->base.properties.padding = ye->padding;
+                    btn->base.properties.expand = ye->expand;
+                    btn->base.properties.parent = ov;
+                    btn->label->fg = elem_fg;
+                    btn->label->bg = elem_bg;
+                    int mw, mh;
+                    measure_text(ye->text ? ye->text : "", &mw, &mh);
+                    btn->base.properties.w = ye->w > 0 ? ye->w : mw;
+                    btn->base.properties.h = ye->h > 0 ? ye->h : mh;
                     UIOverlay_Add_New_Element(ov, (UIElement *)btn);
                     int step = (btn->base.properties.h > 0 ? btn->base.properties.h : 1) + yo->spacing;
+                    y_cursor += step;
+                }
+                else if (strcasecmp(ye->type, "text") == 0)
+                {
+                    char *dup = ye->text ? strdup(ye->text) : strdup("");
+                    UIElement_Text *txt = UIText_Create(ye->x, y_cursor + ye->y, elem_fg, elem_bg, false, pass_through, dup);
+                    txt->base.properties.name = ye->name ? strdup(ye->name) : NULL;
+                    txt->base.properties.id = eid;
+                    txt->base.properties.z = ye->z;
+                    txt->base.properties.padding = ye->padding;
+                    txt->base.properties.expand = ye->expand;
+                    txt->base.properties.parent = ov;
+                    int mw, mh;
+                    measure_text(ye->text ? ye->text : "", &mw, &mh);
+                    txt->base.properties.w = ye->w > 0 ? ye->w : mw;
+                    txt->base.properties.h = ye->h > 0 ? ye->h : mh;
+                    UIOverlay_Add_New_Element(ov, (UIElement *)txt);
+                    int step = (txt->base.properties.h > 0 ? txt->base.properties.h : 1) + yo->spacing;
                     y_cursor += step;
                 }
             }

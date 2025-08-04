@@ -36,6 +36,8 @@ UIOverlay *UIOverlay_Create(char *name, int id, int x, int y, int z, int w, int 
     o->properties.padding = padding;
     o->properties.visible = visible;
     o->properties.enabled = enabled;
+    o->properties.expand = false;
+    o->properties.parent = NULL;
 
     o->layout = layout;
     o->anchor = anchor;

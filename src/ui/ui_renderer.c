@@ -3,7 +3,117 @@
 #include "code_page_lut.h"
 #include "bzzt.h"
 #include <string.h>
-#include <stdio.h>
+#include <ctype.h>
+
+static void measure_text(const char *str, int *w, int *h)
+{
+    int max_w = 0, cur_w = 0, lines = 1;
+    if (!str)
+    {
+        if (w)
+            *w = 0;
+        if (h)
+            *h = 0;
+        return;
+    }
+    for (int i = 0; str[i];)
+    {
+        if (str[i] == '\\')
+        {
+            if (str[i + 1] == 'n')
+            {
+                if (cur_w > max_w)
+                    max_w = cur_w;
+                cur_w = 0;
+                lines++;
+                i += 2;
+                continue;
+            }
+            else if ((str[i + 1] == 'f' && str[i + 2] == 'g') || (str[i + 1] == 'b' && str[i + 2] == 'g'))
+            {
+                i += 3;
+                while (str[i] && isdigit((unsigned char)str[i]))
+                    i++;
+                continue;
+            }
+        }
+        cur_w++;
+        i++;
+    }
+    if (cur_w > max_w)
+        max_w = cur_w;
+    if (w)
+        *w = max_w;
+    if (h)
+        *h = lines;
+}
+
+static void draw_escaped_text(Renderer *r, const char *str, int base_x, int base_y, int max_w, int max_h, bool wrap, Color_Bzzt fg, Color_Bzzt bg)
+{
+    int x = base_x;
+    int y = base_y;
+    Color_Bzzt cur_fg = fg;
+    Color_Bzzt cur_bg = bg;
+    for (int i = 0; str[i];)
+    {
+        if (str[i] == '\\')
+        {
+            if (str[i + 1] == 'n')
+            {
+                x = base_x;
+                y += 1;
+                i += 2;
+                if (y - base_y >= max_h)
+                    break;
+                continue;
+            }
+            else if (str[i + 1] == 'f' && str[i + 2] == 'g')
+            {
+                i += 3;
+                int val = 0;
+                while (str[i] && isdigit((unsigned char)str[i]))
+                {
+                    val = val * 10 + (str[i] - '0');
+                    i++;
+                }
+                cur_fg = bzzt_get_color(val);
+                continue;
+            }
+            else if (str[i + 1] == 'b' && str[i + 2] == 'g')
+            {
+                i += 3;
+                int val = 0;
+                while (str[i] && isdigit((unsigned char)str[i]))
+                {
+                    val = val * 10 + (str[i] - '0');
+                    i++;
+                }
+                cur_bg = bzzt_get_color(val);
+                continue;
+            }
+        }
+
+        if (x - base_x >= max_w)
+        {
+            if (wrap)
+            {
+                x = base_x;
+                y += 1;
+                if (y - base_y >= max_h)
+                    break;
+            }
+            else
+            {
+                break;
+            }
+        }
+        if (y - base_y >= max_h)
+            break;
+        Renderer_Draw_Cell(r, x, y, unicode_to_cp437((unsigned char)str[i]), cur_fg, cur_bg);
+        x += 1;
+        i++;
+    }
+}
 
 static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement *e)
 {
@@ -11,18 +121,36 @@ static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement 
     int base_y = s->properties.y + ov->properties.y + e->properties.y;
 
     // Handle anchoring
-    int elem_width = 0;
+    int elem_width = 0, elem_height = 1;
     if (e->type == UI_ELEM_TEXT)
     {
         UIElement_Text *t = (UIElement_Text *)e;
         const char *str = t->textCallback(t->ud);
-        elem_width = strlen(str);
+        measure_text(str, &elem_width, &elem_height);
+        if (e->properties.expand)
+        {
+            int max_w = ov->properties.w - e->properties.x;
+            int max_h = ov->properties.h - e->properties.y;
+            if (elem_width > e->properties.w)
+                e->properties.w = elem_width > max_w ? max_w : elem_width;
+            if (elem_height > e->properties.h)
+                e->properties.h = elem_height > max_h ? max_h : elem_height;
+        }
     }
     else if (e->type == UI_ELEM_BUTTON)
     {
         UIButton *b = (UIButton *)e;
         const char *caption = b->label->textCallback(b->label->ud);
-        elem_width = strlen(caption); // brackets
+        measure_text(caption, &elem_width, &elem_height);
+        if (e->properties.expand)
+        {
+            int max_w = ov->properties.w - e->properties.x;
+            int max_h = ov->properties.h - e->properties.y;
+            if (elem_width > e->properties.w)
+                e->properties.w = elem_width > max_w ? max_w : elem_width;
+            if (elem_height > e->properties.h)
+                e->properties.h = elem_height > max_h ? max_h : elem_height;
+        }
     }
 
     int anchor_offset = 0;
@@ -39,47 +167,18 @@ static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement 
     {
         UIElement_Text *t = (UIElement_Text *)e;
         const char *str = t->textCallback(t->ud);
-        int x = base_x;
-        int y = base_y;
-        int maxWidth = t->wrap ? s->properties.w - (x - s->properties.x) : s->properties.w;
-        int len = strlen(str);
-        for (int i = 0; i < len; ++i)
-        {
-            unsigned char c = (unsigned char)str[i];
-            if (c == '\n')
-            {
-                x = base_x;
-                y += 1;
-                continue;
-            }
-            if (x - base_x >= maxWidth)
-            {
-                if (t->wrap)
-                {
-                    x = base_x;
-                    y += 1;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            Renderer_Draw_Cell(r, x, y, unicode_to_cp437(c), t->fg, t->bg);
-            x += 1;
-        }
+        int max_w = e->properties.w > 0 ? e->properties.w : ov->properties.w - e->properties.x;
+        int max_h = e->properties.h > 0 ? e->properties.h : ov->properties.h - e->properties.y;
+        draw_escaped_text(r, str, base_x, base_y, max_w, max_h, t->wrap, t->fg, t->bg);
         break;
     }
     case UI_ELEM_BUTTON:
     {
         UIButton *b = (UIButton *)e;
         const char *caption = b->label->textCallback(b->label->ud);
-        int x = base_x;
-        int len = strlen(caption);
-        for (int i = 0; i < len; ++i)
-        {
-            Renderer_Draw_Cell(r, x + i, base_y, unicode_to_cp437((unsigned char)caption[i]), b->label->fg, b->label->bg);
-        }
+        int max_w = e->properties.w > 0 ? e->properties.w : ov->properties.w - e->properties.x;
+        int max_h = e->properties.h > 0 ? e->properties.h : ov->properties.h - e->properties.y;
+        draw_escaped_text(r, caption, base_x, base_y, max_w, max_h, false, b->label->fg, b->label->bg);
         break;
     }
     default:
