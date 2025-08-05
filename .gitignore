@@ -17,6 +17,7 @@
 *~ 
 
 # misc
+.vs/
 .vscode/
 *.bat
 *.zzt
