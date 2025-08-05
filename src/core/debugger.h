@@ -14,6 +14,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <limits.h>
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 typedef enum
 {
@@ -35,13 +40,13 @@ typedef enum
 typedef struct
 {
     FILE *file;
-    char *path;
+    char path[PATH_MAX];
     int log_limit;
     bool enabled;
     bool log_to_file;
     LogLevel log_level;
 } Debugger;
 
-void Debugger_Create();
+void Debugger_Create(void);
 void Debug_Printf(LogType lt, const char *fmt, ...);
 const char *Debug_Log(LogLevel lvl, LogType lt, const char *fmt, ...);

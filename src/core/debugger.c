@@ -115,8 +115,9 @@ static void enforce_log_limit(int limit)
         remove(entries[i].name);
 }
 
-void Debugger_Create(int log_limit)
+void Debugger_Create(void)
 {
+    const int log_limit = 5;
     Debugger *d = calloc(1, sizeof *d);
     if (!d)
     {
@@ -147,7 +148,8 @@ void Debugger_Create(int log_limit)
     }
 
     strncpy(d->path, fname, sizeof d->path);
-
+    d->path[sizeof d->path - 1] = '\0';
+    
     dbg = d;
 
     fprintf(dbg->file, "=== bzzt log started %s ===\n", stamp);
