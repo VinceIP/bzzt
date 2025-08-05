@@ -8,6 +8,7 @@
  * @copyright Copyright (c) 2025
  *
  */
+#define _POSIX_C_SOURCE 200809L
 #include "debugger.h"
 #include <stdarg.h>
 #include <stdio.h>
@@ -16,6 +17,7 @@
 #include <time.h>
 #include <stdbool.h>
 #include <sys/stat.h>
+#include <stdint.h>
 
 #if defined(_WIN32)
 #include <io.h>
@@ -56,7 +58,7 @@ static void enforce_log_limit(int limit)
 
 #if defined(_WIN32)
     struct _finddata_t f;
-    long h;
+    intptr_t h;
     if ((h = _findfirst("bzzt_*.log", &f)) != -1)
     {
         do
@@ -131,7 +133,6 @@ void Debugger_Create(void)
     d->log_limit = log_limit;
 
     enforce_log_limit(log_limit);
-
     struct tm tm_now;
     get_time(&tm_now, NULL);
     char stamp[20];
@@ -149,7 +150,7 @@ void Debugger_Create(void)
 
     strncpy(d->path, fname, sizeof d->path);
     d->path[sizeof d->path - 1] = '\0';
-    
+
     dbg = d;
 
     fprintf(dbg->file, "=== bzzt log started %s ===\n", stamp);
@@ -168,23 +169,23 @@ void Debugger_Destroy(void)
 
 static void write_line(const char *prefix, const char *fmt, va_list ap)
 {
-    /* stderr */
+    va_list cp;
+    va_copy(cp, ap);
+
     fprintf(stderr, "%s", prefix);
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     fflush(stderr);
 
-    /* file */
     if (dbg && dbg->log_to_file && dbg->file)
     {
-        va_list cp;
-        va_copy(cp, ap);
         fprintf(dbg->file, "%s", prefix);
         vfprintf(dbg->file, fmt, cp);
         fprintf(dbg->file, "\n");
         fflush(dbg->file);
-        va_end(cp);
     }
+
+    va_end(cp);
 }
 
 void Debug_Printf(LogType lt, const char *fmt, ...)
@@ -227,7 +228,7 @@ const char *Debug_Log(LogLevel lvl, LogType lt, const char *fmt, ...)
                                   : lt == LOG_UI      ? "UI"
                                                       : "";
 
-    char prefix[64];
+    static char prefix[64];
     snprintf(prefix, sizeof prefix, "[%s] %s %s: ", tbuf, lvl_s, typ_s);
 
     va_list ap;
