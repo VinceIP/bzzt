@@ -36,7 +36,7 @@ static void measure_text(const char *str, int *w, int *h)
             *h = 0;
         return;
     }
-    for (int i = 0; i < strlen(str); ++i)
+    for (int i = 0; str[i];)
     {
         if (str[i] == '\\')
         {
@@ -89,6 +89,8 @@ typedef struct
     char *value;
     char *fg;
     char *bg;
+    bool visible;
+    bool enabled;
     bool expand;
 } YamlElement;
 
@@ -124,8 +126,6 @@ typedef struct
     YamlSurface *surfaces;
     unsigned surfaces_count;
 } YamlUIRoot;
-
-// --- Color helpers -------------------------------------------------
 
 typedef struct
 {
@@ -166,8 +166,8 @@ static Color_Bzzt color_from_string(const char *s, Color_Bzzt default_color)
     }
     return default_color;
 }
-// --- CYAML schema --------------------------------------------------
 
+// --- CYAML schema ---
 static const cyaml_schema_field_t element_fields[] = {
     CYAML_FIELD_STRING_PTR("type", CYAML_FLAG_POINTER, YamlElement, type, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("name", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, name, 0, CYAML_UNLIMITED),
@@ -182,6 +182,8 @@ static const cyaml_schema_field_t element_fields[] = {
     CYAML_FIELD_STRING_PTR("value", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, value, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("fg", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, fg, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("bg", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, bg, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_BOOL("visible", CYAML_FLAG_OPTIONAL, YamlElement, visible),
+    CYAML_FIELD_BOOL("enabled", CYAML_FLAG_OPTIONAL, YamlElement, enabled),
     CYAML_FIELD_BOOL("expand", CYAML_FLAG_OPTIONAL, YamlElement, expand),
     CYAML_FIELD_END};
 
@@ -384,15 +386,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
 
                 if (strcasecmp(ye->type, "Button") == 0)
                 {
-                    UIButton *btn = UIButton_Create(ye->x, y_cursor + ye->y, ye->text ? ye->text : "", NULL, NULL);
-                    btn->base.properties.name = ye->name ? strdup(ye->name) : NULL;
-                    btn->base.properties.id = eid;
-                    btn->base.properties.z = ye->z;
-                    btn->base.properties.padding = ye->padding;
-                    btn->base.properties.expand = ye->expand;
-                    btn->base.properties.parent = ov;
-                    btn->label->fg = elem_fg;
-                    btn->label->bg = elem_bg;
+                    UIButton *btn = UIButton_Create(ov, ye->name, ye->id, ye->x, y_cursor + ye->y, ye->z, ye->w, ye->h, ye->padding, color_from_string(ye->fg, COLOR_BLACK), color_from_string(ye->bg, COLOR_BLACK), ye->visible, ye->enabled, ye->expand, ye->text ? ye->text : "", NULL, NULL);
                     int mw, mh;
                     measure_text(ye->text ? ye->text : "", &mw, &mh);
                     btn->base.properties.w = ye->w > 0 ? ye->w : mw;

@@ -87,6 +87,8 @@ typedef struct UIElement
     ElementType type;
     UIProperties properties;
     void (*update)(struct UIElement *);
+    Bzzt_Cell *cells;
+    int cell_count;
 } UIElement;
 
 // A UI text field
@@ -331,7 +333,7 @@ void UIOverlay_Print(UIOverlay *ov, Color_Bzzt fg, Color_Bzzt bg, bool wrap,
  * @param type new element's ElementType
  * @return UIElement*
  */
-UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, bool expand, ElementType type);
+UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg, Color_Bzzt bg, bool visible, bool enabled, bool expand, ElementType type);
 /**
  * @brief Run update callbacks for this element.
  *
@@ -361,11 +363,10 @@ UIElement_Text *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool w
 
 UIElement_Text *UIText_Create_Bound(int x, int y, Color_Bzzt fg, Color_Bzzt bg,
                                     const void *ptr, const void *fmt, BindType type);
-UIButton *UIButton_Create(int x, int y, const char *caption,
-                          UIButtonAction cb, void *ud);
+UIButton *UIButton_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg, Color_Bzzt bg, bool visible, bool enabled, bool expand, const char *caption, UIButtonAction cb, void *ud);
 
-bool UISurface_DrawText(UISurface *surface, const char *utf8, int x, int y,
-                        Color_Bzzt fg, Color_Bzzt bg, bool wrap, int wrapWidth);
+    bool UISurface_DrawText(UISurface *surface, const char *utf8, int x, int y,
+                            Color_Bzzt fg, Color_Bzzt bg, bool wrap, int wrapWidth);
 
 void Renderer_Draw_UI(struct Renderer *, const UI *);
 

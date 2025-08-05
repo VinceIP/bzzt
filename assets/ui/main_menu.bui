@@ -15,10 +15,10 @@ surfaces:
           - type: button
             name: "banner text"
             expand: true
-            value: "\f15bzzt version 0.1"
+            value: '\fg14bzzt\nversion\fg15\bg1 0.1'
   - name: "Main Menu"
     layer: 0
-    width: 10
+    width: 25
     height: 7
     fg: blue
     bg: blue
@@ -29,11 +29,14 @@ surfaces:
       - name: "menu"
         layout: vbox
         anchor: left
-        spacing: 2
+        spacing: 1
         elements:
           - type: Button
             name: "btnPlay"
             text: "Play"
+            width: 20
+            height: 2
+            bg: light_blue
           - type: Button
             name: "btnEditor"
             text: "Editor"

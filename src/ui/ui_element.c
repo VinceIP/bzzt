@@ -10,7 +10,7 @@ static const char *pass_through_caption(void *ud)
     return (const char *)ud;
 }
 
-UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, bool expand, ElementType type)
+UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg, Color_Bzzt bg, bool visible, bool enabled, bool expand, ElementType type)
 {
     UIElement *e = malloc(sizeof(UIElement));
     if (!e)
@@ -28,6 +28,8 @@ UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int 
     e->properties.enabled = enabled;
     e->properties.expand = expand;
     e->properties.parent = o;
+
+    e->cell_count = e->properties.w * e->properties.h;
 
     e->type = type;
     e->update = NULL; // TBD
@@ -129,28 +131,24 @@ UIElement_Text *UIText_Create_Bound(int x, int y, Color_Bzzt fg, Color_Bzzt bg, 
     return UIText_Create(x, y, fg, bg, false, UIBinding_Text_Format, b);
 }
 
-UIButton *UIButton_Create(int x, int y, const char *caption, UIButtonAction cb, void *ud)
+UIButton *UIButton_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg, Color_Bzzt bg, bool visible, bool enabled, bool expand, const char *caption, UIButtonAction cb, void *ud)
 {
     UIButton *b = malloc(sizeof(UIButton));
     if (!b)
         Debug_Printf(LOG_UI, "Error allocating UIButton.");
 
     b->base.type = UI_ELEM_BUTTON;
-    b->base.properties.name = NULL;
-    b->base.properties.id = 0;
+    b->base.properties.name = name;
+    b->base.properties.id = id;
     b->base.properties.x = x;
     b->base.properties.y = y;
-    b->base.properties.z = 0;
-
-    int len = caption ? (int)strlen(caption) : 0;
-    b->base.properties.w = len + 2;
-    b->base.properties.h = 1;
-
-    b->base.properties.padding = 0;
-    b->base.properties.visible = true;
-    b->base.properties.enabled = true;
+    b->base.properties.z = z;
+    b->base.properties.w = w;
+    b->base.properties.h = h;
+    b->base.properties.enabled = enabled;
+    b->base.properties.visible = visible;
     b->base.properties.expand = false;
-    b->base.properties.parent = NULL;
+    b->base.properties.parent = o;
     b->base.update = NULL;
 
     b->onClick = cb;

@@ -55,11 +55,10 @@ static void draw_escaped_text(Renderer *r, const char *str, int base_x, int base
     int y = base_y;
     Color_Bzzt cur_fg = fg;
     Color_Bzzt cur_bg = bg;
-    for (int i = 0; i < strlen(str); ++i)
+    for (int i = 0; str[i];)
     {
         if (str[i] == '\\')
         {
-            Debug_Printf(LOG_UI, "Saw an escape.");
             if (str[i + 1] == 'n')
             {
                 x = base_x;
