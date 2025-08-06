@@ -11,6 +11,14 @@ UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool e
     if (!surface)
         goto fail;
 
+    surface->cell_count = w * h;
+    surface->cells = malloc(sizeof(Bzzt_Cell) * surface->cell_count);
+    if (!surface->cells)
+        goto fail;
+
+    surface->cells = NULL;
+    surface->overlays = NULL;
+
     UIProperties props = {
         name, id, x, y, z, w, h, 0, visible, enabled, false, l};
     surface->properties = props;
@@ -31,12 +39,21 @@ UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool e
 
     surface->overlays_cap = 1;
     surface->overlays_count = 0;
+
     surface->overlays = malloc(sizeof(UIOverlay *) * surface->overlays_cap);
     if (!surface->overlays)
         goto fail;
     return surface;
 
 fail:
+    if (surface)
+    {
+        if (surface->cells)
+            free(surface->cells);
+        if (surface->overlays)
+            free(surface->overlays);
+        free(surface);
+    }
     Debug_Printf(LOG_UI, "Error creating surface with %d cells.", w * h);
     return NULL;
 }
@@ -44,7 +61,11 @@ fail:
 void UISurface_Destroy(UISurface *s)
 {
     if (!s)
+    {
+        fprintf(stderr, "No surface, returning early\n");
+
         return;
+    }
 
     if (s->cell_count > 0)
     {
@@ -55,6 +76,8 @@ void UISurface_Destroy(UISurface *s)
     {
         for (int i = 0; i < s->overlays_count; ++i)
         {
+            fprintf(stderr, "Destroying overlay\n");
+
             UIOverlay *o = s->overlays[i];
             UIOverlay_Destroy(o);
         }
@@ -65,6 +88,7 @@ void UISurface_Destroy(UISurface *s)
         free(s->properties.name);
 
     free(s);
+    fprintf(stderr, "Surface freed\n");
 }
 
 void UISurface_Add_New_Overlay(UISurface *s, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, OverlayLayout layout, OverlayAnchor anchor, int spacing)
@@ -85,6 +109,11 @@ void UISurface_Add_New_Overlay(UISurface *s, char *name, int id, int x, int y, i
         s->overlays_cap = new_cap;
     }
     UIOverlay *o = UIOverlay_Create(name, id, x, y, z, w, h, padding, visible, enabled, layout, anchor, spacing);
+    if (!o)
+    {
+        Debug_Printf(LOG_UI, "Error creating overlay when adding to a surface.");
+        return;
+    }
     s->overlays[s->overlays_count++] = o;
     o->surface = s;
     o->properties.parent = s;

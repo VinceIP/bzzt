@@ -168,18 +168,18 @@ void Renderer_Update(Renderer *r, Engine *e)
     ClearBackground(BLACK);
     switch (e->state)
     {
-    case SPLASH_MODE:
+    case ENGINE_STATE_SPLASH:
         Renderer_Draw_Board(r, e->world->boards[e->world->boards_current]);
         if (e->ui)
         {
             Renderer_Draw_UI(r, e->ui);
         }
         break;
-    case PLAY_MODE:
+    case ENGINE_STATE_PLAY:
         Renderer_Draw_Board(r, e->world->boards[e->world->boards_current]);
         break;
 
-    case EDIT_MODE:
+    case ENGINE_STATE_EDIT:
         UI *ui = e->ui;
         if (ui)
         {

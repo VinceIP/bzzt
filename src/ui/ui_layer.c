@@ -37,6 +37,8 @@ void UILayer_Destroy(UILayer *l)
 
     for (int i = 0; i < l->surface_count; ++i)
     {
+        fprintf(stderr, "Destroying a surface\n");
+
         UISurface *s = l->surfaces[i];
         UISurface_Destroy(s);
     }

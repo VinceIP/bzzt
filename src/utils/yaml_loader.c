@@ -89,7 +89,7 @@ typedef struct
     char *value;
     char *fg;
     char *bg;
-    bool visible;
+    bool *visible;
     bool enabled;
     bool expand;
 } YamlElement;
@@ -182,7 +182,7 @@ static const cyaml_schema_field_t element_fields[] = {
     CYAML_FIELD_STRING_PTR("value", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, value, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("fg", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, fg, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("bg", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, bg, 0, CYAML_UNLIMITED),
-    CYAML_FIELD_BOOL("visible", CYAML_FLAG_OPTIONAL, YamlElement, visible),
+    CYAML_FIELD_BOOL_PTR("visible", CYAML_FLAG_OPTIONAL, YamlElement, visible),
     CYAML_FIELD_BOOL("enabled", CYAML_FLAG_OPTIONAL, YamlElement, enabled),
     CYAML_FIELD_BOOL("expand", CYAML_FLAG_OPTIONAL, YamlElement, expand),
     CYAML_FIELD_END};
@@ -383,10 +383,14 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
 
                 Color_Bzzt elem_fg = color_from_string(ye->fg, COLOR_WHITE);
                 Color_Bzzt elem_bg = color_from_string(ye->bg, COLOR_TRANSPARENT);
+                bool is_visible = ye->visible ? *ye->visible : true; // visible by default
 
                 if (strcasecmp(ye->type, "Button") == 0)
                 {
-                    UIButton *btn = UIButton_Create(ov, ye->name, ye->id, ye->x, y_cursor + ye->y, ye->z, ye->w, ye->h, ye->padding, color_from_string(ye->fg, COLOR_BLACK), color_from_string(ye->bg, COLOR_BLACK), ye->visible, ye->enabled, ye->expand, ye->text ? ye->text : "", NULL, NULL);
+                    UIButton *btn = UIButton_Create(ov, ye->name, ye->id, ye->x, y_cursor + ye->y, ye->z, ye->w, ye->h, ye->padding,
+                                                    color_from_string(ye->fg, COLOR_BLACK), color_from_string(ye->bg, COLOR_BLACK),
+                                                    is_visible, ye->enabled,
+                                                    ye->expand, ye->text ? ye->text : "", NULL, NULL);
                     int mw, mh;
                     measure_text(ye->text ? ye->text : "", &mw, &mh);
                     btn->base.properties.w = ye->w > 0 ? ye->w : mw;
@@ -398,13 +402,15 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                 else if (strcasecmp(ye->type, "text") == 0)
                 {
                     char *dup = ye->text ? strdup(ye->text) : strdup("");
-                    UIElement_Text *txt = UIText_Create(ye->x, y_cursor + ye->y, elem_fg, elem_bg, false, pass_through, dup);
+                    UIElement_Text *txt = UIText_Create(ye->x, y_cursor + ye->y, elem_fg, elem_bg, false, pass_through, dup, true);
                     txt->base.properties.name = ye->name ? strdup(ye->name) : NULL;
                     txt->base.properties.id = eid;
                     txt->base.properties.z = ye->z;
                     txt->base.properties.padding = ye->padding;
                     txt->base.properties.expand = ye->expand;
                     txt->base.properties.parent = ov;
+                    txt->base.properties.visible = is_visible;
+                    txt->base.properties.enabled = ye->enabled;
                     int mw, mh;
                     measure_text(ye->text ? ye->text : "", &mw, &mh);
                     txt->base.properties.w = ye->w > 0 ? ye->w : mw;

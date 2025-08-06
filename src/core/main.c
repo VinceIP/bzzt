@@ -31,7 +31,7 @@ int main(void)
     Renderer_Init(&rend, &e, fontPath);
 
     InputState in = {0};
-    MouseState mo = {};
+    MouseState mo = {0};
 
     while (!in.quit)
     {

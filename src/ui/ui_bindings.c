@@ -23,6 +23,7 @@ TextBinding *UIBinding_Text_Create(const void *ptr, const char *fmt, BindType ty
     b->fmt = fmt;
     b->type = type;
     b->buf[0] = '\0';
+    b->on_heap = true;
     return b;
 }
 

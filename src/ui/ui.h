@@ -39,6 +39,7 @@ typedef struct
     const char *fmt;
     BindType type;
     char buf[32];
+    bool on_heap;
 } TextBinding;
 
 typedef enum
@@ -86,7 +87,6 @@ typedef struct UIElement
 {
     ElementType type;
     UIProperties properties;
-    void (*update)(struct UIElement *);
     Bzzt_Cell *cells;
     int cell_count;
 } UIElement;
@@ -99,6 +99,7 @@ typedef struct UIElement_Text
     void *ud;
     Color_Bzzt fg, bg; // Color of the text to be printed to screen
     bool wrap;         // Does the text wrap and start a newline if out of bounds
+    bool owns_ud;      // Should ud pointer be freed on destroy
 } UIElement_Text;
 
 typedef struct UIButton
@@ -181,6 +182,13 @@ void UI_Destroy(UI *ui);
  */
 UILayer *UI_Add_New_Layer(UI *ui, bool visible, bool enabled);
 
+/**
+ * @brief Add a surface to the UI at the specified layer.
+ *
+ * @param ui
+ * @param targetIndex
+ * @param s
+ */
 void UI_Add_Surface(UI *ui, int targetIndex, UISurface *s);
 
 bool UI_ID_Is_Valid(int id);
@@ -359,14 +367,18 @@ void UIElement_Destroy(UIElement *e);
  * @param ud reference to data this text displays
  * @return UIElement_Text*
  */
-UIElement_Text *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool wrap, const char *(*cb)(void *ud), void *ud);
+UIElement_Text *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool wrap,
+                              const char *(*cb)(void *ud), void *ud, bool owns_ud);
 
 UIElement_Text *UIText_Create_Bound(int x, int y, Color_Bzzt fg, Color_Bzzt bg,
                                     const void *ptr, const void *fmt, BindType type);
-UIButton *UIButton_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg, Color_Bzzt bg, bool visible, bool enabled, bool expand, const char *caption, UIButtonAction cb, void *ud);
+                                    
+UIButton *UIButton_Create(UIOverlay *o, const char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg,
+                          Color_Bzzt bg, bool visible, bool enabled, bool expand, const char *caption, UIButtonAction cb,
+                          void *ud);
 
-    bool UISurface_DrawText(UISurface *surface, const char *utf8, int x, int y,
-                            Color_Bzzt fg, Color_Bzzt bg, bool wrap, int wrapWidth);
+bool UISurface_DrawText(UISurface *surface, const char *utf8, int x, int y,
+                        Color_Bzzt fg, Color_Bzzt bg, bool wrap, int wrapWidth);
 
 void Renderer_Draw_UI(struct Renderer *, const UI *);
 

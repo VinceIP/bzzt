@@ -10,11 +10,19 @@
 
 static void grow_boards_array(Bzzt_World *w)
 {
+    int old_cap = w->boards_cap;
     int new_cap = w->boards_cap * 2;
-    Bzzt_Board **tmp = realloc(w->boards, new_cap * sizeof(Bzzt_World *));
+    Bzzt_Board **tmp = realloc(w->boards, new_cap * sizeof(Bzzt_Board *));
     if (!tmp)
-        Debug_Printf(LOG_ENGINE, "Error reallocating boards array. Get ready to crash, probably");
+    {
+        Debug_Printf(LOG_ENGINE, "Error reallocating boards array.");
+        return;
+    }
     w->boards = tmp;
+    for (int i = old_cap; i < new_cap; ++i)
+    {
+        w->boards[i] = NULL;
+    }
     w->boards_cap = new_cap;
 }
 
@@ -25,7 +33,20 @@ Bzzt_World *Bzzt_World_Create(char *title)
         return NULL;
     strncpy(w->title, title, sizeof(w->title) - 1);
     w->boards_cap = 4;
-    w->boards = (Bzzt_Board **)malloc(sizeof(Bzzt_Board *) * w->boards_cap);                      // allocate initial boards size to 4
+    w->boards = (Bzzt_Board **)malloc(sizeof(Bzzt_Board *) * w->boards_cap); // allocate initial boards size to 4
+
+    if (!w->boards)
+    {
+        Debug_Printf(LOG_ENGINE, "Error allocating bzzt boards array.");
+        free(w);
+        return NULL;
+    }
+
+    for (int i = 0; i < w->boards_cap; ++i)
+    {
+        w->boards[i] = NULL;
+    }
+
     w->boards[0] = Bzzt_Board_Create("Title Screen", BZZT_BOARD_DEFAULT_W, BZZT_BOARD_DEFAULT_H); // create a starting empty title screen board
 
     w->player = Bzzt_Board_Add_Object(w->boards[0], // Pushes a default player obj to the board
@@ -57,6 +78,14 @@ void Bzzt_World_Unload(Bzzt_World *w)
     free(w->boards);
 }
 
+static void update_player(Bzzt_World *w, InputState *in)
+{
+    int *dx = &w->player->x;
+    int *dy = &w->player->y;
+    Bzzt_Board *b = w->boards[w->boards_current];
+    Rectangle bounds = {0, 0, b->width, b->height};
+}
+
 void Bzzt_World_Update(Bzzt_World *w, InputState *in)
 {
     if (w->doUnload)
@@ -65,12 +94,8 @@ void Bzzt_World_Update(Bzzt_World *w, InputState *in)
         return;
     }
 
-    int *dx = &w->player->x;
-    int *dy = &w->player->y;
-    Bzzt_Board *b = w->boards[w->boards_current];
-    Rectangle bounds = {0, 0, b->width, b->height};
-
-    // Handle_Key_Move(dx, dy, bounds, in);
+    if (w->player)
+        update_player(w, in);
 }
 
 void Bzzt_World_Add_Board(Bzzt_World *w, Bzzt_Board *b)

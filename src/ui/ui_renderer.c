@@ -21,21 +21,26 @@ static void measure_text(const char *str, int *w, int *h)
     {
         if (str[i] == '\\')
         {
-            if (str[i + 1] == 'n')
+            if (str[i + 1])
             {
-                if (cur_w > max_w)
-                    max_w = cur_w;
-                cur_w = 0;
-                lines++;
-                i += 2;
-                continue;
-            }
-            else if ((str[i + 1] == 'f' && str[i + 2] == 'g') || (str[i + 1] == 'b' && str[i + 2] == 'g'))
-            {
-                i += 3;
-                while (str[i] && isdigit((unsigned char)str[i]))
-                    i++;
-                continue;
+                if (str[i + 1] == 'n')
+                {
+                    if (cur_w > max_w)
+                        max_w = cur_w;
+                    cur_w = 0;
+                    lines++;
+                    i += 2;
+                    continue;
+                }
+                else if (str[i + 2] &&
+                         ((str[i + 1] == 'f' && str[i + 2] == 'g') ||
+                          (str[i + 1] == 'b' && str[i + 2] == 'g')))
+                {
+                    i += 3;
+                    while (str[i] && isdigit((unsigned char)str[i]))
+                        i++;
+                    continue;
+                }
             }
         }
         cur_w++;
@@ -59,60 +64,63 @@ static void draw_escaped_text(Renderer *r, const char *str, int base_x, int base
     {
         if (str[i] == '\\')
         {
-            if (str[i + 1] == 'n')
+            if (str[i + 1])
             {
-                x = base_x;
-                y += 1;
-                i += 2;
-                if (y - base_y >= max_h)
-                    break;
-                continue;
-            }
-            else if (str[i + 1] == 'f' && str[i + 2] == 'g')
-            {
-                i += 3;
-                int val = 0;
-                while (str[i] && isdigit((unsigned char)str[i]))
+                if (str[i + 1] == 'n')
                 {
-                    val = val * 10 + (str[i] - '0');
-                    i++;
+                    x = base_x;
+                    y += 1;
+                    i += 2;
+                    if (y - base_y >= max_h)
+                        break;
+                    continue;
                 }
-                cur_fg = bzzt_get_color(val);
-                continue;
-            }
-            else if (str[i + 1] == 'b' && str[i + 2] == 'g')
-            {
-                i += 3;
-                int val = 0;
-                while (str[i] && isdigit((unsigned char)str[i]))
+                else if (str[i + 2] && str[i + 1] == 'f' && str[i + 2] == 'g')
                 {
-                    val = val * 10 + (str[i] - '0');
-                    i++;
+                    i += 3;
+                    int val = 0;
+                    while (str[i] && isdigit((unsigned char)str[i]))
+                    {
+                        val = val * 10 + (str[i] - '0');
+                        i++;
+                    }
+                    cur_fg = bzzt_get_color(val);
+                    continue;
                 }
-                cur_bg = bzzt_get_color(val);
-                continue;
+                else if (str[i + 2] && str[i + 1] == 'b' && str[i + 2] == 'g')
+                {
+                    i += 3;
+                    int val = 0;
+                    while (str[i] && isdigit((unsigned char)str[i]))
+                    {
+                        val = val * 10 + (str[i] - '0');
+                        i++;
+                    }
+                    cur_bg = bzzt_get_color(val);
+                    continue;
+                }
             }
-        }
 
-        if (x - base_x >= max_w)
-        {
-            if (wrap)
+            if (x - base_x >= max_w)
             {
-                x = base_x;
-                y += 1;
-                if (y - base_y >= max_h)
+                if (wrap)
+                {
+                    x = base_x;
+                    y += 1;
+                    if (y - base_y >= max_h)
+                        break;
+                }
+                else
+                {
                     break;
+                }
             }
-            else
-            {
+            if (y - base_y >= max_h)
                 break;
-            }
+            Renderer_Draw_Cell(r, x, y, unicode_to_cp437((unsigned char)str[i]), cur_fg, cur_bg);
+            x += 1;
+            i++;
         }
-        if (y - base_y >= max_h)
-            break;
-        Renderer_Draw_Cell(r, x, y, unicode_to_cp437((unsigned char)str[i]), cur_fg, cur_bg);
-        x += 1;
-        i++;
     }
 }
 
@@ -120,7 +128,6 @@ static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement 
 {
     int base_x = s->properties.x + ov->properties.x + e->properties.x;
     int base_y = s->properties.y + ov->properties.y + e->properties.y;
-
     // Handle anchoring
     int elem_width = 0, elem_height = 1;
     if (e->type == UI_ELEM_TEXT)

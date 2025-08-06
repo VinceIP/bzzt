@@ -70,6 +70,8 @@ void UI_Destroy(UI *ui)
     int layer_count = ui->layer_count;
     for (int i = 0; i < layer_count; ++i)
     {
+        fprintf(stderr, "Destroying a layer\n");
+
         UILayer *l = ui->layers[i];
         UILayer_Destroy(l);
     }
@@ -79,26 +81,25 @@ void UI_Destroy(UI *ui)
 
 void UI_Add_Surface(UI *ui, int targetIndex, UISurface *s)
 {
-    int cell_count = s->cell_count;
-    Debug_Printf(LOG_UI, "Adding a surface with %d cells to a UI layer.", cell_count);
-
     if (!ui || !s)
     {
-        Debug_Printf(LOG_UI, "One or more params was NULL on UI_Add_Surface.");
+        Debug_Printf(LOG_UI, "One or more params was null on UI_Add_Surface.");
         return;
     }
 
-    if (ui->layer_count < targetIndex || ui->layer_count == 0)
+    int cell_count = s->cell_count;
+    Debug_Printf(LOG_UI, "Adding a surface with %d cells to a UI layer.", cell_count);
+
+    if (ui->layer_count <= targetIndex)
     {
         if (ui->layer_count == 0)
         {
-            UI_Add_New_Layer(ui, true, true); // Add initial layer if none exist
+            UI_Add_New_Layer(ui, true, true); // Add initial layer if none exists
         }
         Debug_Printf(LOG_UI, "UI_Add_Surface targeted layer %d, but that layer doesn't exist. Adding it now.", targetIndex);
-        for (int i = ui->layer_count; i < targetIndex; ++i) // Runs until we have enough layers to reach the target layer index. This is bad.
+        for (int i = ui->layer_count; i <= targetIndex; ++i)
         {
             UI_Add_New_Layer(ui, true, true);
-            Debug_Printf(LOG_UI, "layer count: %d", ui->layer_count);
         }
     }
 
@@ -133,7 +134,7 @@ UILayer *UI_Add_New_Layer(UI *ui, bool visible, bool enabled)
         return NULL;
 
     ui->layers[ui->layer_count++] = layer;
-    layer->index = ui->layer_count; // Assign the new layer's index to the current ui layer count
+    layer->index = ui->layer_count - 1; // Assign the new layer's index to the current ui layer count
     return layer;
 }
 

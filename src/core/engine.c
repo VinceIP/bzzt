@@ -37,8 +37,41 @@ static void play_init(Engine *e)
     char *file = "burglar1.zzt";
     e->world = Bzzt_World_From_ZZT_World(file);
     if (!e->world)
+    {
         Debug_Printf(LOG_ENGINE, "Error loading ZZT world %s", file);
+        return;
+    }
     e->world->boards_current = 8;
+}
+
+static void change_state(Engine *e, EngineState target_state)
+{
+    switch (target_state)
+    {
+    case ENGINE_STATE_SPLASH:
+        break;
+
+    case ENGINE_STATE_EDIT:
+        e->state = ENGINE_STATE_EDIT;
+        if (e->ui)
+        {
+            fprintf(stderr, "Destroying UI\n");
+            UI_Destroy(e->ui);
+        }
+        e->ui = UI_Create(true, true);
+        Editor_Init(e);
+        if (e->world)
+        {
+            Bzzt_World *w = e->world;
+            w->doUnload = true;
+        }
+
+        e->ui->visible = true;
+        break;
+
+    case ENGINE_STATE_PLAY:
+        break;
+    }
 }
 
 bool Engine_Init(Engine *e)
@@ -48,7 +81,7 @@ bool Engine_Init(Engine *e)
 
     Debugger_Create();
 
-    e->state = SPLASH_MODE;
+    e->state = ENGINE_STATE_SPLASH;
     e->world = NULL;
     e->running = true;
     e->debugShow = false;
@@ -80,23 +113,14 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
 
     switch (e->state)
     {
-    case SPLASH_MODE:
-        Bzzt_World_Update(e->world, i);
-
+    case ENGINE_STATE_SPLASH:
         if (i->E_pressed)
         {
-            e->state = EDIT_MODE;
-            Editor_Init(e);
-            if (e->world)
-            {
-                Bzzt_World *w = e->world;
-                w->doUnload = true;
-            }
-            e->ui->visible = true;
+            change_state(e, ENGINE_STATE_EDIT);
         }
         else if (i->P_pressed)
         {
-            e->state = PLAY_MODE;
+            e->state = ENGINE_STATE_PLAY;
             if (e->world)
             {
                 e->world->doUnload = true;
@@ -105,14 +129,14 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
         }
         break;
 
-    case PLAY_MODE:
+    case ENGINE_STATE_PLAY:
         break;
 
-    case EDIT_MODE:
+    case ENGINE_STATE_EDIT:
         Editor_Update(e, i);
         if (i->Q_pressed)
         {
-            e->state = SPLASH_MODE;
+            e->state = ENGINE_STATE_SPLASH;
             e->world = Bzzt_World_Create("Title Screen");
         }
 
@@ -131,5 +155,26 @@ void Engine_Quit(Engine *e)
     {
         Bzzt_World_Unload(e->world);
         e->world = NULL;
+    }
+
+    if (e->camera)
+    {
+        free(e->camera);
+        e->camera = NULL;
+    }
+
+    if (e->ui)
+    {
+        UI_Destroy(e->ui);
+        e->ui = NULL;
+    }
+
+    for (int i = 0; i < 8; ++i)
+    {
+        if (e->charsets[i] && e->charsets[i]->pixels)
+        {
+            free(e->charsets[i]->pixels);
+            e->charsets[i]->pixels = NULL;
+        }
     }
 }

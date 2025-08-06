@@ -12,10 +12,10 @@ typedef struct MouseState MouseState;
 
 typedef enum
 {
-    SPLASH_MODE,
-    PLAY_MODE,
-    EDIT_MODE
-} EState;
+    ENGINE_STATE_SPLASH,
+    ENGINE_STATE_PLAY,
+    ENGINE_STATE_EDIT
+} EngineState;
 
 typedef struct Cursor
 {
@@ -37,7 +37,7 @@ typedef struct Cursor
 
 typedef struct Engine
 {
-    EState state;
+    EngineState state;
     UI *ui;
     Bzzt_World *world;
     Font font;
