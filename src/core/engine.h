@@ -41,7 +41,7 @@ typedef struct Engine
     UI *ui;
     Bzzt_World *world;
     Font font;
-    Cursor cursor;
+    Cursor *cursor;
     Bzzt_Camera *camera;
     BzztCharset *charsets[8]; // Loaded charsets (slot 0 = default)
     // Renderer renderer;

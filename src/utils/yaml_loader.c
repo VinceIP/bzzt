@@ -228,6 +228,7 @@ static const cyaml_schema_value_t root_schema = {
 
 bool UI_Load_From_BUI(UI *ui, const char *path)
 {
+    Debug_Printf(LOG_UI, "Loading .bui: %s", path);
     if (!ui || !path)
     {
         Debug_Printf(LOG_UI, "Failed loading UI.");

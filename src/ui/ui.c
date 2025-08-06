@@ -56,12 +56,24 @@ static int grow_layers(UI *ui)
 
 UI *UI_Create(bool visible, bool enabled)
 {
+    Debug_Printf(LOG_UI, "Creating a new base UI.");
     UI *ui = malloc(sizeof(UI));
+    if (!ui)
+    {
+        Debug_Printf(LOG_UI, "Failed to allocate base UI.");
+        return NULL;
+    }
     ui->visible = visible;
     ui->enabled = enabled;
     ui->layer_count = 0;
     ui->layer_cap = 4;
     ui->layers = malloc(sizeof(UILayer *) * ui->layer_cap);
+    if (!ui->layers)
+    {
+        Debug_Printf(LOG_UI, "Failed to allocate UI layers stack.");
+        return NULL;
+    }
+    puts("returning base ui");
     return ui;
 }
 

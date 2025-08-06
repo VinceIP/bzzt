@@ -13,7 +13,13 @@
 
 static void init_cursor(Engine *e)
 {
-    Cursor *c = &e->cursor;
+    Debug_Printf(LOG_ENGINE, "Initializing cursor.");
+    Cursor *c = malloc(sizeof(Cursor *));
+    if (!c)
+    {
+        Debug_Printf(LOG_ENGINE, "Error allocating cursor.");
+        return;
+    }
     c->position = (Vector2){0, 0};
     c->visible = true;
     c->enabled = true;
@@ -21,11 +27,21 @@ static void init_cursor(Engine *e)
     c->lastBlink = GetTime();
     c->glyph = '#';
     c->color = COLOR_WHITE;
+
+    e->cursor = c;
 }
 
 static void init_camera(Engine *e)
 {
+    if (!e)
+        return;
+    Debug_Printf(LOG_ENGINE, "Initializing camera.");
     e->camera = malloc(sizeof(Bzzt_Camera));
+    if (!e->camera)
+    {
+        Debug_Printf(LOG_ENGINE, "Engine failed to allocate camera.");
+        return;
+    }
     e->camera->viewport.rect = (Rectangle){0, 0, 80, 25}; // remove magic nums
     e->camera->rect = e->camera->viewport.rect;
     e->camera->cell_width = 16;
@@ -80,6 +96,7 @@ bool Engine_Init(Engine *e)
         return false;
 
     Debugger_Create();
+    Debug_Printf(LOG_ENGINE, "Initializing bzzt engine.");
 
     e->state = ENGINE_STATE_SPLASH;
     e->world = NULL;
@@ -90,7 +107,19 @@ bool Engine_Init(Engine *e)
     init_cursor(e);
 
     e->ui = UI_Create(true, true);
-    UI_Load_From_BUI(e->ui, "assets/ui/main_menu.bui");
+    if (!e->ui)
+    {
+        Debug_Printf(LOG_UI, "Engine UI creation failed.");
+        return false;
+    }
+    bool ok = UI_Load_From_BUI(e->ui, "assets/ui/main_menu.bui");
+    if (!ok)
+    {
+        Debug_Printf(LOG_ENGINE, "Engine failed in loading main menu from .bui.");
+        return false;
+    }
+    else
+        Debug_Printf(LOG_ENGINE, "Engine reports success loading UI from .bui.");
 
     init_camera(e);
 
@@ -103,12 +132,13 @@ bool Engine_Init(Engine *e)
 
 void Engine_Update(Engine *e, InputState *i, MouseState *m)
 {
+    puts("updating engine\n");
     Input_Poll(i);
     Mouse_Poll(m);
 
-    if (e->cursor.enabled)
+    if (e->cursor && e->cursor->enabled)
     {
-        e->cursor.position = Handle_Cursor_Move(e->cursor.position, i, m, e->camera, e->camera->viewport.rect);
+        e->cursor->position = Handle_Cursor_Move(e->cursor->position, i, m, e->camera, e->camera->viewport.rect);
     }
 
     switch (e->state)

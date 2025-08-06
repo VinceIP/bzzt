@@ -10,6 +10,8 @@
 
 int testX = 0;
 
+#define CURSOR_BLINK_RATE 0.5
+
 static const char *caption_cb(void *ud) { return (const char *)ud; }
 
 static void ui_init(Engine *e)
@@ -22,17 +24,17 @@ static void ui_init(Engine *e)
     UISurface_Add_New_Overlay(sidebarSurface, NULL, 0, 0, 0, 0, 0, 0, 0, true, true, LAYOUT_NONE, ANCHOR_NONE, 0);
     UIOverlay *textOverlay = sidebarSurface->overlays[sidebarSurface->overlays_count - 1];
     UIOverlay_Add_New_Element(textOverlay,
-                              (UIElement *)UIText_Create_Bound(2, sidebarSurface->properties.h - 2, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor.position.x, "Cursor x: %d", BIND_INT)); // Create text element that prints cursor x
+                              (UIElement *)UIText_Create_Bound(2, sidebarSurface->properties.h - 2, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor->position.x, "Cursor x: %d", BIND_INT)); // Create text element that prints cursor x
     UIOverlay_Add_New_Element(textOverlay,
-                              (UIElement *)UIText_Create_Bound(2, sidebarSurface->properties.h - 1, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor.position.y, "Cursor y: %d", BIND_INT));
+                              (UIElement *)UIText_Create_Bound(2, sidebarSurface->properties.h - 1, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor->position.y, "Cursor y: %d", BIND_INT));
 }
 
 void Editor_Init(Engine *e)
 {
     e->edit_mode_init_done = true;
-    Cursor *c = &e->cursor;
+    Cursor *c = e->cursor;
     c->color = COLOR_WHITE;
-    c->blinkRate = 0.5;
+    c->blinkRate = CURSOR_BLINK_RATE;
     c->glyph = 219;
     c->position.x = 41;
     c->position.y = 14;

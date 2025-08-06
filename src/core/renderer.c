@@ -132,40 +132,35 @@ void Renderer_Draw_Cell(Renderer *r, int cellX, int cellY, unsigned char glyph, 
         r->glyph_w,
         r->glyph_h};
 
-    // Fill bg
-
-    // Draw fg
-    BeginShaderMode(r->glyphShader);
-
     if (!(bg.r == COLOR_TRANSPARENT.r && bg.g == COLOR_TRANSPARENT.g && bg.b == COLOR_TRANSPARENT.b))
     {
         DrawRectangleRec(dst, rb);
     }
     DrawTexturePro(r->font, src, dst, (Vector2){0, 0}, 0.0f, rf);
-
-    EndShaderMode();
 }
 
 static void draw_cursor(Renderer *r, Engine *e)
 {
-    Cursor *c = &e->cursor;
+    if (!r || !e || !e->cursor)
+        return;
     double now = GetTime();
 
-    if (now - c->lastBlink >= c->blinkRate)
+    if (now - e->cursor->lastBlink >= e->cursor->blinkRate)
     {
-        c->visible = !c->visible;
-        c->lastBlink = now;
+        e->cursor->visible = !e->cursor->visible;
+        e->cursor->lastBlink = now;
     }
 
-    if (c->visible)
+    if (e->cursor->visible)
     {
-        Renderer_Draw_Cell(r, c->position.x, c->position.y, c->glyph, c->color, COLOR_BLACK);
+        Renderer_Draw_Cell(r, e->cursor->position.x, e->cursor->position.y, e->cursor->glyph, e->cursor->color, COLOR_BLACK);
     }
 }
 
 void Renderer_Update(Renderer *r, Engine *e)
 {
     ClearBackground(BLACK);
+    BeginShaderMode(r->glyphShader);
     switch (e->state)
     {
     case ENGINE_STATE_SPLASH:
@@ -195,6 +190,7 @@ void Renderer_Update(Renderer *r, Engine *e)
     default:
         break;
     }
+    EndShaderMode();
 }
 
 void Renderer_Quit(Renderer *r)

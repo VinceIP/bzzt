@@ -23,7 +23,14 @@ int main(void)
     setup_raylib();
     const char *fontPath = ASSET("fonts/default.bzc");
     Engine e;
-    Engine_Init(&e);
+    bool ok = Engine_Init(&e);
+    if (!ok)
+    {
+        Debug_Printf(LOG_ENGINE, "Engine init failure.");
+        return -1;
+    }
+    else
+        Debug_Printf(LOG_ENGINE, "Finished engine init.");
     e.font = GetFontDefault();
     e.world = Bzzt_World_Create("New World");
     Renderer rend;
