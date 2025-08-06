@@ -12,21 +12,15 @@ UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool e
         goto fail;
 
     surface->cell_count = w * h;
+
+    surface->cells = NULL;
     surface->cells = malloc(sizeof(Bzzt_Cell) * surface->cell_count);
     if (!surface->cells)
         goto fail;
-
-    surface->cells = NULL;
-    surface->overlays = NULL;
 
     UIProperties props = {
         name, id, x, y, z, w, h, 0, visible, enabled, false, l};
     surface->properties = props;
-
-    surface->cell_count = w * h;
-    surface->cells = malloc(sizeof(Bzzt_Cell) * surface->cell_count);
-    if (!surface->cells)
-        goto fail;
 
     // Init empty cells
     for (int i = 0; i < surface->cell_count; ++i)
@@ -37,12 +31,14 @@ UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool e
         surface->cells[i].bg = COLOR_TRANSPARENT;
     }
 
+    surface->overlays = NULL;
     surface->overlays_cap = 1;
     surface->overlays_count = 0;
 
     surface->overlays = malloc(sizeof(UIOverlay *) * surface->overlays_cap);
     if (!surface->overlays)
         goto fail;
+
     return surface;
 
 fail:
@@ -61,26 +57,24 @@ fail:
 void UISurface_Destroy(UISurface *s)
 {
     if (!s)
-    {
-        fprintf(stderr, "No surface, returning early\n");
-
         return;
-    }
 
-    if (s->cell_count > 0)
+    if (s->cells)
     {
         free(s->cells);
     }
 
-    if (s->overlays && s->overlays_count > 0)
+    if (s->overlays)
     {
-        for (int i = 0; i < s->overlays_count; ++i)
+        if (s->overlays_count > 0)
         {
-            fprintf(stderr, "Destroying overlay\n");
-
-            UIOverlay *o = s->overlays[i];
-            UIOverlay_Destroy(o);
+            for (int i = 0; i < s->overlays_count; ++i)
+            {
+                UIOverlay *o = s->overlays[i];
+                UIOverlay_Destroy(o);
+            }
         }
+        
         free(s->overlays);
     }
 
