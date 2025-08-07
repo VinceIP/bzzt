@@ -61,20 +61,27 @@ UI *UI_Create(bool visible, bool enabled)
     if (!ui)
     {
         Debug_Printf(LOG_UI, "Failed to allocate base UI.");
-        return NULL;
+        goto cleanup;
     }
+
     ui->visible = visible;
     ui->enabled = enabled;
     ui->layer_count = 0;
     ui->layer_cap = 4;
+
     ui->layers = malloc(sizeof(UILayer *) * ui->layer_cap);
     if (!ui->layers)
     {
         Debug_Printf(LOG_UI, "Failed to allocate UI layers stack.");
-        return NULL;
+        goto cleanup;
     }
+
     puts("returning base ui");
     return ui;
+
+cleanup:
+    free(ui);
+    return NULL;
 }
 
 void UI_Destroy(UI *ui)

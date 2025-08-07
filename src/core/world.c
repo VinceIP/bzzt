@@ -8,7 +8,7 @@
 #include "color.h"
 #include "debugger.h"
 
-static void grow_boards_array(Bzzt_World *w)
+static bool grow_boards_array(Bzzt_World *w)
 {
     int old_cap = w->boards_cap;
     int new_cap = w->boards_cap * 2;
@@ -16,7 +16,7 @@ static void grow_boards_array(Bzzt_World *w)
     if (!tmp)
     {
         Debug_Printf(LOG_ENGINE, "Error reallocating boards array.");
-        return;
+        return false;
     }
     w->boards = tmp;
     for (int i = old_cap; i < new_cap; ++i)
@@ -24,6 +24,7 @@ static void grow_boards_array(Bzzt_World *w)
         w->boards[i] = NULL;
     }
     w->boards_cap = new_cap;
+    return true;
 }
 
 Bzzt_World *Bzzt_World_Create(char *title)
@@ -33,7 +34,7 @@ Bzzt_World *Bzzt_World_Create(char *title)
         return NULL;
     strncpy(w->title, title, sizeof(w->title) - 1);
     w->boards_cap = 4;
-    w->boards = (Bzzt_Board **)malloc(sizeof(Bzzt_Board) * w->boards_cap); // allocate initial boards size to 4
+    w->boards = (Bzzt_Board **)malloc(sizeof(Bzzt_Board *) * w->boards_cap); // allocate initial boards size to 4
 
     if (!w->boards)
     {
@@ -102,7 +103,8 @@ void Bzzt_World_Add_Board(Bzzt_World *w, Bzzt_Board *b)
 {
     if (w->boards_count >= w->boards_cap)
     {
-        grow_boards_array(w);
+        if (!grow_boards_array(w))
+            return;
     }
     w->boards[w->boards_count++] = b;
 }

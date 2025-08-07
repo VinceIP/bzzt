@@ -133,7 +133,7 @@ bool Engine_Init(Engine *e)
 
 void Engine_Update(Engine *e, InputState *i, MouseState *m)
 {
-    puts("updating engine\n");
+    //puts("updating engine\n");
     Input_Poll(i);
     Mouse_Poll(m);
 
