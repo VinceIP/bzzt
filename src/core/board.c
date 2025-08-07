@@ -85,6 +85,8 @@ Bzzt_Object *Bzzt_Board_Get_Object(Bzzt_Board *b, int id)
 
 Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw)
 {
+    if (!zw)
+        return NULL;
     ZZTblock *block = zztBoardGetBlock(zw);
     Bzzt_Board *bzztBoard = Bzzt_Board_Create(zztBoardGetTitle(zw), block->width, block->height);
     for (int y = 0; y < bzztBoard->height; ++y)

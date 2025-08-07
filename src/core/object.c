@@ -26,7 +26,9 @@ void Bzzt_Object_Destroy(Bzzt_Object *o)
 
 Bzzt_Object *Bzzt_Object_From_ZZT_Tile(ZZTblock *block, int x, int y)
 {
-    unsigned char ch = zztTileGetDisplayChar(block, x, y);
+    if (!block)
+        return NULL;
+    uint8_t ch = zztTileGetDisplayChar(block, x, y);
     uint8_t attr = zztTileGetDisplayColor(block, x, y);
     uint8_t fg_idx = attr & 0x0F;
     uint8_t bg_idx = (attr >> 4) & 0x0F;
