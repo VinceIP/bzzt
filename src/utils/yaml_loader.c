@@ -259,6 +259,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
     {
         YamlSurface *ys = &root->surfaces[si];
         char *surface_name = ys->name ? strdup(ys->name) : NULL;
+
         int sid;
         if (ys->id > 0)
         {
@@ -321,6 +322,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                     anchor = ANCHOR_RIGHT;
             }
             char *overlay_name = yo->name ? strdup(yo->name) : NULL;
+
             int oid;
             if (yo->id > 0)
             {
@@ -393,12 +395,14 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                 {
                     const char *src = ye->text ? ye->text : "";
                     char *caption = strdup(src);
+
                     UIButton *btn = UIButton_Create(ov, ye->name, ye->id, ye->x, y_cursor + ye->y, ye->z, ye->w, ye->h, ye->padding,
                                                     color_from_string(ye->fg, COLOR_BLACK), color_from_string(ye->bg, COLOR_BLACK),
                                                     is_visible, ye->enabled,
                                                     ye->expand, caption, NULL, NULL);
+
                     int mw, mh;
-                    measure_text(ye->text ? ye->text : "", &mw, &mh);
+                    measure_text(caption ? caption : "", &mw, &mh);
                     btn->base.properties.w = ye->w > 0 ? ye->w : mw;
                     btn->base.properties.h = ye->h > 0 ? ye->h : mh;
                     UIOverlay_Add_New_Element(ov, (UIElement *)btn);
@@ -408,6 +412,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                 else if (strcasecmp(ye->type, "text") == 0)
                 {
                     char *dup = ye->text ? strdup(ye->text) : strdup("");
+
                     UIElement_Text *txt = UIText_Create(ye->x, y_cursor + ye->y, elem_fg, elem_bg, false, pass_through, dup, true);
                     txt->base.properties.name = ye->name ? strdup(ye->name) : NULL;
                     txt->base.properties.id = eid;

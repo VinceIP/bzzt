@@ -67,6 +67,7 @@ static Texture2D texture_from_charset(BzztCharset *c)
 
 bool Renderer_Init(Renderer *r, Engine *e, const char *path)
 {
+    Debug_Printf(LOG_ENGINE, "Initializing renderer.");
 
     if (!BZC_Load(path, &defaultCharset))
     {
@@ -164,7 +165,7 @@ void Renderer_Update(Renderer *r, Engine *e)
     switch (e->state)
     {
     case ENGINE_STATE_SPLASH:
-        Renderer_Draw_Board(r, e->world->boards[e->world->boards_current]);
+        //Renderer_Draw_Board(r, e->world->boards[e->world->boards_current]);
         if (e->ui)
         {
             Renderer_Draw_UI(r, e->ui);
@@ -179,10 +180,6 @@ void Renderer_Update(Renderer *r, Engine *e)
         if (ui)
         {
             Renderer_Draw_UI(r, ui);
-        }
-        else
-        {
-            fprintf(stderr, "Failed to draw UI.");
         }
         draw_cursor(r, e);
         break;

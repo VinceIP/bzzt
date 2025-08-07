@@ -1,12 +1,12 @@
 /**
  * @file ui_renderer.c
  * @author Vince Patterson (vinceip532@gmail.com)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2025-08-07
- * 
+ *
  * @copyright Copyright (c) 2025
- * 
+ *
  */
 
 #include "ui_renderer.h"
@@ -73,6 +73,7 @@ static void draw_escaped_text(Renderer *r, const char *str, int base_x, int base
     int y = base_y;
     Color_Bzzt cur_fg = fg;
     Color_Bzzt cur_bg = bg;
+
     for (int i = 0; str[i];)
     {
         if (str[i] == '\\')
@@ -130,6 +131,29 @@ static void draw_escaped_text(Renderer *r, const char *str, int base_x, int base
             }
             if (y - base_y >= max_h)
                 break;
+
+            Renderer_Draw_Cell(r, x, y, unicode_to_cp437((unsigned char)str[i]), cur_fg, cur_bg);
+            x += 1;
+            i++;
+        }
+        else
+        {
+            if (x - base_x >= max_w)
+            {
+                if (wrap)
+                {
+                    x = base_x;
+                    y += 1;
+                    if (y - base_y >= max_h)
+                        break;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            if (y - base_y >= max_h)
+                break;
             Renderer_Draw_Cell(r, x, y, unicode_to_cp437((unsigned char)str[i]), cur_fg, cur_bg);
             x += 1;
             i++;
@@ -161,7 +185,9 @@ static void draw_ui_element(Renderer *r, UISurface *s, UIOverlay *ov, UIElement 
     else if (e->type == UI_ELEM_BUTTON)
     {
         UIButton *b = (UIButton *)e;
+
         const char *caption = b->label->textCallback(b->label->ud);
+
         measure_text(caption, &elem_width, &elem_height);
         if (e->properties.expand)
         {

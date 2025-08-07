@@ -71,7 +71,6 @@ static void change_state(Engine *e, EngineState target_state)
         e->state = ENGINE_STATE_EDIT;
         if (e->ui)
         {
-            fprintf(stderr, "Destroying UI\n");
             UI_Destroy(e->ui);
         }
         e->ui = UI_Create(true, true);

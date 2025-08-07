@@ -89,8 +89,6 @@ void UI_Destroy(UI *ui)
     int layer_count = ui->layer_count;
     for (int i = 0; i < layer_count; ++i)
     {
-        fprintf(stderr, "Destroying a layer\n");
-
         UILayer *l = ui->layers[i];
         UILayer_Destroy(l);
     }

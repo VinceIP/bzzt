@@ -82,7 +82,6 @@ void UISurface_Destroy(UISurface *s)
         free(s->properties.name);
 
     free(s);
-    fprintf(stderr, "Surface freed\n");
 }
 
 void UISurface_Add_New_Overlay(UISurface *s, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, OverlayLayout layout, OverlayAnchor anchor, int spacing)
