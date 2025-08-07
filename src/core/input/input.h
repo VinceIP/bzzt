@@ -32,7 +32,6 @@ typedef struct MouseState
     float wheelMove;
 } MouseState;
 
-void Input_Handle(struct Engine *e, int key);
 void Input_Set_Handler(InputState *in, Key_Handler h);
 void Input_Poll(InputState *out);
 void Mouse_Poll(MouseState *out);

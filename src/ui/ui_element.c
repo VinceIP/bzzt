@@ -23,7 +23,7 @@ static const char *pass_through_caption(void *ud)
 
 UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg, Color_Bzzt bg, bool visible, bool enabled, bool expand, ElementType type)
 {
-    UIElement *e = malloc(sizeof(UIElement));
+    UIElement *e = calloc(1, sizeof(UIElement));
     if (!e)
         goto fail;
 
@@ -62,8 +62,8 @@ void UIElement_Destroy(UIElement *e)
         UIButton *b = (UIButton *)e;
         if (b->label)
             UIElement_Destroy((UIElement *)b->label);
-        if (e->properties.name)
-            free(e->properties.name);
+        if (b->base.properties.name)
+            free(b->base.properties.name);
         free(b);
         break;
     }
@@ -71,7 +71,7 @@ void UIElement_Destroy(UIElement *e)
     case UI_ELEM_TEXT:
     {
         UIElement_Text *t = (UIElement_Text *)e;
-        if (t->ud && t->owns_ud)
+        if (t->ud)
             free(t->ud);
         if (e->properties.name)
             free(e->properties.name);
@@ -96,7 +96,7 @@ void UIElement_Update(UIElement *e)
 UIElement_Text *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool wrap,
                               const char *(*cb)(void *ud), void *ud, bool owns_ud)
 {
-    UIElement_Text *t = malloc(sizeof(UIElement_Text));
+    UIElement_Text *t = calloc(1, sizeof(UIElement_Text));
     if (!t)
     {
         Debug_Printf(LOG_UI, "Error allocating UIText.");
@@ -140,7 +140,7 @@ UIButton *UIButton_Create(UIOverlay *o, const char *name, int id, int x, int y, 
                           Color_Bzzt bg, bool visible, bool enabled, bool expand, const char *caption, UIButtonAction cb,
                           void *ud)
 {
-    UIButton *b = malloc(sizeof(UIButton));
+    UIButton *b = calloc(1, sizeof(UIButton));
     if (!b)
     {
         Debug_Printf(LOG_UI, "Error allocating UIButton.");
@@ -163,12 +163,9 @@ UIButton *UIButton_Create(UIOverlay *o, const char *name, int id, int x, int y, 
     b->onClick = cb;
     b->ud = ud;
 
-    char *dup = caption ? strdup(caption) : strdup("");
-    b->label = UIText_Create(0, 0, COLOR_WHITE, COLOR_TRANSPARENT, false, pass_through_caption, dup, true);
+    b->label = UIText_Create(0, 0, COLOR_WHITE, COLOR_TRANSPARENT, false, pass_through_caption, caption, true);
     if (!b->label)
     {
-        if (dup)
-            free(dup);
         if (b->base.properties.name)
             free(b->base.properties.name);
         free(b);

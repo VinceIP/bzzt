@@ -242,7 +242,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
         .flags = CYAML_CFG_DEFAULT};
 
     YamlUIRoot *root = NULL;
-    puts("about to load");
+
     cyaml_err_t err = cyaml_load_file(path, &config, &root_schema, (cyaml_data_t **)&root, NULL);
     if (err != CYAML_OK)
     {

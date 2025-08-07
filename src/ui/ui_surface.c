@@ -7,14 +7,13 @@
 UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool enabled, int x, int y, int z, int w, int h)
 {
     Debug_Printf(LOG_UI, "Creating surface.");
-    UISurface *surface = malloc(sizeof(UISurface));
+    UISurface *surface = calloc(1, sizeof(UISurface));
     if (!surface)
         goto fail;
 
     surface->cell_count = w * h;
 
-    surface->cells = NULL;
-    surface->cells = malloc(sizeof(Bzzt_Cell) * surface->cell_count);
+    surface->cells = calloc(surface->cell_count, sizeof(Bzzt_Cell));
     if (!surface->cells)
         goto fail;
 
@@ -60,9 +59,7 @@ void UISurface_Destroy(UISurface *s)
         return;
 
     if (s->cells)
-    {
         free(s->cells);
-    }
 
     if (s->overlays)
     {
@@ -70,17 +67,13 @@ void UISurface_Destroy(UISurface *s)
         {
             for (int i = 0; i < s->overlays_count; ++i)
             {
-                UIOverlay *o = s->overlays[i];
-                UIOverlay_Destroy(o);
+                UIOverlay_Destroy(s->overlays[i]);
             }
         }
-        
         free(s->overlays);
     }
-
     if (s->properties.name)
         free(s->properties.name);
-
     free(s);
 }
 

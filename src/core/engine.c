@@ -1,3 +1,14 @@
+/**
+ * @file engine.c
+ * @author Vince Patterson (vinceip532@gmail.com)
+ * @brief
+ * @version 0.1
+ * @date 2025-08-07
+ *
+ * @copyright Copyright (c) 2025
+ *
+ */
+
 #include <stdbool.h>
 #include <stdlib.h>
 #include "debugger.h"
@@ -74,17 +85,6 @@ static void change_state(Engine *e, EngineState next)
     switch (next)
     {
     case ENGINE_STATE_SPLASH:
-        if (e->ui)
-            UI_Destroy(e->ui);
-        e->ui = UI_Create(true, true);
-        bool ok = UI_Load_From_BUI(e->ui, "assets/ui/main_menu.bui");
-        if (!ok)
-        {
-            Debug_Printf(LOG_ENGINE, "Engine failed in loading main menu from .bui.");
-            return;
-        }
-        else
-            Debug_Printf(LOG_ENGINE, "Engine reports success loading UI from .bui.");
         break;
 
     case ENGINE_STATE_EDIT:
@@ -131,6 +131,7 @@ bool Engine_Init(Engine *e, InputState *in)
     e->debugShow = false;
     e->edit_mode_init_done = false;
     e->input = in;
+    e->state = ENGINE_STATE_SPLASH;
 
     init_cursor(e);
 
@@ -156,7 +157,7 @@ bool Engine_Init(Engine *e, InputState *in)
     for (int i = 0; i < 8; ++i)
         e->charsets[i] = NULL;
 
-    Engine_Set_State(e, ENGINE_STATE_SPLASH);
+    // Engine_Set_State(e, ENGINE_STATE_SPLASH);
     return true;
 }
 
@@ -165,7 +166,6 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
     // puts("updating engine\n");
     Input_Poll(i);
     Mouse_Poll(m);
-
     if (e->cursor && e->cursor->enabled)
     {
         e->cursor->position = Handle_Cursor_Move(e->cursor->position, i, m, e->camera, e->camera->viewport.rect);
@@ -213,20 +213,22 @@ void Engine_Quit(Engine *e)
         return;
     if (e->world)
     {
-        Bzzt_World_Unload(e->world);
-        e->world = NULL;
+        Bzzt_World_Destroy(e->world);
     }
 
     if (e->camera)
     {
         free(e->camera);
-        e->camera = NULL;
+    }
+
+    if (e->cursor)
+    {
+        free(e->cursor);
     }
 
     if (e->ui)
     {
         UI_Destroy(e->ui);
-        e->ui = NULL;
     }
 
     for (int i = 0; i < 8; ++i)
@@ -234,7 +236,6 @@ void Engine_Quit(Engine *e)
         if (e->charsets[i] && e->charsets[i]->pixels)
         {
             free(e->charsets[i]->pixels);
-            e->charsets[i]->pixels = NULL;
         }
     }
 }

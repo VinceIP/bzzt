@@ -140,7 +140,7 @@ Bzzt_World *Bzzt_World_Create(char *title);
 void Bzzt_World_Add_Board(Bzzt_World *world, Bzzt_Board *board);
 int Bzzt_World_Load(Bzzt_World *w, const char *path);
 int Bzzt_World_Save(Bzzt_World *w, const char *path);
-void Bzzt_World_Unload(Bzzt_World *w);
+void Bzzt_World_Destroy(Bzzt_World *w);
 
 void Bzzt_World_Update(Bzzt_World *w, InputState *in);
 

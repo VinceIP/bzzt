@@ -6,10 +6,6 @@
 #include "coords.h"
 #include "bzzt.h"
 
-void Input_Handle(struct Engine *e, int key)
-{
-}
-
 void Input_Set_Handler(InputState *in, Key_Handler h)
 {
     if (!in || h)

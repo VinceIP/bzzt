@@ -10,7 +10,7 @@ typedef struct Bzzt_Camera Bzzt_Camera;
 typedef struct InputState InputState;
 typedef struct MouseState MouseState;
 
-typedef enum
+typedef enum EngineState
 {
     ENGINE_STATE_SPLASH,
     ENGINE_STATE_PLAY,

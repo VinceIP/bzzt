@@ -59,7 +59,7 @@ Bzzt_World *Bzzt_World_Create(char *title)
     return w;
 }
 
-void Bzzt_World_Unload(Bzzt_World *w)
+void Bzzt_World_Destroy(Bzzt_World *w)
 {
     if (!w)
         return;
@@ -77,6 +77,7 @@ void Bzzt_World_Unload(Bzzt_World *w)
     w->loaded = false;
     w->player = NULL;
     free(w->boards);
+    free(w);
 }
 
 static void update_player(Bzzt_World *w, InputState *in)
@@ -91,7 +92,7 @@ void Bzzt_World_Update(Bzzt_World *w, InputState *in)
 {
     if (w->doUnload)
     {
-        Bzzt_World_Unload(w);
+        Bzzt_World_Destroy(w);
         return;
     }
 

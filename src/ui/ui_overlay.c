@@ -20,7 +20,7 @@
 UIOverlay *UIOverlay_Create(char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, OverlayLayout layout, OverlayAnchor anchor, int spacing)
 {
     Debug_Printf(LOG_UI, "Creating a new overlay.");
-    UIOverlay *o = malloc(sizeof(UIOverlay));
+    UIOverlay *o = calloc(1, sizeof(UIOverlay));
     if (!o)
     {
         Debug_Printf(LOG_UI, "Error allocating UIOverlay.");
@@ -45,7 +45,7 @@ UIOverlay *UIOverlay_Create(char *name, int id, int x, int y, int z, int w, int 
 
     o->elements_cap = 1;
     o->elements_count = 0;
-    o->elements = malloc(sizeof(UIElement *) * o->elements_cap);
+    o->elements = calloc(o->elements_cap, sizeof(UIElement *) * o->elements_cap);
     if (!o->elements)
     {
         free(o);
@@ -75,14 +75,11 @@ void UIOverlay_Destroy(UIOverlay *o)
     if (!o)
         return;
 
-    UIElement **elements = o->elements;
-    int elements_count = o->elements_count;
-    if (elements && elements_count > 0)
+    if (o->elements)
     {
-        for (int i = 0; i < elements_count; ++i)
+        for (int i = 0; i < o->elements_count; ++i)
         {
-            UIElement *e = o->elements[i];
-            UIElement_Destroy(e);
+            UIElement_Destroy(o->elements[i]);
         }
         free(o->elements);
     }

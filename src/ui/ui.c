@@ -57,7 +57,7 @@ static int grow_layers(UI *ui)
 UI *UI_Create(bool visible, bool enabled)
 {
     Debug_Printf(LOG_UI, "Creating a new base UI.");
-    UI *ui = malloc(sizeof(UI));
+    UI *ui = calloc(1, sizeof(UI));
     if (!ui)
     {
         Debug_Printf(LOG_UI, "Failed to allocate base UI.");
@@ -86,6 +86,8 @@ cleanup:
 
 void UI_Destroy(UI *ui)
 {
+    if (!ui)
+        return;
     int layer_count = ui->layer_count;
     for (int i = 0; i < layer_count; ++i)
     {

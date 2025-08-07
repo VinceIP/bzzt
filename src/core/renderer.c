@@ -105,7 +105,6 @@ bool Renderer_Init(Renderer *r, Engine *e, const char *path)
 
     Vector2 centerCoord = {(float)GetRenderWidth() / 2, (float)GetRenderHeight() / 2};
     r->centerCoord = centerCoord;
-
     return true;
 }
 
@@ -165,7 +164,7 @@ void Renderer_Update(Renderer *r, Engine *e)
     switch (e->state)
     {
     case ENGINE_STATE_SPLASH:
-        //Renderer_Draw_Board(r, e->world->boards[e->world->boards_current]);
+        // Renderer_Draw_Board(r, e->world->boards[e->world->boards_current]);
         if (e->ui)
         {
             Renderer_Draw_UI(r, e->ui);

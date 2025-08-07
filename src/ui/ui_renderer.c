@@ -289,7 +289,6 @@ static void draw_ui_layer(Renderer *r, UILayer *l)
 
 void Renderer_Draw_UI(Renderer *r, const UI *ui)
 {
-
     if (!ui || !ui->visible)
     {
         return; // Skip drawing if UI is NULL or invisible

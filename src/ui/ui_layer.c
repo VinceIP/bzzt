@@ -7,7 +7,7 @@
 // fix this
 UILayer *UILayer_Create(bool visible, bool enabled)
 {
-    UILayer *l = malloc(sizeof(UILayer));
+    UILayer *l = calloc(1, sizeof(UILayer));
     if (!l)
     {
         Debug_Printf(LOG_UI, "Error allocating UILayer.");
