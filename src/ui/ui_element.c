@@ -16,8 +16,6 @@
 #include <stdio.h>
 #include <string.h>
 
-extern char *strdup(const char *);
-
 static const char *pass_through_caption(void *ud)
 {
     return (const char *)ud;

@@ -54,7 +54,7 @@ endif
 # Generic compiler & linker flags
 # ------------------------------------------------------------
 INC_DIRS := $(shell find $(SRC_ROOT) -type d)
-CFLAGS   := -std=c99 $(WARN_FLAGS)            \
+CFLAGS   := -std=c99 -D_POSIX_C_SOURCE=200809L $(WARN_FLAGS)            \
             -I$(RAYLIB_INC) -I$(CYAML_INC)    \
             $(addprefix -I,$(INC_DIRS))
 

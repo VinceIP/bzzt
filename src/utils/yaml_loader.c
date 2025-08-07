@@ -20,8 +20,6 @@
 #include <strings.h>
 #include <ctype.h>
 
-extern char *strdup(const char *);
-
 static const char *pass_through(void *ud)
 {
     return (const char *)ud;
