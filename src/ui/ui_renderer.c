@@ -1,3 +1,14 @@
+/**
+ * @file ui_renderer.c
+ * @author Vince Patterson (vinceip532@gmail.com)
+ * @brief 
+ * @version 0.1
+ * @date 2025-08-07
+ * 
+ * @copyright Copyright (c) 2025
+ * 
+ */
+
 #include "ui_renderer.h"
 #include "ui.h"
 #include "code_page_lut.h"
@@ -8,6 +19,7 @@
 
 static void measure_text(const char *str, int *w, int *h)
 {
+
     int max_w = 0, cur_w = 0, lines = 1;
     if (!str)
     {
@@ -17,6 +29,7 @@ static void measure_text(const char *str, int *w, int *h)
             *h = 0;
         return;
     }
+
     for (int i = 0; str[i];)
     {
         if (str[i] == '\\')

@@ -14,7 +14,7 @@
 static void init_cursor(Engine *e)
 {
     Debug_Printf(LOG_ENGINE, "Initializing cursor.");
-    Cursor *c = malloc(sizeof(Cursor *));
+    Cursor *c = malloc(sizeof(Cursor));
     if (!c)
     {
         Debug_Printf(LOG_ENGINE, "Error allocating cursor.");
@@ -112,6 +112,7 @@ bool Engine_Init(Engine *e)
         Debug_Printf(LOG_UI, "Engine UI creation failed.");
         return false;
     }
+
     bool ok = UI_Load_From_BUI(e->ui, "assets/ui/main_menu.bui");
     if (!ok)
     {

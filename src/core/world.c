@@ -28,12 +28,12 @@ static void grow_boards_array(Bzzt_World *w)
 
 Bzzt_World *Bzzt_World_Create(char *title)
 {
-    Bzzt_World *w = (Bzzt_World *)malloc(sizeof(Bzzt_World));
+    Bzzt_World *w = malloc(sizeof(Bzzt_World));
     if (!w)
         return NULL;
     strncpy(w->title, title, sizeof(w->title) - 1);
     w->boards_cap = 4;
-    w->boards = (Bzzt_Board **)malloc(sizeof(Bzzt_Board *) * w->boards_cap); // allocate initial boards size to 4
+    w->boards = (Bzzt_Board **)malloc(sizeof(Bzzt_Board) * w->boards_cap); // allocate initial boards size to 4
 
     if (!w->boards)
     {

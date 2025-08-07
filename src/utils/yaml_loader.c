@@ -20,6 +20,8 @@
 #include <strings.h>
 #include <ctype.h>
 
+extern char *strdup(const char *);
+
 static const char *pass_through(void *ud)
 {
     return (const char *)ud;
@@ -242,12 +244,15 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
         .flags = CYAML_CFG_DEFAULT};
 
     YamlUIRoot *root = NULL;
+    puts("about to load");
     cyaml_err_t err = cyaml_load_file(path, &config, &root_schema, (cyaml_data_t **)&root, NULL);
     if (err != CYAML_OK)
     {
         Debug_Printf(LOG_UI, "Failed loading YAML. Err: %s", cyaml_strerror(err));
         return false;
     }
+    else
+        puts("loaded ok");
 
     bool ok = true;
 
@@ -388,10 +393,12 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
 
                 if (strcasecmp(ye->type, "Button") == 0)
                 {
+                    const char *src = ye->text ? ye->text : "";
+                    char *caption = strdup(src);
                     UIButton *btn = UIButton_Create(ov, ye->name, ye->id, ye->x, y_cursor + ye->y, ye->z, ye->w, ye->h, ye->padding,
                                                     color_from_string(ye->fg, COLOR_BLACK), color_from_string(ye->bg, COLOR_BLACK),
                                                     is_visible, ye->enabled,
-                                                    ye->expand, ye->text ? ye->text : "", NULL, NULL);
+                                                    ye->expand, caption, NULL, NULL);
                     int mw, mh;
                     measure_text(ye->text ? ye->text : "", &mw, &mh);
                     btn->base.properties.w = ye->w > 0 ? ye->w : mw;
