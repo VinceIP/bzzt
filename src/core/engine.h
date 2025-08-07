@@ -14,7 +14,8 @@ typedef enum
 {
     ENGINE_STATE_SPLASH,
     ENGINE_STATE_PLAY,
-    ENGINE_STATE_EDIT
+    ENGINE_STATE_EDIT,
+    ENGINE_STATE__COUNT
 } EngineState;
 
 typedef struct Cursor
@@ -42,6 +43,7 @@ typedef struct Engine
     Bzzt_World *world;
     Font font;
     Cursor *cursor;
+    InputState *input;
     Bzzt_Camera *camera;
     BzztCharset *charsets[8]; // Loaded charsets (slot 0 = default)
     // Renderer renderer;
@@ -51,6 +53,7 @@ typedef struct Engine
     bool edit_mode_init_done;
 } Engine;
 
-bool Engine_Init(Engine *);
+bool Engine_Init(Engine *e, InputState *in);
 void Engine_Update(Engine *, InputState *, MouseState *);
 void Engine_Quit(Engine *);
+void Engine_Set_State(Engine *e, EngineState next);

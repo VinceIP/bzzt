@@ -6,6 +6,17 @@
 #include "coords.h"
 #include "bzzt.h"
 
+void Input_Handle(struct Engine *e, int key)
+{
+}
+
+void Input_Set_Handler(InputState *in, Key_Handler h)
+{
+    if (!in || h)
+        return;
+    in->key_handler = h;
+}
+
 void Input_Poll(InputState *s)
 {
     s->dx = (IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT));

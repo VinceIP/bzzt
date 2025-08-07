@@ -11,6 +11,15 @@
 #include "bzzt.h"
 #include "raylib.h"
 
+static void splash_key_handler(int k);
+static void play_key_handler(int k);
+static void editor_key_handler(int k);
+
+static const Key_Handler STATE_KEY_FN[ENGINE_STATE__COUNT] = {
+    [ENGINE_STATE_SPLASH] = splash_key_handler,
+    [ENGINE_STATE_PLAY] = play_key_handler,
+    [ENGINE_STATE_EDIT] = editor_key_handler};
+
 static void init_cursor(Engine *e)
 {
     Debug_Printf(LOG_ENGINE, "Initializing cursor.");
@@ -60,15 +69,25 @@ static void play_init(Engine *e)
     e->world->boards_current = 8;
 }
 
-static void change_state(Engine *e, EngineState target_state)
+static void change_state(Engine *e, EngineState next)
 {
-    switch (target_state)
+    switch (next)
     {
     case ENGINE_STATE_SPLASH:
+        if (e->ui)
+            UI_Destroy(e->ui);
+        e->ui = UI_Create(true, true);
+        bool ok = UI_Load_From_BUI(e->ui, "assets/ui/main_menu.bui");
+        if (!ok)
+        {
+            Debug_Printf(LOG_ENGINE, "Engine failed in loading main menu from .bui.");
+            return;
+        }
+        else
+            Debug_Printf(LOG_ENGINE, "Engine reports success loading UI from .bui.");
         break;
 
     case ENGINE_STATE_EDIT:
-        e->state = ENGINE_STATE_EDIT;
         if (e->ui)
         {
             UI_Destroy(e->ui);
@@ -89,19 +108,29 @@ static void change_state(Engine *e, EngineState target_state)
     }
 }
 
-bool Engine_Init(Engine *e)
+void Engine_Set_State(Engine *e, EngineState next)
 {
-    if (!e)
+    if (!e || !next)
+        return;
+
+    e->state = next;
+    Input_Set_Handler(e->input, STATE_KEY_FN[next]);
+    change_state(e, next);
+}
+
+bool Engine_Init(Engine *e, InputState *in)
+{
+    if (!e || !in)
         return false;
 
     Debugger_Create();
     Debug_Printf(LOG_ENGINE, "Initializing bzzt engine.");
 
-    e->state = ENGINE_STATE_SPLASH;
     e->world = NULL;
     e->running = true;
     e->debugShow = false;
     e->edit_mode_init_done = false;
+    e->input = in;
 
     init_cursor(e);
 
@@ -127,12 +156,13 @@ bool Engine_Init(Engine *e)
     for (int i = 0; i < 8; ++i)
         e->charsets[i] = NULL;
 
+    Engine_Set_State(e, ENGINE_STATE_SPLASH);
     return true;
 }
 
 void Engine_Update(Engine *e, InputState *i, MouseState *m)
 {
-    //puts("updating engine\n");
+    // puts("updating engine\n");
     Input_Poll(i);
     Mouse_Poll(m);
 
@@ -207,4 +237,16 @@ void Engine_Quit(Engine *e)
             e->charsets[i]->pixels = NULL;
         }
     }
+}
+
+void splash_key_handler(int k)
+{
+}
+
+void play_key_handler(int k)
+{
+}
+
+void editor_key_handler(int k)
+{
 }

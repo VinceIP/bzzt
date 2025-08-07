@@ -23,7 +23,9 @@ int main(void)
     setup_raylib();
     const char *fontPath = ASSET("fonts/default.bzc");
     Engine e;
-    bool ok = Engine_Init(&e);
+    InputState in = {0};
+    MouseState mo = {0};
+    bool ok = Engine_Init(&e, &in);
     if (!ok)
     {
         Debug_Printf(LOG_ENGINE, "Engine init failure.");
@@ -36,9 +38,6 @@ int main(void)
     Renderer rend;
 
     Renderer_Init(&rend, &e, fontPath);
-
-    InputState in = {0};
-    MouseState mo = {0};
 
     while (!in.quit)
     {

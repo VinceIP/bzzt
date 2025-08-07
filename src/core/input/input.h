@@ -1,8 +1,11 @@
 #pragma once
 #include <stdbool.h>
+#include <stdint.h>
 #include "raylib.h"
 
 typedef struct Bzzt_Camera Bzzt_Camera;
+
+typedef void (*Key_Handler)(int key);
 
 typedef struct InputState
 {
@@ -17,6 +20,7 @@ typedef struct InputState
     double elapsedTime;
     const int frameDelay;
     bool delayLock;
+    Key_Handler key_handler;
 } InputState;
 
 typedef struct MouseState
@@ -28,6 +32,8 @@ typedef struct MouseState
     float wheelMove;
 } MouseState;
 
+void Input_Handle(struct Engine *e, int key);
+void Input_Set_Handler(InputState *in, Key_Handler h);
 void Input_Poll(InputState *out);
 void Mouse_Poll(MouseState *out);
 void Mouse_Reset(MouseState *out);
