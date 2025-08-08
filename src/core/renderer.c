@@ -93,8 +93,8 @@ bool Renderer_Init(Renderer *r, Engine *e, const char *path)
     int screenW = GetScreenWidth();
     int screenH = GetScreenHeight();
     int maxScaleW = screenW / (BZZT_BOARD_DEFAULT_W * r->src_w);
-    int maxeScaleH = screenH / (BZZT_BOARD_DEFAULT_H * r->src_h);
-    int maxScale = maxScaleW < maxeScaleH ? maxScaleW : maxeScaleH;
+    int maxScaleH = screenH / (BZZT_BOARD_DEFAULT_H * r->src_h);
+    int maxScale = maxScaleW < maxScaleH ? maxScaleW : maxScaleH;
     if (desired > maxScale)
         desired = maxScale;
     if (desired < 1)

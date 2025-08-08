@@ -4,8 +4,9 @@
 #include "raylib.h"
 
 typedef struct Bzzt_Camera Bzzt_Camera;
+typedef struct Engine Engine;
 
-typedef void (*Key_Handler)(int key);
+typedef void (*Key_Handler)(Engine *e);
 
 typedef struct InputState
 {

@@ -249,8 +249,6 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
         Debug_Printf(LOG_UI, "Failed loading YAML. Err: %s", cyaml_strerror(err));
         return false;
     }
-    else
-        puts("loaded ok");
 
     bool ok = true;
 
@@ -396,7 +394,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                     const char *src = ye->text ? ye->text : "";
                     char *caption = strdup(src);
 
-                    UIButton *btn = UIButton_Create(ov, ye->name, ye->id, ye->x, y_cursor + ye->y, ye->z, ye->w, ye->h, ye->padding,
+                    UIButton *btn = UIButton_Create(ov, ye->name, eid, ye->x, y_cursor + ye->y, ye->z, ye->w, ye->h, ye->padding,
                                                     color_from_string(ye->fg, COLOR_BLACK), color_from_string(ye->bg, COLOR_BLACK),
                                                     is_visible, ye->enabled,
                                                     ye->expand, caption, NULL, NULL);

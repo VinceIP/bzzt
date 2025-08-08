@@ -139,9 +139,9 @@ Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
         bw->player = NULL;
     }
 
-    int boartCount = zztWorldGetBoardcount(zw);
+    int boardCount = zztWorldGetBoardcount(zw);
 
-    for (int i = 0; i < boartCount; ++i)
+    for (int i = 0; i < boardCount; ++i)
     {
         zztBoardSelect(zw, i);
         Bzzt_Board *b = Bzzt_Board_From_ZZT_Board(zw);

@@ -1,3 +1,13 @@
+/**
+ * @file engine.h
+ * @author Vince Patterson (vinceip532@gmail.com)
+ * @brief 
+ * @version 0.1
+ * @date 2025-08-08
+ * 
+ * @copyright Copyright (c) 2025
+ * 
+ */
 
 #pragma once
 #include "raylib.h"
@@ -49,6 +59,7 @@ typedef struct Engine
     // Renderer renderer;
     // Input input;
     bool running;
+    bool firstBoot;
     bool debugShow;
     bool edit_mode_init_done;
 } Engine;

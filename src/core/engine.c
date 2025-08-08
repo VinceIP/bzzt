@@ -29,6 +29,8 @@ static void play_key_handler(Engine *e);
 // Handle keyboard input in editor mode
 static void editor_key_handler(Engine *e);
 
+static void load_splash_screen(UI *ui);
+
 static const Key_Handler STATE_KEY_FN[ENGINE_STATE__COUNT] = {
     [ENGINE_STATE_SPLASH] = splash_key_handler,
     [ENGINE_STATE_PLAY] = play_key_handler,
@@ -83,11 +85,44 @@ static void play_init(Engine *e)
     e->world->boards_current = 8;
 }
 
-static void change_state(Engine *e, EngineState next)
+static void load_splash_screen(UI *ui)
 {
+    if (!ui)
+    {
+        Debug_Printf(LOG_UI, "Engine UI creation failed.");
+        return;
+    }
+
+    bool ok = UI_Load_From_BUI(ui, "assets/ui/main_menu.bui");
+    if (!ok)
+    {
+        Debug_Printf(LOG_ENGINE, "Engine failed in loading main menu from .bui.");
+        return;
+    }
+    else
+        Debug_Printf(LOG_ENGINE, "Engine reports success loading UI from .bui.");
+}
+
+void Engine_Set_State(Engine *e, EngineState next)
+{
+    if (!e)
+        return;
+
+    // Change state and setup new input handler function
+    e->state = next;
+    Input_Set_Handler(e->input, STATE_KEY_FN[next]);
+
+    // Handle specific setups
     switch (next)
     {
     case ENGINE_STATE_SPLASH:
+        if (!e->firstBoot) // Only refresh the UI if the engine has not just been initialized
+        {
+            if (e->ui)
+                UI_Destroy(e->ui);
+            e->ui = UI_Create(true, true);
+        }
+        load_splash_screen(e->ui);
         break;
 
     case ENGINE_STATE_EDIT:
@@ -102,12 +137,9 @@ static void change_state(Engine *e, EngineState next)
             Bzzt_World *w = e->world;
             w->doUnload = true;
         }
-
-        e->ui->visible = true;
         break;
 
     case ENGINE_STATE_PLAY:
-        e->state = ENGINE_STATE_PLAY;
         if (e->world)
         {
             e->world->doUnload = true;
@@ -115,16 +147,6 @@ static void change_state(Engine *e, EngineState next)
         play_init(e);
         break;
     }
-}
-
-void Engine_Set_State(Engine *e, EngineState next)
-{
-    if (!e || !next)
-        return;
-
-    e->state = next;
-    Input_Set_Handler(e->input, STATE_KEY_FN[next]);
-    change_state(e, next);
 }
 
 bool Engine_Init(Engine *e, InputState *in)
@@ -140,25 +162,12 @@ bool Engine_Init(Engine *e, InputState *in)
     e->debugShow = false;
     e->edit_mode_init_done = false;
     e->input = in;
-    e->state = ENGINE_STATE_SPLASH;
+    e->firstBoot = true;
 
     init_cursor(e);
 
     e->ui = UI_Create(true, true);
-    if (!e->ui)
-    {
-        Debug_Printf(LOG_UI, "Engine UI creation failed.");
-        return false;
-    }
-
-    bool ok = UI_Load_From_BUI(e->ui, "assets/ui/main_menu.bui");
-    if (!ok)
-    {
-        Debug_Printf(LOG_ENGINE, "Engine failed in loading main menu from .bui.");
-        return false;
-    }
-    else
-        Debug_Printf(LOG_ENGINE, "Engine reports success loading UI from .bui.");
+    load_splash_screen(e->ui);
 
     init_camera(e);
 
@@ -166,7 +175,9 @@ bool Engine_Init(Engine *e, InputState *in)
     for (int i = 0; i < 8; ++i)
         e->charsets[i] = NULL;
 
-    // Engine_Set_State(e, ENGINE_STATE_SPLASH);
+    Engine_Set_State(e, ENGINE_STATE_SPLASH);
+
+    e->firstBoot = false;
     return true;
 }
 
@@ -179,10 +190,12 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
         e->cursor->position = Handle_Cursor_Move(e->cursor->position, i, m, e->camera, e->camera->viewport.rect);
     }
 
+    if (i->key_handler)
+        i->key_handler(e);
+
     switch (e->state)
     {
     case ENGINE_STATE_SPLASH:
-        splash_key_handler();
         break;
 
     case ENGINE_STATE_PLAY:
@@ -190,12 +203,6 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
 
     case ENGINE_STATE_EDIT:
         Editor_Update(e, i);
-        if (i->Q_pressed)
-        {
-            e->state = ENGINE_STATE_SPLASH;
-            e->world = Bzzt_World_Create("Title Screen");
-        }
-
         break;
 
     default:
@@ -239,18 +246,27 @@ void Engine_Quit(Engine *e)
 static void splash_key_handler(Engine *e)
 {
     InputState *i = e->input;
+
     if (i->E_pressed)
-        change_state(e, ENGINE_STATE_EDIT);
+        Engine_Set_State(e, ENGINE_STATE_EDIT);
     else if (i->P_pressed)
     {
-        change_state(e, ENGINE_STATE_PLAY);
+        Engine_Set_State(e, ENGINE_STATE_PLAY);
     }
 }
 
-static void play_key_handler(int k)
+static void play_key_handler(Engine *e)
 {
+    // Stub
+    return;
 }
 
-static void editor_key_handler(int k)
+static void editor_key_handler(Engine *e)
 {
+    InputState *i = e->input;
+
+    if (i->Q_pressed)
+    {
+        Engine_Set_State(e, ENGINE_STATE_SPLASH);
+    }
 }

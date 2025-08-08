@@ -1,3 +1,14 @@
+/**
+ * @file input.c
+ * @author Vince Patterson (vinceip532@gmail.com)
+ * @brief 
+ * @version 0.1
+ * @date 2025-08-08
+ * 
+ * @copyright Copyright (c) 2025
+ * 
+ */
+
 #include <stdbool.h>
 #include <stdio.h>
 #include "raylib.h"
@@ -8,7 +19,7 @@
 
 void Input_Set_Handler(InputState *in, Key_Handler h)
 {
-    if (!in || h)
+    if (!in || !h)
         return;
     in->key_handler = h;
 }
