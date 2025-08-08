@@ -22,9 +22,12 @@
 #include "bzzt.h"
 #include "raylib.h"
 
-static void splash_key_handler(int k);
-static void play_key_handler(int k);
-static void editor_key_handler(int k);
+// Handle keyboard input on splash screen
+static void splash_key_handler(Engine *e);
+// Handle keyboard input in play mode
+static void play_key_handler(Engine *e);
+// Handle keyboard input in editor mode
+static void editor_key_handler(Engine *e);
 
 static const Key_Handler STATE_KEY_FN[ENGINE_STATE__COUNT] = {
     [ENGINE_STATE_SPLASH] = splash_key_handler,
@@ -104,6 +107,12 @@ static void change_state(Engine *e, EngineState next)
         break;
 
     case ENGINE_STATE_PLAY:
+        e->state = ENGINE_STATE_PLAY;
+        if (e->world)
+        {
+            e->world->doUnload = true;
+        }
+        play_init(e);
         break;
     }
 }
@@ -163,7 +172,6 @@ bool Engine_Init(Engine *e, InputState *in)
 
 void Engine_Update(Engine *e, InputState *i, MouseState *m)
 {
-    // puts("updating engine\n");
     Input_Poll(i);
     Mouse_Poll(m);
     if (e->cursor && e->cursor->enabled)
@@ -174,19 +182,7 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
     switch (e->state)
     {
     case ENGINE_STATE_SPLASH:
-        if (i->E_pressed)
-        {
-            change_state(e, ENGINE_STATE_EDIT);
-        }
-        else if (i->P_pressed)
-        {
-            e->state = ENGINE_STATE_PLAY;
-            if (e->world)
-            {
-                e->world->doUnload = true;
-            }
-            play_init(e);
-        }
+        splash_key_handler();
         break;
 
     case ENGINE_STATE_PLAY:
@@ -240,14 +236,21 @@ void Engine_Quit(Engine *e)
     }
 }
 
-void splash_key_handler(int k)
+static void splash_key_handler(Engine *e)
+{
+    InputState *i = e->input;
+    if (i->E_pressed)
+        change_state(e, ENGINE_STATE_EDIT);
+    else if (i->P_pressed)
+    {
+        change_state(e, ENGINE_STATE_PLAY);
+    }
+}
+
+static void play_key_handler(int k)
 {
 }
 
-void play_key_handler(int k)
-{
-}
-
-void editor_key_handler(int k)
+static void editor_key_handler(int k)
 {
 }
