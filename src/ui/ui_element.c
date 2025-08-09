@@ -39,8 +39,8 @@ UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int 
     e->properties.enabled = enabled;
     e->properties.expand = expand;
     e->properties.parent = o;
-
     e->cell_count = e->properties.w * e->properties.h;
+    e->child = NULL;
 
     e->type = type;
     return e;

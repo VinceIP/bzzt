@@ -24,29 +24,6 @@ int testX = 0;
 
 #define CURSOR_BLINK_RATE 0.5
 
-static UIOverlay *find_overlay_by_name(UI *ui, const char *name)
-{
-    if (!ui || !name)
-        return NULL;
-
-    for (int i = 0; i < ui->layer_count; ++i)
-    {
-        UILayer *layer = ui->layers[i];
-        for (int j = 0; j < layer->surface_count; ++j)
-        {
-            UISurface *surface = layer->surfaces[j];
-            for (int k = 0; k < surface->overlays_count; ++k)
-            {
-                UIOverlay *overlay = surface->overlays[k];
-                if (overlay->properties.name && strcmp(overlay->properties.name, name) == 0)
-                {
-                    return overlay;
-                }
-            }
-        }
-    }
-}
-
 static void ui_init(Engine *e)
 {
     if (!e)
@@ -79,8 +56,8 @@ static void handle_keys(Engine *e, InputState *in)
 {
     if (in->Q_pressed || in->ESC_pressed)
     {
-        UIOverlay *quitBox = find_overlay_by_name(e->ui, "quit dialog");
-        UIOverlay *buttons = find_overlay_by_name(e->ui, "buttons");
+        UIOverlay *quitBox = UIOverlay_Find_By_Name(e->ui, "quit dialog");
+        UIOverlay *buttons = UIOverlay_Find_By_Name(e->ui, "buttons");
         quitBox->properties.visible = true;
         buttons->properties.visible = false;
         // Engine_Set_State(e, ENGINE_STATE_SPLASH);

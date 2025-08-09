@@ -141,3 +141,26 @@ void UIOverlay_Print(UIOverlay *ov, Color_Bzzt fg, Color_Bzzt bg, bool wrap, con
     // UISurface_DrawText(ov->surface, buffer, ov->properties.x, ov->properties.y,
     //                    fg, bg, wrap, ov->surface->properties.w);
 }
+
+UIOverlay *UIOverlay_Find_By_Name(UI *ui, const char *name)
+{
+    if (!ui || !name)
+        return NULL;
+
+    for (int i = 0; i < ui->layer_count; ++i)
+    {
+        UILayer *layer = ui->layers[i];
+        for (int j = 0; j < layer->surface_count; ++j)
+        {
+            UISurface *surface = layer->surfaces[j];
+            for (int k = 0; k < surface->overlays_count; ++k)
+            {
+                UIOverlay *overlay = surface->overlays[k];
+                if (overlay->properties.name && strcmp(overlay->properties.name, name) == 0)
+                {
+                    return overlay;
+                }
+            }
+        }
+    }
+}

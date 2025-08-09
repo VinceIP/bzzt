@@ -55,9 +55,10 @@ surfaces:
             y: 3
             name: "tools button"
             text: '\f0\b2 T \f15\b8 Tools'
-      - name: "quit dialog"
+      - name: "dialog container"
         visible: false
         anchor: center
         elements:
           - type: text
-            value: "Really quit? y/n"
+            name: "dialog"
+            value: ""
