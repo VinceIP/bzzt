@@ -1,5 +1,16 @@
+/**
+ * @file editor.c
+ * @author Vince Patterson (vinceip532@gmail.com)
+ * @brief
+ * @version 0.1
+ * @date 2025-08-09
+ *
+ * @copyright Copyright (c) 2025
+ *
+ */
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include "raylib.h"
 #include "editor.h"
 #include "engine.h"
@@ -13,7 +24,28 @@ int testX = 0;
 
 #define CURSOR_BLINK_RATE 0.5
 
-static const char *caption_cb(void *ud) { return (const char *)ud; }
+static UIOverlay *find_overlay_by_name(UI *ui, const char *name)
+{
+    if (!ui || !name)
+        return NULL;
+
+    for (int i = 0; i < ui->layer_count; ++i)
+    {
+        UILayer *layer = ui->layers[i];
+        for (int j = 0; j < layer->surface_count; ++j)
+        {
+            UISurface *surface = layer->surfaces[j];
+            for (int k = 0; k < surface->overlays_count; ++k)
+            {
+                UIOverlay *overlay = surface->overlays[k];
+                if (overlay->properties.name && strcmp(overlay->properties.name, name) == 0)
+                {
+                    return overlay;
+                }
+            }
+        }
+    }
+}
 
 static void ui_init(Engine *e)
 {
@@ -23,19 +55,6 @@ static void ui_init(Engine *e)
     bool ok = UI_Load_From_BUI(e->ui, "assets/ui/sidebar_editor.bui");
     if (!ok)
         Debug_Printf(LOG_UI, "Editor failed to load sidebar.");
-
-    // old playscii asset stuff
-    // UISurface *sidebarSurface = UISurface_Load_From_Playscii("assets/ui/sidebar.psci"); // Load up the sidebar
-    // if (!sidebarSurface)
-    //     Debug_Printf(LOG_UI, "Failed to load sidebar surface.");
-    // sidebarSurface->properties.x = 60;
-    // UI_Add_Surface(e->ui, 0, sidebarSurface); // Add the surface to the UI layer 0
-    // UISurface_Add_New_Overlay(sidebarSurface, NULL, 0, 0, 0, 0, 0, 0, 0, true, true, LAYOUT_NONE, ANCHOR_NONE, 0);
-    // UIOverlay *textOverlay = sidebarSurface->overlays[sidebarSurface->overlays_count - 1];
-    // UIOverlay_Add_New_Element(textOverlay,
-    //                           (UIElement *)UIText_Create_Bound(2, sidebarSurface->properties.h - 2, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor->position.x, "Cursor x: %d", BIND_INT)); // Create text element that prints cursor x
-    // UIOverlay_Add_New_Element(textOverlay,
-    //                           (UIElement *)UIText_Create_Bound(2, sidebarSurface->properties.h - 1, COLOR_WHITE, COLOR_DARK_GRAY, &e->cursor->position.y, "Cursor y: %d", BIND_INT));
 }
 
 void Editor_Init(Engine *e)
@@ -56,6 +75,19 @@ void Editor_Init(Engine *e)
     ui_init(e);
 }
 
+static void handle_keys(Engine *e, InputState *in)
+{
+    if (in->Q_pressed || in->ESC_pressed)
+    {
+        UIOverlay *quitBox = find_overlay_by_name(e->ui, "quit dialog");
+        UIOverlay *buttons = find_overlay_by_name(e->ui, "buttons");
+        quitBox->properties.visible = true;
+        buttons->properties.visible = false;
+        // Engine_Set_State(e, ENGINE_STATE_SPLASH);
+    }
+}
+
 void Editor_Update(Engine *e, InputState *in)
 {
+    handle_keys(e, in);
 }

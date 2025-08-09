@@ -1,9 +1,9 @@
 /**
  * @file ui_renderer.c
  * @author Vince Patterson (vinceip532@gmail.com)
- * @brief An efficient UI renderer with separated anchoring and alignment.
- * @version 0.3
- * @date 2025-08-10
+ * @brief A simplified, explicit-positioning UI renderer with text alignment.
+ * @version 0.9
+ * @date 2025-08-15
  *
  * @copyright Copyright (c) 2025
  *
@@ -34,10 +34,15 @@ typedef struct
 } LineMetrics;
 
 /**
+ * @brief A helper function to safely compare two Color_Bzzt structs.
+ */
+static inline bool is_color_equal(Color_Bzzt c1, Color_Bzzt c2)
+{
+    return c1.r == c2.r && c1.g == c2.g && c1.b == c2.b;
+}
+
+/**
  * @brief Gets metrics for the next line in a string in a single pass.
- *
- * @param str_ptr Pointer to a string pointer. The function updates this pointer to the beginning of the next line.
- * @return LineMetrics Struct containing the line's start, end, and visible width.
  */
 static LineMetrics get_next_line_metrics(const char **str_ptr)
 {
@@ -111,8 +116,7 @@ static void measure_text(const char *str, int *w, int *h)
 }
 
 /**
- * @brief Draws a string of text, aligning it horizontally within a bounding box.
- * @param align The horizontal alignment for each line.
+ * @brief Draws a string of text, aligning each line horizontally within a given bounding box.
  */
 static void draw_text(Renderer *r, const char *str,
                       int x, int y, int maxW, int maxH,
@@ -122,7 +126,6 @@ static void draw_text(Renderer *r, const char *str,
     if (!r || !str || !*str)
         return;
 
-    // Sanitize bounding box dimensions to prevent issues with negative values.
     int safe_maxW = MAX(0, maxW);
     int safe_maxH = MAX(0, maxH);
 
@@ -131,17 +134,15 @@ static void draw_text(Renderer *r, const char *str,
 
     while (*p)
     {
-        // Perform vertical clipping before processing the line.
         if (safe_maxH > 0 && (cursor_y < y || cursor_y >= y + safe_maxH))
         {
-            get_next_line_metrics(&p); // Advance pointer past the clipped line.
+            get_next_line_metrics(&p);
             cursor_y++;
             continue;
         }
 
         LineMetrics line = get_next_line_metrics(&p);
 
-        // Calculate the starting X position for this specific line based on its alignment.
         int line_start_x = x;
         if (align == ALIGN_CENTER)
             line_start_x = x + (safe_maxW - line.visible_width) / 2;
@@ -155,7 +156,6 @@ static void draw_text(Renderer *r, const char *str,
         const char *line_p = line.start;
         while (line_p < line.end)
         {
-            // Handle color escape codes.
             if (*line_p == '\\' && (*(line_p + 1) == 'f' || *(line_p + 1) == 'b'))
             {
                 char type = *(line_p + 1);
@@ -166,22 +166,34 @@ static void draw_text(Renderer *r, const char *str,
                 {
                     num_buf[num_len++] = *line_p++;
                 }
-                if (type == 'f')
-                    current_fg = bzzt_get_color(atoi(num_buf));
+                int color_index = atoi(num_buf);
+
+                if (color_index == BZ_TRANSPARENT)
+                {
+                    if (type == 'f')
+                        current_fg = COLOR_TRANSPARENT;
+                    else
+                        current_bg = COLOR_TRANSPARENT;
+                }
                 else
-                    current_bg = bzzt_get_color(atoi(num_buf));
+                {
+                    if (type == 'f')
+                        current_fg = bzzt_get_color(color_index);
+                    else
+                        current_bg = bzzt_get_color(color_index);
+                }
                 continue;
             }
 
-            // Draw character with horizontal clipping.
             if (safe_maxW <= 0 || (cursor_x >= x && cursor_x < x + safe_maxW))
             {
-                if (cursor_x >= 0 && cursor_y >= 0) // Prevent drawing at negative screen coordinates.
+                if (cursor_x >= 0 && cursor_y >= 0)
                 {
                     unsigned char cp437_glyph = unicode_to_cp437(*line_p);
                     Renderer_Draw_Cell(r, cursor_x, cursor_y, cp437_glyph, current_fg, current_bg);
                 }
             }
+
             cursor_x++;
             line_p++;
         }
@@ -190,147 +202,102 @@ static void draw_text(Renderer *r, const char *str,
 }
 
 /**
- * @brief Measures the total size of an overlay's content based on its layout.
+ * @brief Draws a single UI element at a pre-calculated absolute position.
  */
-static void measure_overlay_content(UIOverlay *overlay, int *content_w, int *content_h)
+static void draw_ui_element(Renderer *r, UIOverlay *overlay, UIElement *element, int abs_x, int abs_y)
 {
-    if (!overlay || !content_w || !content_h)
-        return;
-
-    *content_w = 0;
-    *content_h = 0;
-
-    if (overlay->layout == LAYOUT_VBOX)
+    switch (element->type)
     {
-        for (int i = 0; i < overlay->elements_count; ++i)
+    case UI_ELEM_TEXT:
+    {
+        UIElement_Text *text_elem = (UIElement_Text *)element;
+        const char *str = text_elem->textCallback(text_elem->ud);
+        if (str)
         {
-            UIElement *e = overlay->elements[i];
-            *content_w = MAX(*content_w, e->properties.w);
-            *content_h += e->properties.h;
-            if (i < overlay->elements_count - 1)
+            // For text elements, the alignment is applied to the text *within* the element's bounding box.
+            draw_text(r, str, abs_x, abs_y, element->properties.w, element->properties.h, text_elem->fg, text_elem->bg, overlay->align);
+        }
+        break;
+    }
+    case UI_ELEM_BUTTON:
+    {
+        UIButton *button = (UIButton *)element;
+        UIElement_Text *label = button->label;
+        if (!label)
+            break;
+
+        if (!is_color_equal(label->bg, COLOR_TRANSPARENT))
+        {
+            for (int cy = 0; cy < element->properties.h; ++cy)
             {
-                *content_h += overlay->spacing;
+                for (int cx = 0; cx < element->properties.w; ++cx)
+                {
+                    Renderer_Draw_Cell(r, abs_x + cx, abs_y + cy, ' ', label->fg, label->bg);
+                }
             }
         }
-    }
-    // else if (overlay->layout == LAYOUT_HBOX) { /* Future hbox implementation would go here. */ }
-    else // LAYOUT_NONE
-    {
-        // For layout none, size is the union of all element bounding boxes.
-        for (int i = 0; i < overlay->elements_count; ++i)
+
+        const char *str = label->textCallback(label->ud);
+        if (str)
         {
-            UIElement *e = overlay->elements[i];
-            *content_w = MAX(*content_w, e->properties.x + e->properties.w);
-            *content_h = MAX(*content_h, e->properties.y + e->properties.h);
+            // Button text is always centered within its own bounding box, for a classic button look.
+            draw_text(r, str, abs_x, abs_y, element->properties.w, element->properties.h, label->fg, COLOR_TRANSPARENT, ALIGN_CENTER);
         }
+        break;
+    }
+    default:
+        break;
     }
 }
 
 /**
- * @brief Draws all elements in an overlay, handling anchoring and alignment.
+ * @brief Draws all elements in an overlay using a simple, explicit positioning model.
  */
 static void draw_ui_overlay(Renderer *r, UISurface *surface, UIOverlay *overlay)
 {
     if (!r || !surface || !overlay)
         return;
 
-    // 1. Measure the total size of the overlay's content.
-    int content_w, content_h;
-    measure_overlay_content(overlay, &content_w, &content_h);
+    // Calculate the absolute top-left corner of the overlay.
+    int overlay_abs_x = surface->properties.x + overlay->properties.x;
+    int overlay_abs_y = surface->properties.y + overlay->properties.y;
 
-    // If overlay has explicit dimensions in the BUI file, use them. Otherwise, use the measured content size.
-    int overlay_w = overlay->properties.w > 0 ? overlay->properties.w : content_w;
-    int overlay_h = overlay->properties.h > 0 ? overlay->properties.h : content_h;
+    // --- REFINED: Define the container for alignment. ---
+    // If the overlay has its own width, that's the container. Otherwise, it's the parent surface.
+    int container_w = overlay->properties.w > 0 ? overlay->properties.w : surface->properties.w;
 
-    // 2. Calculate the overlay's top-left (ox, oy) based on its anchor to the parent surface.
-    int ox = surface->properties.x + overlay->properties.x;
-    int oy = surface->properties.y + overlay->properties.y;
-
-    // Horizontal Anchoring
-    if (overlay->anchor == ANCHOR_TOP_CENTER || overlay->anchor == ANCHOR_MIDDLE_CENTER || overlay->anchor == ANCHOR_BOTTOM_CENTER)
-        ox = surface->properties.x + (surface->properties.w - overlay_w) / 2;
-    else if (overlay->anchor == ANCHOR_TOP_RIGHT || overlay->anchor == ANCHOR_MIDDLE_RIGHT || overlay->anchor == ANCHOR_BOTTOM_RIGHT)
-        ox = surface->properties.x + surface->properties.w - overlay_w;
-
-    // Vertical Anchoring
-    if (overlay->anchor == ANCHOR_MIDDLE_LEFT || overlay->anchor == ANCHOR_MIDDLE_CENTER || overlay->anchor == ANCHOR_MIDDLE_RIGHT)
-        oy = surface->properties.y + (surface->properties.h - overlay_h) / 2;
-    else if (overlay->anchor == ANCHOR_BOTTOM_LEFT || overlay->anchor == ANCHOR_BOTTOM_CENTER || overlay->anchor == ANCHOR_BOTTOM_RIGHT)
-        oy = surface->properties.y + surface->properties.h - overlay_h;
-
-    // 3. Draw each element, positioning it relative to the overlay's calculated (ox, oy) and alignment.
-    int cursor_y = 0; // Relative y-position for layout modes
+    // Iterate through elements and draw them.
     for (int i = 0; i < overlay->elements_count; ++i)
     {
         UIElement *element = overlay->elements[i];
         if (!element->properties.visible)
             continue;
 
-        int element_abs_x, element_abs_y;
+        int element_abs_x;
 
-        // Calculate final X position based on overlay's alignment property.
+        // --- REFINED: Alignment logic is now applied to the ELEMENT'S POSITION. ---
         if (overlay->align == ALIGN_CENTER)
-            element_abs_x = ox + (overlay_w - element->properties.w) / 2 + element->properties.x;
+        {
+            // Center the element within the container, then apply its own x as an offset.
+            element_abs_x = overlay_abs_x + (container_w - element->properties.w) / 2 + element->properties.x;
+        }
         else if (overlay->align == ALIGN_RIGHT)
-            element_abs_x = ox + overlay_w - element->properties.w + element->properties.x;
+        {
+            // Right-align the element, then apply its own x as an offset.
+            element_abs_x = overlay_abs_x + container_w - element->properties.w + element->properties.x;
+        }
         else // ALIGN_LEFT
-            element_abs_x = ox + element->properties.x;
-
-        // Calculate final Y position based on overlay's layout property.
-        if (overlay->layout == LAYOUT_VBOX)
-            element_abs_y = oy + cursor_y + element->properties.y;
-        else // LAYOUT_NONE
-            element_abs_y = oy + element->properties.y;
-
-        // --- Draw the element based on its type ---
-        switch (element->type)
         {
-        case UI_ELEM_TEXT:
-        {
-            UIElement_Text *text_elem = (UIElement_Text *)element;
-            const char *str = text_elem->textCallback(text_elem->ud);
-            if (str)
-            {
-                // Text elements are drawn simply at their calculated position.
-                // The alignment of the text's content is implicitly left, as it fills its own box.
-                draw_text(r, str, element_abs_x, element_abs_y, element->properties.w, element->properties.h, text_elem->fg, text_elem->bg, ALIGN_LEFT);
-            }
-            break;
-        }
-        case UI_ELEM_BUTTON:
-        {
-            UIButton *button = (UIButton *)element;
-            UIElement_Text *label = button->label;
-            if (!label)
-                break;
-
-            // Draw button background at its final calculated position.
-            for (int cy = 0; cy < element->properties.h; ++cy)
-            {
-                for (int cx = 0; cx < element->properties.w; ++cx)
-                {
-                    Renderer_Draw_Cell(r, element_abs_x + cx, element_abs_y + cy, ' ', label->fg, label->bg);
-                }
-            }
-
-            // Draw the label text, which is always centered inside the button's own bounds.
-            const char *str = label->textCallback(label->ud);
-            if (str)
-            {
-                Color_Bzzt transparent_bg = bzzt_get_color(BZ_TRANSPARENT);
-                draw_text(r, str, element_abs_x, element_abs_y, element->properties.w, element->properties.h, label->fg, transparent_bg, ALIGN_CENTER);
-            }
-            break;
-        }
-        default:
-            break;
+            // Default left-alignment.
+            element_abs_x = overlay_abs_x + element->properties.x;
         }
 
-        // Advance layout cursor if a layout mode is active.
-        if (overlay->layout == LAYOUT_VBOX)
-        {
-            cursor_y += element->properties.h + overlay->spacing;
-        }
+        // The element's final Y position is its own y offset from the overlay's absolute position.
+        int element_abs_y = overlay_abs_y + element->properties.y;
+
+        // Delegate the final drawing call to the element-specific function.
+        if (element->properties.visible && element->properties.enabled)
+            draw_ui_element(r, overlay, element, element_abs_x, element_abs_y);
     }
 }
 
@@ -339,7 +306,6 @@ static void draw_ui_overlay(Renderer *r, UISurface *surface, UIOverlay *overlay)
  */
 static void draw_ui_surface(Renderer *r, UISurface *s)
 {
-    // Draw the surface's base cells (background).
     if (s->cells && s->cell_count > 0)
     {
         int width = s->properties.w;
@@ -356,7 +322,6 @@ static void draw_ui_surface(Renderer *r, UISurface *s)
         }
     }
 
-    // Draw each overlay this surface holds.
     for (int i = 0; i < s->overlays_count; ++i)
     {
         UIOverlay *o = s->overlays[i];

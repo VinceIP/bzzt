@@ -1,9 +1,9 @@
 /**
  * @file bui_loader.c
  * @author Vince Patterson (vinceip532@gmail.com)
- * @brief
- * @version 0.1
- * @date 2025-07-15
+ * @brief A robust BUI loader with correct default value handling.
+ * @version 1.0
+ * @date 2025-08-15
  *
  * @copyright Copyright (c) 2025
  *
@@ -19,6 +19,7 @@
 #include <string.h>
 #include <strings.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 static const char *pass_through(void *ud)
 {
@@ -78,6 +79,7 @@ static void measure_text(const char *str, int *w, int *h)
         *h = lines;
 }
 
+// Using pointers for booleans allows us to detect if the field was omitted in the YAML file.
 typedef struct
 {
     char *type;
@@ -90,7 +92,7 @@ typedef struct
     char *fg;
     char *bg;
     bool *visible;
-    bool enabled;
+    bool *enabled;
     bool expand;
 } YamlElement;
 
@@ -98,6 +100,8 @@ typedef struct
 {
     char *name;
     int id;
+    bool *enabled;
+    bool *visible;
     int x, y, z, w, h;
     int padding;
     char *layout;
@@ -156,39 +160,52 @@ static const ColorMap color_map[] = {
 };
 #define COLOR_MAP_COUNT (sizeof(color_map) / sizeof(color_map[0]))
 
+/**
+ * @brief REFINED: Correctly handles COLOR_TRANSPARENT, which has an enum value that
+ * would be incorrectly processed by bzzt_get_color's bitmask.
+ */
 static Color_Bzzt color_from_string(const char *s, Color_Bzzt default_color)
 {
     if (!s)
         return default_color;
+    if (strcasecmp(s, "transparent") == 0)
+        return COLOR_TRANSPARENT;
     for (size_t i = 0; i < COLOR_MAP_COUNT; ++i)
     {
         if (strcasecmp(s, color_map[i].str) == 0)
         {
+            if (color_map[i].val == BZ_TRANSPARENT)
+                return COLOR_TRANSPARENT;
             return bzzt_get_color(color_map[i].val);
         }
     }
     return default_color;
 }
 
+/**
+ * @brief REFINED: Added "center" as a user-friendly alias for "middle_center".
+ */
 static UIAnchor anchor_from_string(const char *s)
 {
-    if (!s || strcasecmp(s, "top_left") == 0)
+    if (!s)
         return ANCHOR_TOP_LEFT;
-    if (strcasecmp(s, "top_center") == 0)
+    if (strcasecmp(s, "top-left") == 0)
+        return ANCHOR_TOP_LEFT;
+    if (strcasecmp(s, "top-center") == 0)
         return ANCHOR_TOP_CENTER;
-    if (strcasecmp(s, "top_right") == 0)
+    if (strcasecmp(s, "top-right") == 0)
         return ANCHOR_TOP_RIGHT;
-    if (strcasecmp(s, "middle_left") == 0)
+    if (strcasecmp(s, "middle-left") == 0)
         return ANCHOR_MIDDLE_LEFT;
-    if (strcasecmp(s, "middle_center") == 0)
+    if (strcasecmp(s, "center") == 0 || strcasecmp(s, "middle-center") == 0)
         return ANCHOR_MIDDLE_CENTER;
-    if (strcasecmp(s, "middle_right") == 0)
+    if (strcasecmp(s, "middle-right") == 0)
         return ANCHOR_MIDDLE_RIGHT;
-    if (strcasecmp(s, "bottom_left") == 0)
+    if (strcasecmp(s, "bottom-left") == 0)
         return ANCHOR_BOTTOM_LEFT;
-    if (strcasecmp(s, "bottom_center") == 0)
+    if (strcasecmp(s, "bottom-center") == 0)
         return ANCHOR_BOTTOM_CENTER;
-    if (strcasecmp(s, "bottom_right") == 0)
+    if (strcasecmp(s, "bottom-right") == 0)
         return ANCHOR_BOTTOM_RIGHT;
     return ANCHOR_TOP_LEFT; // Default
 }
@@ -205,6 +222,7 @@ static UIAlign align_from_string(const char *s)
 }
 
 // --- CYAML schema ---
+// Using CYAML_FIELD_BOOL_PTR for 'visible' and 'enabled' allows us to detect when they are omitted.
 static const cyaml_schema_field_t element_fields[] = {
     CYAML_FIELD_STRING_PTR("type", CYAML_FLAG_POINTER, YamlElement, type, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("name", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, name, 0, CYAML_UNLIMITED),
@@ -220,7 +238,7 @@ static const cyaml_schema_field_t element_fields[] = {
     CYAML_FIELD_STRING_PTR("fg", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, fg, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("bg", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, bg, 0, CYAML_UNLIMITED),
     CYAML_FIELD_BOOL_PTR("visible", CYAML_FLAG_OPTIONAL, YamlElement, visible),
-    CYAML_FIELD_BOOL("enabled", CYAML_FLAG_OPTIONAL, YamlElement, enabled),
+    CYAML_FIELD_BOOL_PTR("enabled", CYAML_FLAG_OPTIONAL, YamlElement, enabled),
     CYAML_FIELD_BOOL("expand", CYAML_FLAG_OPTIONAL, YamlElement, expand),
     CYAML_FIELD_END};
 
@@ -230,22 +248,19 @@ static const cyaml_schema_value_t element_schema = {
 static const cyaml_schema_field_t overlay_fields[] = {
     CYAML_FIELD_STRING_PTR("name", CYAML_FLAG_POINTER, YamlOverlay, name, 0, CYAML_UNLIMITED),
     CYAML_FIELD_INT("id", CYAML_FLAG_OPTIONAL, YamlOverlay, id),
-
+    CYAML_FIELD_BOOL_PTR("visible", CYAML_FLAG_OPTIONAL, YamlOverlay, visible),
+    CYAML_FIELD_BOOL_PTR("enabled", CYAML_FLAG_OPTIONAL, YamlOverlay, enabled),
     CYAML_FIELD_INT("x", CYAML_FLAG_OPTIONAL, YamlOverlay, x),
     CYAML_FIELD_INT("y", CYAML_FLAG_OPTIONAL, YamlOverlay, y),
     CYAML_FIELD_INT("z", CYAML_FLAG_OPTIONAL, YamlOverlay, z),
-
     CYAML_FIELD_INT("w", CYAML_FLAG_OPTIONAL, YamlOverlay, w),
     CYAML_FIELD_INT("h", CYAML_FLAG_OPTIONAL, YamlOverlay, h),
-
     CYAML_FIELD_INT("padding", CYAML_FLAG_OPTIONAL, YamlOverlay, padding),
     CYAML_FIELD_STRING_PTR("layout", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, layout, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("anchor", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, anchor, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("align", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, align, 0, CYAML_UNLIMITED),
     CYAML_FIELD_INT("spacing", CYAML_FLAG_OPTIONAL, YamlOverlay, spacing),
-
     CYAML_FIELD_SEQUENCE("elements", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, elements, &element_schema, 0, CYAML_UNLIMITED),
-
     CYAML_FIELD_END};
 
 static const cyaml_schema_value_t overlay_schema = {
@@ -363,6 +378,11 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
             UIAlign align = align_from_string(yo->align);
             char *overlay_name = yo->name ? strdup(yo->name) : NULL;
 
+            // Check if the optional 'visible' field was present. If not (pointer is NULL), default to true.
+            bool is_overlay_visible = yo->visible ? *yo->visible : true;
+            // Check if the optional 'enabled' field was present. If not (pointer is NULL), default to true.
+            bool is_overlay_enabled = yo->enabled ? *yo->enabled : true;
+
             int oid;
             if (yo->id > 0)
             {
@@ -388,10 +408,12 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                     break;
                 }
             }
+
+            // --- FIX: Pass the resolved boolean values, not the pointers. ---
             UISurface_Add_New_Overlay(surface, overlay_name, oid,
-                                      0, 0, surface->properties.z,
-                                      surface->properties.w, surface->properties.h, surface->properties.padding,
-                                      true, true,
+                                      yo->x, yo->y, yo->z,
+                                      yo->w, yo->h, yo->padding,
+                                      is_overlay_visible, is_overlay_enabled,
                                       layout, anchor, align, yo->spacing);
             UIOverlay *ov = surface->overlays[surface->overlays_count - 1];
             int y_cursor = 0;
@@ -431,7 +453,10 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
 
                 Color_Bzzt elem_fg = color_from_string(ye->fg, COLOR_WHITE);
                 Color_Bzzt elem_bg = color_from_string(ye->bg, COLOR_TRANSPARENT);
-                bool is_visible = ye->visible ? *ye->visible : true; // visible by default
+
+                // Check for optional 'visible' and 'enabled' fields for elements. Default to true.
+                bool is_elem_visible = ye->visible ? *ye->visible : true;
+                bool is_elem_enabled = ye->enabled ? *ye->enabled : true;
 
                 if (strcasecmp(ye->type, "Button") == 0)
                 {
@@ -439,8 +464,8 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                     char *caption = strdup(src);
 
                     UIButton *btn = UIButton_Create(ov, ye->name, eid, ye->x, y_cursor + ye->y, ye->z, ye->w, ye->h, ye->padding,
-                                                    color_from_string(ye->fg, COLOR_BLACK), color_from_string(ye->bg, COLOR_BLACK),
-                                                    is_visible, ye->enabled,
+                                                    elem_fg, elem_bg,
+                                                    is_elem_visible, is_elem_enabled,
                                                     ye->expand, caption, NULL, NULL);
 
                     int mw, mh;
@@ -462,8 +487,8 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                     txt->base.properties.padding = ye->padding;
                     txt->base.properties.expand = ye->expand;
                     txt->base.properties.parent = ov;
-                    txt->base.properties.visible = is_visible;
-                    txt->base.properties.enabled = ye->enabled;
+                    txt->base.properties.visible = is_elem_visible;
+                    txt->base.properties.enabled = is_elem_enabled;
                     int mw, mh;
                     measure_text(ye->text ? ye->text : "", &mw, &mh);
                     txt->base.properties.w = ye->w > 0 ? ye->w : mw;

@@ -1,12 +1,12 @@
 /**
  * @file input.c
  * @author Vince Patterson (vinceip532@gmail.com)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2025-08-08
- * 
+ *
  * @copyright Copyright (c) 2025
- * 
+ *
  */
 
 #include <stdbool.h>
@@ -32,6 +32,7 @@ void Input_Poll(InputState *s)
     s->L_pressed = IsKeyPressed(KEY_L);
     s->Q_pressed = IsKeyPressed(KEY_Q);
     s->P_pressed = IsKeyPressed(KEY_P);
+    s->ESC_pressed = IsKeyPressed(KEY_ESCAPE);
     if (s->dx != 0 || s->dy != 0) // If key is down
     {
         s->anyDirPressed = true;
@@ -57,7 +58,7 @@ void Input_Poll(InputState *s)
         s->delayLock = false;
     }
 
-    s->quit = IsKeyPressed(KEY_ESCAPE) || WindowShouldClose();
+    s->quit = WindowShouldClose();
 }
 
 static bool is_vector2_equal(Vector2 *a, Vector2 *b)

@@ -4,38 +4,43 @@ surfaces:
     layer: 0
     width: 12
     height: 2
-    fg: light_blue
-    bg: light_blue
+    fg: dark_gray
+    bg: dark_gray
     x: 36
-    y: 7
+    y: 8
     z: 0
     overlays:
       - name: "banner text"
-        anchor: center
+        align: center
         elements:
           - type: text
             name: "banner text"
-            value: 'bzzt\nversion\f0 0.1'
+            value: '\f10bzzt\n\f7version\f0 0.1'
   - name: "Main Menu"
     layer: 0
     width: 10
-    height: 8
-    fg: blue
-    bg: blue
+    height: 7
+    fg: dark_gray
+    bg: dark_gray
     x: 37
-    y: 10
+    y: 11
     z: 0
     overlays:
       - name: "menu"
-        layout: vbox
-        anchor: center_middle
+        align: center
+        spacing: 1
+        y: 1
         elements:
           - type: Button
             name: "btnPlay"
-            text: '\f13P\f15lay'
+            text: '\f10P\f15lay'
+            bg: cyan
+            fg: yellow
           - type: Button
+            bg: cyan
             name: "btnEditor"
-            text: "Editor"
+            text: '\f10E\f15ditor'
           - type: Button
             name: "btnQuit"
-            text: "Quit"
+            text: '\f2Q\f15uit'
+            bg: cyan

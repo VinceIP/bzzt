@@ -1,12 +1,12 @@
 /**
  * @file input.h
  * @author Vince Patterson (vinceip532@gmail.com)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2025-08-08
- * 
+ *
  * @copyright Copyright (c) 2025
- * 
+ *
  */
 
 #pragma once
@@ -27,6 +27,7 @@ typedef struct InputState
     bool L_pressed;
     bool Q_pressed;
     bool P_pressed;
+    bool ESC_pressed;
     bool quit;
     int heldFrames;
     double elapsedTime;

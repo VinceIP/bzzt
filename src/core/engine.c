@@ -22,19 +22,7 @@
 #include "bzzt.h"
 #include "raylib.h"
 
-// Handle keyboard input on splash screen
-static void splash_key_handler(Engine *e);
-// Handle keyboard input in play mode
-static void play_key_handler(Engine *e);
-// Handle keyboard input in editor mode
-static void editor_key_handler(Engine *e);
-
 static void load_splash_screen(UI *ui);
-
-static const Key_Handler STATE_KEY_FN[ENGINE_STATE__COUNT] = {
-    [ENGINE_STATE_SPLASH] = splash_key_handler,
-    [ENGINE_STATE_PLAY] = play_key_handler,
-    [ENGINE_STATE_EDIT] = editor_key_handler};
 
 static void init_cursor(Engine *e)
 {
@@ -108,11 +96,8 @@ void Engine_Set_State(Engine *e, EngineState next)
     if (!e)
         return;
 
-    // Change state and setup new input handler function
     e->state = next;
-    Input_Set_Handler(e->input, STATE_KEY_FN[next]);
 
-    // Handle specific setups
     switch (next)
     {
     case ENGINE_STATE_SPLASH:
@@ -189,12 +174,13 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
         e->cursor->position = Handle_Cursor_Move(e->cursor->position, i, m, e->camera, e->camera->viewport.rect);
     }
 
-    if (i->key_handler)
-        i->key_handler(e);
-
     switch (e->state)
     {
     case ENGINE_STATE_SPLASH:
+        if (i->E_pressed)
+            Engine_Set_State(e, ENGINE_STATE_EDIT);
+        else if (i->P_pressed)
+            Engine_Set_State(e, ENGINE_STATE_PLAY);
         break;
 
     case ENGINE_STATE_PLAY:
