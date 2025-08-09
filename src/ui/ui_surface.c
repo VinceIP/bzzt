@@ -1,3 +1,14 @@
+/**
+ * @file ui_surface.c
+ * @author Vince Patterson (vinceip532@gmail.com)
+ * @brief
+ * @version 0.2
+ * @date 2025-08-09
+ *
+ * @copyright Copyright (c) 2025
+ *
+ */
+
 #include "ui.h"
 #include "bzzt.h"
 #include "debugger.h"
@@ -77,7 +88,7 @@ void UISurface_Destroy(UISurface *s)
     free(s);
 }
 
-void UISurface_Add_New_Overlay(UISurface *s, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, OverlayLayout layout, OverlayAnchor anchor, int spacing)
+void UISurface_Add_New_Overlay(UISurface *s, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, UILayout layout, UIAnchor anchor, UIAlign align, int spacing)
 {
     Debug_Printf(LOG_UI, "Adding an overlay to a surface.");
     if (!s)
@@ -94,7 +105,7 @@ void UISurface_Add_New_Overlay(UISurface *s, char *name, int id, int x, int y, i
         s->overlays = new_overlays;
         s->overlays_cap = new_cap;
     }
-    UIOverlay *o = UIOverlay_Create(name, id, x, y, z, w, h, padding, visible, enabled, layout, anchor, spacing);
+    UIOverlay *o = UIOverlay_Create(name, id, x, y, z, w, h, padding, visible, enabled, layout, anchor, align, spacing);
     if (!o)
     {
         Debug_Printf(LOG_UI, "Error creating overlay when adding to a surface.");
@@ -104,8 +115,10 @@ void UISurface_Add_New_Overlay(UISurface *s, char *name, int id, int x, int y, i
     o->surface = s;
     o->properties.parent = s;
 }
+
 void UISurface_Update(UISurface *s)
 {
+    // ... (no changes in this function)
     if (!s || !s->properties.visible)
         return;
     for (int i = 0; i < s->overlays_count; ++i)

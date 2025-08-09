@@ -1,3 +1,4 @@
+# -- main_menu.bui
 surfaces:
   - name: "Banner"
     layer: 0
@@ -12,10 +13,9 @@ surfaces:
       - name: "banner text"
         anchor: center
         elements:
-          - type: button
+          - type: text
             name: "banner text"
-            expand: true
-            value: '\fg14bzzt\nversion\fg15\bg1 0.1'
+            value: 'bzzt\nversion\f0 0.1'
   - name: "Main Menu"
     layer: 0
     width: 10
@@ -28,14 +28,11 @@ surfaces:
     overlays:
       - name: "menu"
         layout: vbox
-        anchor: center
-        spacing: 1
+        anchor: center_middle
         elements:
           - type: Button
             name: "btnPlay"
-            text: '\fg13P\fg15lay'
-            bg: light_blue
-            y: 1
+            text: '\f13P\f15lay'
           - type: Button
             name: "btnEditor"
             text: "Editor"

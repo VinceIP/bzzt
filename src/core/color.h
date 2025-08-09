@@ -45,23 +45,24 @@ static const Color_Bzzt COLOR_WHITE = {255, 255, 255};
 static const Color_Bzzt COLOR_TRANSPARENT = {0, 35, 0};
 
 static const Color_Bzzt BZZT_PALETTE[17] = {
-    COLOR_BLACK,
-    COLOR_BLUE,
-    COLOR_GREEN,
-    COLOR_CYAN,
-    COLOR_RED,
-    COLOR_MAGENTA,
-    COLOR_BROWN,
-    COLOR_LIGHT_GRAY,
-    COLOR_DARK_GRAY,
-    COLOR_LIGHT_BLUE,
-    COLOR_LIGHT_GREEN,
-    COLOR_LIGHT_CYAN,
-    COLOR_LIGHT_RED,
-    COLOR_LIGHT_MAGENTA,
-    COLOR_YELLOW,
-    COLOR_WHITE,
-    COLOR_TRANSPARENT};
+    COLOR_BLACK,         // 0
+    COLOR_BLUE,          // 1
+    COLOR_GREEN,         // 2
+    COLOR_CYAN,          // 3
+    COLOR_RED,           // 4
+    COLOR_MAGENTA,       // 5
+    COLOR_BROWN,         // 6
+    COLOR_LIGHT_GRAY,    // 7
+    COLOR_DARK_GRAY,     // 8
+    COLOR_LIGHT_BLUE,    // 9
+    COLOR_LIGHT_GREEN,   // 10
+    COLOR_LIGHT_CYAN,    // 11
+    COLOR_LIGHT_RED,     // 12
+    COLOR_LIGHT_MAGENTA, // 13
+    COLOR_YELLOW,        // 14
+    COLOR_WHITE,         // 15
+    COLOR_TRANSPARENT    // 16
+};
 
 static inline Color_Bzzt bzzt_get_color(uint8_t idx)
 {

@@ -16,7 +16,7 @@
 #include "input.h"
 #include "editor.h"
 #include "ui.h"
-#include "yaml_loader.h"
+#include "bui_loader.h"
 #include "color.h"
 #include "coords.h"
 #include "bzzt.h"
@@ -167,7 +167,6 @@ bool Engine_Init(Engine *e, InputState *in)
     init_cursor(e);
 
     e->ui = UI_Create(true, true);
-    load_splash_screen(e->ui);
 
     init_camera(e);
 

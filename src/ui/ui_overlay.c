@@ -2,7 +2,7 @@
  * @file overlay.c
  * @author your name (you@domain.com)
  * @brief
- * @version 0.1
+ * @version 0.2
  * @date 2025-07-12
  *
  * @copyright Copyright (c) 2025
@@ -17,7 +17,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-UIOverlay *UIOverlay_Create(char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, OverlayLayout layout, OverlayAnchor anchor, int spacing)
+UIOverlay *UIOverlay_Create(char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, UILayout layout, UIAnchor anchor, UIAlign align, int spacing)
 {
     Debug_Printf(LOG_UI, "Creating a new overlay.");
     UIOverlay *o = calloc(1, sizeof(UIOverlay));
@@ -41,6 +41,7 @@ UIOverlay *UIOverlay_Create(char *name, int id, int x, int y, int z, int w, int 
 
     o->layout = layout;
     o->anchor = anchor;
+    o->align = align;
     o->spacing = spacing;
 
     o->elements_cap = 1;
@@ -55,7 +56,6 @@ UIOverlay *UIOverlay_Create(char *name, int id, int x, int y, int z, int w, int 
 
     return o;
 }
-
 static void remove_from_surface(UISurface *s, UIOverlay *o)
 {
     if (!s)
@@ -136,6 +136,8 @@ void UIOverlay_Print(UIOverlay *ov, Color_Bzzt fg, Color_Bzzt bg, bool wrap, con
     vsnprintf(buffer, sizeof(buffer), fmt, args);
     va_end(args);
 
-    UISurface_DrawText(ov->surface, buffer, ov->properties.x, ov->properties.y,
-                       fg, bg, wrap, ov->surface->properties.w);
+    // This function might need updating if used, as its concept of drawing is now simpler.
+    // For now, leaving as is.
+    // UISurface_DrawText(ov->surface, buffer, ov->properties.x, ov->properties.y,
+    //                    fg, bg, wrap, ov->surface->properties.w);
 }

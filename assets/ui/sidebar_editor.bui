@@ -1,0 +1,45 @@
+# -- sidebar_editor.bui
+surfaces:
+  - name: "Sidebar"
+    layer: 0
+    width: 20
+    height: 25
+    fg: dark_gray
+    bg: dark_gray
+    x: 60
+    y: 0
+    z: 0
+    overlays:
+      - name: "banner"
+        elements:
+          - type: text
+            value: "- - - -"
+            fg: light_gray
+          - type: text
+            value: 'bzzt editor \f15v0.1'
+            fg: light_gray
+          - type: text
+            value: "- - - -"
+            fg: light_gray
+
+  - name: "buttons"
+    layer: 0
+    width: 24
+    height: 22
+    x: 61
+    y: 4
+    overlays:
+      - name: "buttons"
+        anchor: left
+        spacing: 0
+        elements:
+          - type: button
+            x: 0
+            y: 0
+            name: "load button"
+            text: '\f0\b2 L \f15\b8 Load'
+          - type: button
+            x: 10
+            y: 0
+            name: "help button"
+            text: '\f0\b2 H \f15\b8 Help'

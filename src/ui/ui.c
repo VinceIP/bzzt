@@ -1,3 +1,14 @@
+/**
+ * @file ui.c
+ * @author Vince Patterson (vinceip532@gmail.com)
+ * @brief 
+ * @version 0.1
+ * @date 2025-08-09
+ * 
+ * @copyright Copyright (c) 2025
+ * 
+ */
+
 #include "ui.h"
 #include "cJSON.h"
 #include "bzzt.h"

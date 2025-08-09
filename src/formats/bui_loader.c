@@ -1,5 +1,5 @@
 /**
- * @file yaml_loader.c
+ * @file bui_loader.c
  * @author Vince Patterson (vinceip532@gmail.com)
  * @brief
  * @version 0.1
@@ -9,7 +9,7 @@
  *
  */
 
-#include "yaml_loader.h"
+#include "bui_loader.h"
 #include "ui.h"
 #include "color.h"
 #include "bzzt.h"
@@ -98,8 +98,11 @@ typedef struct
 {
     char *name;
     int id;
+    int x, y, z, w, h;
+    int padding;
     char *layout;
     char *anchor;
+    char *align;
     int spacing;
     YamlElement *elements;
     unsigned elements_count;
@@ -167,6 +170,40 @@ static Color_Bzzt color_from_string(const char *s, Color_Bzzt default_color)
     return default_color;
 }
 
+static UIAnchor anchor_from_string(const char *s)
+{
+    if (!s || strcasecmp(s, "top_left") == 0)
+        return ANCHOR_TOP_LEFT;
+    if (strcasecmp(s, "top_center") == 0)
+        return ANCHOR_TOP_CENTER;
+    if (strcasecmp(s, "top_right") == 0)
+        return ANCHOR_TOP_RIGHT;
+    if (strcasecmp(s, "middle_left") == 0)
+        return ANCHOR_MIDDLE_LEFT;
+    if (strcasecmp(s, "middle_center") == 0)
+        return ANCHOR_MIDDLE_CENTER;
+    if (strcasecmp(s, "middle_right") == 0)
+        return ANCHOR_MIDDLE_RIGHT;
+    if (strcasecmp(s, "bottom_left") == 0)
+        return ANCHOR_BOTTOM_LEFT;
+    if (strcasecmp(s, "bottom_center") == 0)
+        return ANCHOR_BOTTOM_CENTER;
+    if (strcasecmp(s, "bottom_right") == 0)
+        return ANCHOR_BOTTOM_RIGHT;
+    return ANCHOR_TOP_LEFT; // Default
+}
+
+static UIAlign align_from_string(const char *s)
+{
+    if (!s)
+        return ALIGN_LEFT;
+    if (strcasecmp(s, "center") == 0)
+        return ALIGN_CENTER;
+    if (strcasecmp(s, "right") == 0)
+        return ALIGN_RIGHT;
+    return ALIGN_LEFT; // Default
+}
+
 // --- CYAML schema ---
 static const cyaml_schema_field_t element_fields[] = {
     CYAML_FIELD_STRING_PTR("type", CYAML_FLAG_POINTER, YamlElement, type, 0, CYAML_UNLIMITED),
@@ -193,10 +230,22 @@ static const cyaml_schema_value_t element_schema = {
 static const cyaml_schema_field_t overlay_fields[] = {
     CYAML_FIELD_STRING_PTR("name", CYAML_FLAG_POINTER, YamlOverlay, name, 0, CYAML_UNLIMITED),
     CYAML_FIELD_INT("id", CYAML_FLAG_OPTIONAL, YamlOverlay, id),
+
+    CYAML_FIELD_INT("x", CYAML_FLAG_OPTIONAL, YamlOverlay, x),
+    CYAML_FIELD_INT("y", CYAML_FLAG_OPTIONAL, YamlOverlay, y),
+    CYAML_FIELD_INT("z", CYAML_FLAG_OPTIONAL, YamlOverlay, z),
+
+    CYAML_FIELD_INT("w", CYAML_FLAG_OPTIONAL, YamlOverlay, w),
+    CYAML_FIELD_INT("h", CYAML_FLAG_OPTIONAL, YamlOverlay, h),
+
+    CYAML_FIELD_INT("padding", CYAML_FLAG_OPTIONAL, YamlOverlay, padding),
     CYAML_FIELD_STRING_PTR("layout", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, layout, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("anchor", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, anchor, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_STRING_PTR("align", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, align, 0, CYAML_UNLIMITED),
     CYAML_FIELD_INT("spacing", CYAML_FLAG_OPTIONAL, YamlOverlay, spacing),
+
     CYAML_FIELD_SEQUENCE("elements", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlOverlay, elements, &element_schema, 0, CYAML_UNLIMITED),
+
     CYAML_FIELD_END};
 
 static const cyaml_schema_value_t overlay_schema = {
@@ -306,19 +355,12 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
         for (unsigned oi = 0; oi < ys->overlays_count && ok; ++oi)
         {
             YamlOverlay *yo = &ys->overlays[oi];
-            OverlayLayout layout = LAYOUT_NONE;
+            UILayout layout = LAYOUT_NONE;
             if (yo->layout && strcasecmp(yo->layout, "vbox") == 0)
                 layout = LAYOUT_VBOX;
-            OverlayAnchor anchor = ANCHOR_NONE;
-            if (yo->anchor)
-            {
-                if (strcasecmp(yo->anchor, "center") == 0)
-                    anchor = ANCHOR_CENTER;
-                else if (strcasecmp(yo->anchor, "left") == 0)
-                    anchor = ANCHOR_LEFT;
-                else if (strcasecmp(yo->anchor, "right") == 0)
-                    anchor = ANCHOR_RIGHT;
-            }
+
+            UIAnchor anchor = anchor_from_string(yo->anchor);
+            UIAlign align = align_from_string(yo->align);
             char *overlay_name = yo->name ? strdup(yo->name) : NULL;
 
             int oid;
@@ -346,9 +388,11 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                     break;
                 }
             }
-            UISurface_Add_New_Overlay(surface, overlay_name, oid, 0, 0, 0,
-                                      surface->properties.w, surface->properties.h,
-                                      0, true, true, layout, anchor, yo->spacing);
+            UISurface_Add_New_Overlay(surface, overlay_name, oid,
+                                      0, 0, surface->properties.z,
+                                      surface->properties.w, surface->properties.h, surface->properties.padding,
+                                      true, true,
+                                      layout, anchor, align, yo->spacing);
             UIOverlay *ov = surface->overlays[surface->overlays_count - 1];
             int y_cursor = 0;
 
