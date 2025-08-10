@@ -1,12 +1,12 @@
 /**
  * @file engine.h
  * @author Vince Patterson (vinceip532@gmail.com)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2025-08-08
- * 
+ *
  * @copyright Copyright (c) 2025
- * 
+ *
  */
 
 #pragma once
@@ -19,6 +19,7 @@ typedef struct UI UI;
 typedef struct Bzzt_Camera Bzzt_Camera;
 typedef struct InputState InputState;
 typedef struct MouseState MouseState;
+typedef struct Editor Editor;
 
 typedef enum EngineState
 {
@@ -50,6 +51,7 @@ typedef struct Engine
 {
     EngineState state;
     UI *ui;
+    Editor *editor;
     Bzzt_World *world;
     Font font;
     Cursor *cursor;

@@ -197,6 +197,7 @@ void Debug_Printf(LogType lt, const char *fmt, ...)
         lt == LOG_ENGINE ? "ENGINE: " : lt == LOG_WORLD ? "WORLD: "
                                     : lt == LOG_BOARD   ? "BOARD: "
                                     : lt == LOG_UI      ? "UI: "
+                                    : lt == LOG_EDITOR  ? "EDITOR: "
                                                         : "";
 
     va_list ap;

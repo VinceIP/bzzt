@@ -1,12 +1,12 @@
 /**
  * @file ui.c
  * @author Vince Patterson (vinceip532@gmail.com)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2025-08-09
- * 
+ *
  * @copyright Copyright (c) 2025
- * 
+ *
  */
 
 #include "ui.h"
@@ -180,26 +180,17 @@ void UI_Update(UI *ui)
     }
 }
 
-void UI_Print_Screen(UI *ui, UISurface *s, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int x, int y, char *fmt, ...)
+void UI_Print_Screen(UI *ui, UISurface *s, int x, int y, char *fmt, ...)
 {
-    if (!ui || ui->layer_count == 0)
-    {
-        Debug_Printf(LOG_UI, "UI is null or UI has no layers when trying to print to screen.");
-        return;
-    }
-
-    UILayer *layer = ui->layers[0];
-    if (layer->surface_count == 0)
-        return;
-
-    // UISurface *surface = layer->surfaces[0];
+    
     char buffer[256];
     va_list args;
     va_start(args, fmt);
     vsnprintf(buffer, sizeof(buffer), fmt, args);
     va_end(args);
 
-    UISurface_DrawText(s, buffer, x, y, fg, bg, wrap, s->properties.w);
+
+
 }
 
 /** old plascii import code */

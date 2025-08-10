@@ -112,10 +112,10 @@ void Engine_Set_State(Engine *e, EngineState next)
 
     case ENGINE_STATE_EDIT:
         if (e->ui)
-        {
             UI_Destroy(e->ui);
-        }
         e->ui = UI_Create(true, true);
+        if (!e->editor)
+            Editor_Create(e);
         Editor_Init(e);
         if (e->world)
         {
@@ -199,25 +199,19 @@ void Engine_Quit(Engine *e)
 {
     if (!e)
         return;
+    if (e->editor)
+        Editor_Destroy(e.editor);
     if (e->world)
-    {
         Bzzt_World_Destroy(e->world);
-    }
 
     if (e->camera)
-    {
         free(e->camera);
-    }
 
     if (e->cursor)
-    {
         free(e->cursor);
-    }
 
     if (e->ui)
-    {
         UI_Destroy(e->ui);
-    }
 
     for (int i = 0; i < 8; ++i)
     {
@@ -225,33 +219,5 @@ void Engine_Quit(Engine *e)
         {
             free(e->charsets[i]->pixels);
         }
-    }
-}
-
-static void splash_key_handler(Engine *e)
-{
-    InputState *i = e->input;
-
-    if (i->E_pressed)
-        Engine_Set_State(e, ENGINE_STATE_EDIT);
-    else if (i->P_pressed)
-    {
-        Engine_Set_State(e, ENGINE_STATE_PLAY);
-    }
-}
-
-static void play_key_handler(Engine *e)
-{
-    // Stub
-    return;
-}
-
-static void editor_key_handler(Engine *e)
-{
-    InputState *i = e->input;
-
-    if (i->Q_pressed)
-    {
-        Engine_Set_State(e, ENGINE_STATE_SPLASH);
     }
 }

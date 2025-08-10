@@ -26,7 +26,8 @@ typedef enum
     LOG_ENGINE,
     LOG_WORLD,
     LOG_BOARD,
-    LOG_UI
+    LOG_UI,
+    LOG_EDITOR
 } LogType;
 
 typedef enum

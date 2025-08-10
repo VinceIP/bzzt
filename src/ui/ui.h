@@ -185,6 +185,7 @@ UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool e
 void UISurface_Add_New_Overlay(UISurface *s, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, UILayout layout, UIAnchor anchor, UIAlign align, int spacing);
 void UISurface_Update(UISurface *s);
 void UISurface_Destroy(UISurface *s);
+UISurface *UISurface_Load_From_Playscii(const char *filename);
 UISurface *UISurface_Find_By_Name(UI *ui, const char *name);
 
 UIOverlay *UIOverlay_Create(char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, UILayout layout, UIAnchor anchor, UIAlign align, int spacing);
@@ -201,9 +202,6 @@ UIElement *UIElement_Find_By_Name(UI *ui, const char *e);
 
 UIElement_Text *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool wrap, const char *(*cb)(void *ud), void *ud, bool owns_ud);
 UIButton *UIButton_Create(UIOverlay *o, const char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg, Color_Bzzt bg, bool visible, bool enabled, bool expand, const char *caption, UIButtonAction cb, void *ud);
-bool UISurface_DrawText(UISurface *surface, const char *utf8, int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool wrap, int wrapWidth);
-void Renderer_Draw_UI(struct Renderer *, const UI *);
-UISurface *UISurface_Load_From_Playscii(const char *filename);
 TextBinding *UIBinding_Text_Create(const void *ptr, const char *fmt,
                                    BindType type);
 const char *UIBinding_Text_Format(void *ud);
