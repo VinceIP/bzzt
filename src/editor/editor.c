@@ -25,7 +25,11 @@ int testX = 0;
 
 #define CURSOR_BLINK_RATE 0.5
 
-static void ui_init(Engine *e, Editor *editor)
+static UIElement_Text *text_elem;
+static UIOverlay *overlay;
+static char *prompt;
+
+static void ui_init(Engine *e)
 {
     if (!e)
         return;
@@ -34,29 +38,16 @@ static void ui_init(Engine *e, Editor *editor)
     if (!ok)
         Debug_Printf(LOG_UI, "Editor failed to load sidebar.");
 
-    int promptStackSize = 5;
-    editor->prompts = calloc(promptStackSize, sizeof(UIElement_Text));
-    if (!editor->prompts)
+}
+
+static void handle_keys(Engine *e, InputState *in)
+{
+    if (in->Q_pressed || in->ESC_pressed)
     {
-        Debug_Printf(LOG_EDITOR, "Error allocating prompts to editor.");
-        return;
+        UIOverlay *buttons = UIOverlay_Find_By_Name(e->ui, "buttons");
+        buttons->properties.visible = false;
+        // Engine_Set_State(e, ENGINE_STATE_SPLASH);
     }
-    editor->prompt_count = 5;
-}
-
-Editor *Editor_Create(Engine *e)
-{
-    Editor *editor = calloc(1, sizeof(Editor));
-    e->editor = editor;
-    return editor;
-}
-
-void Editor_Destroy(Editor *editor)
-{
-    if (!editor)
-        return;
-
-    if (editor->prompts)
 }
 
 void Editor_Init(Engine *e)
@@ -74,17 +65,7 @@ void Editor_Init(Engine *e)
 
     e->camera->viewport.rect = (Rectangle){0, 0, 60, 25};
 
-    ui_init(e, &editor);
-}
-
-static void handle_keys(Engine *e, InputState *in)
-{
-    if (in->Q_pressed || in->ESC_pressed)
-    {
-        UIOverlay *buttons = UIOverlay_Find_By_Name(e->ui, "buttons");
-        buttons->properties.visible = false;
-        // Engine_Set_State(e, ENGINE_STATE_SPLASH);
-    }
+    ui_init(e);
 }
 
 void Editor_Update(Engine *e, InputState *in)

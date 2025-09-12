@@ -16,14 +16,10 @@ struct Engine;
 struct Cursor;
 struct InputState;
 
-typedef struct
+typedef struct Editor
 {
     Cursor *c;
-    UIElement_Text *prompts;
-    int prompt_count;
 } Editor;
 
-Editor *Editor_Create(Engine *e);
-void Editor_Destroy(Editor *editor);
 void Editor_Update(Engine *, InputState *);
 void Editor_Init(Engine *);

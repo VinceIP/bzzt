@@ -114,8 +114,6 @@ void Engine_Set_State(Engine *e, EngineState next)
         if (e->ui)
             UI_Destroy(e->ui);
         e->ui = UI_Create(true, true);
-        if (!e->editor)
-            Editor_Create(e);
         Editor_Init(e);
         if (e->world)
         {
@@ -199,8 +197,6 @@ void Engine_Quit(Engine *e)
 {
     if (!e)
         return;
-    if (e->editor)
-        Editor_Destroy(e.editor);
     if (e->world)
         Bzzt_World_Destroy(e->world);
 

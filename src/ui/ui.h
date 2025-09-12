@@ -182,7 +182,7 @@ void UILayer_Update(UILayer *l);
 UILayer *UILayer_Find_By_Name(UI *ui, const char *name);
 
 UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool enabled, int x, int y, int z, int w, int h);
-void UISurface_Add_New_Overlay(UISurface *s, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, UILayout layout, UIAnchor anchor, UIAlign align, int spacing);
+UIOverlay *UISurface_Add_New_Overlay(UISurface *s, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, UILayout layout, UIAnchor anchor, UIAlign align, int spacing);
 void UISurface_Update(UISurface *s);
 void UISurface_Destroy(UISurface *s);
 UISurface *UISurface_Load_From_Playscii(const char *filename);

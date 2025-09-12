@@ -1,6 +1,6 @@
 /**
  * @file ui_bindings.c
- * @author your name (you@domain.com)
+ * @author Vince Patterson (vinceip532@gmail.com)
  * @brief
  * @version 0.1
  * @date 2025-07-13
