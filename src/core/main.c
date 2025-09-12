@@ -1,12 +1,12 @@
 /**
  * @file main.c
  * @author Vince Patterson (vinceip532@gmail.com)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2025-08-07
- * 
+ *
  * @copyright Copyright (c) 2025
- * 
+ *
  */
 
 #include <stdio.h>
@@ -49,6 +49,7 @@ int main(void)
     Renderer rend;
 
     Renderer_Init(&rend, &e, fontPath);
+    Debug_Printf(LOG_ENGINE, "Render init complete.");
 
     while (!in.quit)
     {
