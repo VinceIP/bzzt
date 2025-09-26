@@ -37,16 +37,30 @@ static void ui_init(Engine *e)
     bool ok = UI_Load_From_BUI(e->ui, "assets/ui/sidebar_editor.bui");
     if (!ok)
         Debug_Printf(LOG_UI, "Editor failed to load sidebar.");
-
 }
 
 static void handle_keys(Engine *e, InputState *in)
 {
-    if (in->Q_pressed || in->ESC_pressed)
+    switch (state)
     {
-        UIOverlay *buttons = UIOverlay_Find_By_Name(e->ui, "buttons");
-        buttons->properties.visible = false;
-        // Engine_Set_State(e, ENGINE_STATE_SPLASH);
+    case EDITOR_STATE_MAIN:
+        if (in->Q_pressed || in->ESC_pressed)
+        {
+            UIOverlay *buttons = UIOverlay_Find_By_Name(e->ui, "buttons");
+            buttons->properties.visible = false;
+            UISurface *surface = UISurface_Find_By_Name(e->ui, "Sidebar");
+            UIOverlay *prompt = UISurface_Add_New_Overlay(surface, "prompt", 0, 0, 0, 0, 25, 1, 0, true, true, LAYOUT_NONE, ANCHOR_TOP_LEFT, ALIGN_CENTER, 0);
+            UIText *prompt_text = UIText_Create(0, 0, COLOR_WHITE, COLOR_TRANSPARENT, false, NULL, "Really quit?\n y/n", true);
+            UIOverlay_Add_New_Element(o, (UIElement)prompt_text);
+            // Engine_Set_State(e, ENGINE_STATE_SPLASH);
+        }
+        break;
+
+    case EDITOR_STATE_WAITING_FOR_KEY:
+        break;
+
+    default:
+        break;
     }
 }
 
@@ -65,10 +79,32 @@ void Editor_Init(Engine *e)
 
     e->camera->viewport.rect = (Rectangle){0, 0, 60, 25};
 
+    e->editor = malloc(sizeof *e->editor);
+
+    if (!e->editor)
+    {
+        Debug_Printf(LOG_EDITOR, "Error allocating editor to memory.");
+        return;
+    }
+
+    e->editor->state = EDITOR_STATE_MAIN;
+
     ui_init(e);
 }
 
 void Editor_Update(Engine *e, InputState *in)
 {
     handle_keys(e, in);
+}
+
+void Editor_Destroy(Engine *e)
+{
+    if (!e)
+        return;
+
+    if (!e->editor)
+        return;
+
+    free(e->editor);
+    e->editor = NULL;
 }

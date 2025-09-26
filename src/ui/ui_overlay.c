@@ -163,4 +163,5 @@ UIOverlay *UIOverlay_Find_By_Name(UI *ui, const char *name)
             }
         }
     }
+    return NULL;
 }

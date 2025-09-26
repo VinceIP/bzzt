@@ -51,16 +51,18 @@ static Texture2D texture_from_charset(BzztCharset *c)
     const size_t bytes_per_row = (bits_per_row + 7u) / 8u;
     const size_t glyph_bytes = bytes_per_row * (size_t)c->header.glyph_h;
 
-    Debug_Printf(LOG_ENGINE, "atlas bytes: %zu (pixels)", total_pixels);
+    // Build an RGBA atlas; each pixel takes 4 bytes
+    const size_t atlas_bytes = total_pixels * 4u;
+    Debug_Printf(LOG_ENGINE, "atlas bytes: %zu", atlas_bytes);
 
-    unsigned char *data = (unsigned char *)calloc(total_pixels, sizeof(unsigned char));
+    unsigned char *data = (unsigned char *)calloc(atlas_bytes, sizeof(unsigned char));
     if (!data)
     {
-        Debug_Printf(LOG_ENGINE, "texture_from_charset: out of memory for atlas (%zu bytes)", total_pixels);
+        Debug_Printf(LOG_ENGINE, "texture_from_charset: out of memory for atlas (%zu bytes)", atlas_bytes);
         return (Texture2D){0};
     }
 
-    // Build a grayscale atlas image from packed glyphs
+    // Build a grayscale atlas image from packed glyphs, expanding to RGBA
     for (int g = 0; g < c->header.glyph_count; ++g)
     {
         const int gx = g % cols;
@@ -102,10 +104,13 @@ static Texture2D texture_from_charset(BzztCharset *c)
 
                 const int tx = gx * c->header.glyph_w + x;
                 const int ty = gy * c->header.glyph_h + y;
-                const size_t index = (size_t)ty * (size_t)width + (size_t)tx;
-                if (index < total_pixels)
+                const size_t index = ((size_t)ty * (size_t)width + (size_t)tx) * 4u;
+                if (index + 3 < atlas_bytes)
                 {
-                    data[index] = value;
+                    data[index + 0] = value;
+                    data[index + 1] = value;
+                    data[index + 2] = value;
+                    data[index + 3] = 255u;
                 }
             }
         }
@@ -116,7 +121,7 @@ static Texture2D texture_from_charset(BzztCharset *c)
         .width = width,
         .height = height,
         .mipmaps = 1,
-        .format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE};
+        .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8};
 
     Texture2D tex = LoadTextureFromImage(img);
     UnloadImage(img); // frees data

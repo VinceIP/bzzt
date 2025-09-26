@@ -87,7 +87,6 @@ UI *UI_Create(bool visible, bool enabled)
         goto cleanup;
     }
 
-    puts("returning base ui");
     return ui;
 
 cleanup:
@@ -182,15 +181,12 @@ void UI_Update(UI *ui)
 
 void UI_Print_Screen(UI *ui, UISurface *s, int x, int y, char *fmt, ...)
 {
-    
+
     char buffer[256];
     va_list args;
     va_start(args, fmt);
     vsnprintf(buffer, sizeof(buffer), fmt, args);
     va_end(args);
-
-
-
 }
 
 /** old plascii import code */

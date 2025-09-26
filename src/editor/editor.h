@@ -16,10 +16,18 @@ struct Engine;
 struct Cursor;
 struct InputState;
 
+typedef enum EditorState
+{
+    EDITOR_STATE_MAIN,
+    EDITOR_STATE_WAITING_FOR_KEY,
+    EDITOR_STATE__COUNT
+} EditorState;
+
 typedef struct Editor
 {
-    Cursor *c;
+    EditorState state;
 } Editor;
 
 void Editor_Update(Engine *, InputState *);
 void Editor_Init(Engine *);
+void Editor_Destroy(Engine *);
