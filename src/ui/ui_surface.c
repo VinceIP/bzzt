@@ -14,6 +14,7 @@
 #include "debugger.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool enabled, int x, int y, int z, int w, int h)
 {
@@ -127,4 +128,24 @@ void UISurface_Update(UISurface *s)
         UIOverlay *o = s->overlays[i];
         UIOverlay_Update(o);
     }
+}
+
+UISurface *UISurface_Find_By_Name(UI *ui, const char *name)
+{
+    if (!ui || !name)
+        return NULL;
+
+    for (int i = 0; i < ui->layer_count; ++i)
+    {
+        UILayer *layer = ui->layers[i];
+        for (int j = 0; j < layer->surface_count; ++j)
+        {
+            UISurface *surface = layer->surfaces[j];
+            if (surface->properties.name && strcmp(surface->properties.name, name) == 0)
+            {
+                return surface;
+            }
+        }
+    }
+    return NULL;
 }

@@ -1,0 +1,17 @@
+# -- prompt.bui
+# -- Defines the look and feel of generic system prompts.
+
+surfaces:
+  - name: "PromptDimmer"
+    layer: 1
+    width: 80
+    height: 25
+    bg: dark_gray
+    x: 0
+    y: 0
+    overlays:
+      - name: "PromptBox"
+        width: 40
+        height: 3
+        anchor: center
+        bg: transparent

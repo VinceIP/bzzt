@@ -205,3 +205,5 @@ UIButton *UIButton_Create(UIOverlay *o, const char *name, int id, int x, int y, 
 TextBinding *UIBinding_Text_Create(const void *ptr, const char *fmt,
                                    BindType type);
 const char *UIBinding_Text_Format(void *ud);
+
+const char *pass_through_caption(void *ud);

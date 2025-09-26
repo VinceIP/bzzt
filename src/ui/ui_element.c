@@ -16,11 +16,6 @@
 #include <stdio.h>
 #include <string.h>
 
-static const char *pass_through_caption(void *ud)
-{
-    return (const char *)ud;
-}
-
 UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg, Color_Bzzt bg, bool visible, bool enabled, bool expand, ElementType type)
 {
     UIElement *e = calloc(1, sizeof(UIElement));

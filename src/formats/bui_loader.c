@@ -409,7 +409,6 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                 }
             }
 
-            // --- FIX: Pass the resolved boolean values, not the pointers. ---
             UISurface_Add_New_Overlay(surface, overlay_name, oid,
                                       yo->x, yo->y, yo->z,
                                       yo->w, yo->h, yo->padding,

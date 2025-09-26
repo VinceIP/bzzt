@@ -41,7 +41,7 @@ static void ui_init(Engine *e)
 
 static void handle_keys(Engine *e, InputState *in)
 {
-    switch (state)
+    switch (e->editor->state)
     {
     case EDITOR_STATE_MAIN:
         if (in->Q_pressed || in->ESC_pressed)
@@ -49,10 +49,17 @@ static void handle_keys(Engine *e, InputState *in)
             UIOverlay *buttons = UIOverlay_Find_By_Name(e->ui, "buttons");
             buttons->properties.visible = false;
             UISurface *surface = UISurface_Find_By_Name(e->ui, "Sidebar");
-            UIOverlay *prompt = UISurface_Add_New_Overlay(surface, "prompt", 0, 0, 0, 0, 25, 1, 0, true, true, LAYOUT_NONE, ANCHOR_TOP_LEFT, ALIGN_CENTER, 0);
-            UIText *prompt_text = UIText_Create(0, 0, COLOR_WHITE, COLOR_TRANSPARENT, false, NULL, "Really quit?\n y/n", true);
-            UIOverlay_Add_New_Element(o, (UIElement)prompt_text);
-            // Engine_Set_State(e, ENGINE_STATE_SPLASH);
+            if (!surface)
+                return;
+
+            UIOverlay *overlay = UISurface_Add_New_Overlay(surface, "prompt", 0, 0, 0, 0, 25, 1, 0, true, true, LAYOUT_NONE, ANCHOR_TOP_LEFT, ALIGN_LEFT, 0);
+
+            const char *prompt_str = "Really quit?\n(Y/N)";
+            char *dup_prompt = strdup(prompt_str);
+            UIElement_Text *prompt_text = UIText_Create(1, 4, COLOR_WHITE, COLOR_TRANSPARENT, false, pass_through_caption, dup_prompt, true);
+            UIOverlay_Add_New_Element(overlay, (UIElement *)prompt_text);
+
+            e->editor->state = EDITOR_STATE_WAITING_FOR_KEY;
         }
         break;
 

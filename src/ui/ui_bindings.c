@@ -44,4 +44,4 @@ const char *UIBinding_Text_Format(void *ud)
     return b->buf;
 }
 
-static const char *pass_through_caption(void *ud) { return (const char *)ud; }
+const char *pass_through_caption(void *ud) { return (const char *)ud; }

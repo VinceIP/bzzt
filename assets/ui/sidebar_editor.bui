@@ -1,4 +1,5 @@
 # -- sidebar_editor.bui
+# -- Defines the look, feel, and functionality of the default bzzt editor sidebar.
 surfaces:
   - name: "Sidebar"
     layer: 0
