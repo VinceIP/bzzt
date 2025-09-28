@@ -33,6 +33,18 @@ typedef enum
     DIR_RIGHT
 } Direction;
 
+// tbd -- fill for all zzt types. include bzzt types.
+typedef enum
+{
+    INTERACTION_NONE,
+    INTERACTION_KEY,
+    INTERACTION_DOOR,
+    INTERACTION_GEM,
+    INTERACTION_AMMO,
+    INTERACTION_BOULDER_PUSH,
+    INTERACTION_TORCH,
+} Interaction_Type;
+
 // A Bzzt cell.
 typedef struct Bzzt_Cell
 {
@@ -40,6 +52,18 @@ typedef struct Bzzt_Cell
     uint8_t glyph;
     Color_Bzzt fg, bg;
 } Bzzt_Cell;
+
+typedef struct Bzzt_Param
+{
+    int16_t cycle;
+    int16_t x_step, y_step;
+    uint8_t data[3];       // Generic data - intelligence, delay, etc
+    uint8_t data_label[3]; // What each data slot represents
+
+    char *program;
+    size_t program_length;
+    size_t program_counter;
+} Bzzt_Param;
 
 /**
  * @brief A Bzzt object.
@@ -51,6 +75,13 @@ typedef struct Bzzt_Object
     int x, y;       // Coordinates in world units
     Direction dir;  // This object's direction.
     Bzzt_Cell cell; // Reference to this object's visual data
+
+    uint8_t bzzt_type;
+    Bzzt_Param *param;
+    uint8_t under_type;
+    uint8_t under_color;
+
+    bool is_bzzt_exclusive; // True if using bzzt-exclusive features
 } Bzzt_Object;
 
 /**
@@ -65,6 +96,15 @@ typedef struct Bzzt_Board
     int object_count, object_cap, object_next_id; // Array properties
 
     char *name; // Name of this board
+
+    /*for zzt support*/
+    uint8_t max_shots;
+    uint8_t darkness;
+    uint8_t board_n, board_s, board_w, board_e;
+    uint8_t reenter;              // Re-enter when zapped
+    char message[59];             // board entry message
+    uint8_t reenter_x, reenter_y; // Re-enter coordinates
+    int16_t time_limit;
 
 } Bzzt_Board;
 
@@ -81,6 +121,16 @@ typedef struct Bzzt_World
     int boards_current;
 
     Bzzt_Object *player;
+
+    /*for zzt support*/
+    int16_t ammo, gems, health, torches, score;
+    uint8_t keys[7];
+    int16_t torch_cycles, energizer_cycles;
+    char flags[10][21];
+    int16_t time_passed;
+    /*-*/
+
+    bool zzt_compatible; // If this world can be saved as a valid .zzt
 
     bool allow_scroll;
     bool strict_palette;
@@ -109,6 +159,12 @@ void Bzzt_Object_Destroy(Bzzt_Object *o);
 
 // Convert a tile in a ZZT block to a Bzzt Object
 Bzzt_Object *Bzzt_Object_From_ZZT_Tile(ZZTblock *block, int x, int y);
+
+// Return true if object can be walked on top of.
+bool Bzzt_Object_Is_Walkable(Bzzt_Object *obj);
+
+// Return interaction type of an object.
+Interaction_Type Bzzt_Object_Get_Interaction_Type(Bzzt_Object *obj);
 
 /* -- --*/
 

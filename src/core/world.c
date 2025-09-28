@@ -7,6 +7,7 @@
 #include "input.h"
 #include "color.h"
 #include "debugger.h"
+#include "zzt.h"
 
 static bool grow_boards_array(Bzzt_World *w)
 {
@@ -25,6 +26,70 @@ static bool grow_boards_array(Bzzt_World *w)
     }
     w->boards_cap = new_cap;
     return true;
+}
+
+static Bzzt_Object *get_object_at(Bzzt_Board *board, int x, int y)
+{
+}
+
+static bool handle_board_edge_move(Bzzt_World *w, int new_x, int new_y)
+{
+}
+
+static void move_player_to(Bzzt_World *w, int new_x, int new_y)
+{
+    w->player->x = new_x;
+    w->player->y = new_y;
+}
+
+static void handle_player_touch(Bzzt_World *w, Bzzt_Object *target, int dx, int dy)
+{
+}
+
+static void update_player_direction(Bzzt_World *w, InputState *in)
+{
+    if (in->dx > 0)
+        w->player->dir = DIR_RIGHT;
+    else if (in->dx < 0)
+        w->player->dir = DIR_LEFT;
+    else if (in->dy > 0)
+        w->player->dir = DIR_DOWN;
+    else if (in->dy < 0)
+        w->player->dir = DIR_UP;
+}
+
+static void update_player(Bzzt_World *w, InputState *in)
+{
+    if (!in->anyDirPressed || in->delayLock)
+        return;
+
+    do_player_move(w, in->dx, in->dy);
+    update_player_direction(w, in);
+}
+
+static bool do_player_move(Bzzt_World *w, int dx, int dy)
+{
+    if (dx == 0 && dy == 0)
+        return false;
+
+    Bzzt_Board *board = w->boards[w->boards_current];
+    int new_x = w->player->x + dx;
+    int new_y = w->player->y + dy;
+
+    if (new_x < 0 || new_x >= board->width || new_y < 0 || new_y >= board->height)
+    {
+        return handle_board_edge_move(w, new_x, new_y);
+    }
+
+    Bzzt_Object *target = get_object_at(board, new_x, new_y);
+
+    if (!target || Bzzt_Object_Is_Walkable(target))
+    {
+        move_player_to(w, new_x, new_y);
+        return true;
+    }
+
+    return handle_player_touch(w, target, dx, dy);
 }
 
 Bzzt_World *Bzzt_World_Create(char *title)
@@ -50,8 +115,9 @@ Bzzt_World *Bzzt_World_Create(char *title)
 
     w->boards[0] = Bzzt_Board_Create("Title Screen", BZZT_BOARD_DEFAULT_W, BZZT_BOARD_DEFAULT_H); // create a starting empty title screen board
 
-    w->player = Bzzt_Board_Add_Object(w->boards[0], // Pushes a default player obj to the board
-                                      Bzzt_Object_Create(2, COLOR_WHITE, COLOR_BLUE, 47, 10));
+    // w->player = Bzzt_Board_Add_Object(w->boards[0], // Pushes a default player obj to the board
+    //                                   Bzzt_Object_Create(2, COLOR_WHITE, COLOR_BLUE, 47, 10));
+
     w->boards_current = 0;
     w->boards_count = 1;
     w->doUnload = false;
@@ -78,14 +144,6 @@ void Bzzt_World_Destroy(Bzzt_World *w)
     w->player = NULL;
     free(w->boards);
     free(w);
-}
-
-static void update_player(Bzzt_World *w, InputState *in)
-{
-    int *dx = &w->player->x;
-    int *dy = &w->player->y;
-    Bzzt_Board *b = w->boards[w->boards_current];
-    Rectangle bounds = {0, 0, b->width, b->height};
 }
 
 void Bzzt_World_Update(Bzzt_World *w, InputState *in)

@@ -4,9 +4,9 @@
 surfaces:
   - name: "PromptDimmer"
     layer: 1
-    width: 80
-    height: 25
-    bg: dark_gray
+    width: 0
+    height: 0
+    bg: transparent
     x: 0
     y: 0
     overlays:

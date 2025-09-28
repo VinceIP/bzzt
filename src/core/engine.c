@@ -63,14 +63,14 @@ static void init_camera(Engine *e)
 
 static void play_init(Engine *e)
 {
-    char *file = "burglar1.zzt";
+    char *file = "BURGERJ.ZZT";
     e->world = Bzzt_World_From_ZZT_World(file);
     if (!e->world)
     {
         Debug_Printf(LOG_ENGINE, "Error loading ZZT world %s", file);
         return;
     }
-    e->world->boards_current = 8;
+    e->world->boards_current = 12;
 }
 
 static void load_splash_screen(UI *ui)
