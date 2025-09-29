@@ -30,10 +30,25 @@ static bool grow_boards_array(Bzzt_World *w)
 
 static Bzzt_Object *get_object_at(Bzzt_Board *board, int x, int y)
 {
+    if (!board || x >= board->width || x < 0 || y > board->height || y < 0)
+        return NULL;
+
+    for (int i = 0; i < board->object_count; ++i)
+    {
+        if (board->objects[i]->x == x && board->objects[i]->y == y)
+        {
+            return board->objects[i];
+        }
+    }
+    return NULL;
 }
 
 static bool handle_board_edge_move(Bzzt_World *w, int new_x, int new_y)
 {
+    // tbd
+    if (!w)
+        return false;
+    return false;
 }
 
 static void move_player_to(Bzzt_World *w, int new_x, int new_y)
@@ -42,8 +57,22 @@ static void move_player_to(Bzzt_World *w, int new_x, int new_y)
     w->player->y = new_y;
 }
 
-static void handle_player_touch(Bzzt_World *w, Bzzt_Object *target, int dx, int dy)
+static bool handle_player_touch(Bzzt_World *w, Bzzt_Object *target, int dx, int dy)
 {
+    if (!w || !target)
+        return false;
+
+    // tbd
+    Interaction_Type type = Bzzt_Object_Get_Interaction_Type(target);
+    switch (type)
+    {
+    default:
+        break;
+    }
+
+    const char *type_name = Bzzt_Object_Get_Type_Name(Bzzt_Object * obj);
+    Debug_Printf(LOG_LEVEL_DEBUG, "Player touched %s at (%d, %d).", type_name, target->x, target->y);
+    return true;
 }
 
 static void update_player_direction(Bzzt_World *w, InputState *in)
@@ -56,15 +85,6 @@ static void update_player_direction(Bzzt_World *w, InputState *in)
         w->player->dir = DIR_DOWN;
     else if (in->dy < 0)
         w->player->dir = DIR_UP;
-}
-
-static void update_player(Bzzt_World *w, InputState *in)
-{
-    if (!in->anyDirPressed || in->delayLock)
-        return;
-
-    do_player_move(w, in->dx, in->dy);
-    update_player_direction(w, in);
 }
 
 static bool do_player_move(Bzzt_World *w, int dx, int dy)
@@ -90,6 +110,15 @@ static bool do_player_move(Bzzt_World *w, int dx, int dy)
     }
 
     return handle_player_touch(w, target, dx, dy);
+}
+
+static void update_player(Bzzt_World *w, InputState *in)
+{
+    if (!in->anyDirPressed || in->delayLock)
+        return;
+
+    do_player_move(w, in->dx, in->dy);
+    update_player_direction(w, in);
 }
 
 Bzzt_World *Bzzt_World_Create(char *title)
@@ -207,6 +236,21 @@ Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
     }
 
     bw->boards_current = (int)zztWorldGetStartboard(zw);
+    bw->start_board = bw->boards[bw->boards_current];
+
+    // Instantiate player object on start board
+    Bzzt_Board *starting_board = bw->boards[bw->boards_current];
+    for (int i = 0; i < starting_board->object_count; ++i)
+    {
+        if (starting_board->objects[i]->bzzt_type == ZZT_PLAYER)
+        {
+            bw->player = starting_board->objects[i];
+            break;
+        }
+    }
+
+    if (!bw->player)
+        Debug_Printf(LOG_WORLD, "Warning: No player found in ZZT world.");
 
     zztWorldFree(zw);
 

@@ -121,6 +121,7 @@ typedef struct Bzzt_World
     int boards_current;
 
     Bzzt_Object *player;
+    Bzzt_Board *start_board;
 
     /*for zzt support*/
     int16_t ammo, gems, health, torches, score;
@@ -165,6 +166,8 @@ bool Bzzt_Object_Is_Walkable(Bzzt_Object *obj);
 
 // Return interaction type of an object.
 Interaction_Type Bzzt_Object_Get_Interaction_Type(Bzzt_Object *obj);
+
+const char *Bzzt_Object_Get_Type_Name(Bzzt_Object *obj);
 
 /* -- --*/
 

@@ -94,7 +94,8 @@ Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw)
         for (int x = 0; x < bzztBoard->width; ++x)
         {
             Bzzt_Object *o = Bzzt_Object_From_ZZT_Tile(block, x, y);
-            Bzzt_Board_Add_Object(bzztBoard, o);
+            if (o)
+                Bzzt_Board_Add_Object(bzztBoard, o);
         }
     }
 

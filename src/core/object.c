@@ -104,10 +104,106 @@ void Bzzt_Object_Destroy(Bzzt_Object *o)
     free(o);
 }
 
+bool Bzzt_Object_Is_Walkable(Bzzt_Object *obj)
+{
+    if (!obj)
+        return true;
+
+    switch (obj->bzzt_type)
+    {
+    case ZZT_EMPTY:
+    case ZZT_FAKE:
+    case ZZT_WATER:
+    case ZZT_FOREST:
+        return true;
+        break;
+
+    case ZZT_SOLID:
+    case ZZT_NORMAL:
+    case ZZT_EDGE:
+    case ZZT_BOULDER:
+        return false;
+        break;
+    default:
+        return false;
+        break;
+    }
+}
+
+Interaction_Type Bzzt_Object_Get_Interaction_Type(Bzzt_Object *obj)
+{
+    if (!obj)
+        return INTERACTION_NONE;
+
+    switch (obj->bzzt_type)
+    {
+    case ZZT_KEY:
+        return INTERACTION_KEY;
+        break;
+    case ZZT_DOOR:
+        return INTERACTION_DOOR;
+        break;
+    case ZZT_GEM:
+        return INTERACTION_GEM;
+        break;
+    case ZZT_AMMO:
+        return INTERACTION_AMMO;
+        break;
+    case ZZT_TORCH:
+        return INTERACTION_TORCH;
+        break;
+    case ZZT_BOULDER:
+    case ZZT_NSSLIDER:
+    case ZZT_EWSLIDER:
+        return INTERACTION_BOULDER_PUSH;
+        break;
+    default:
+        return INTERACTION_NONE;
+        break;
+    }
+}
+
+const char *Bzzt_Object_Get_Type_Name(Bzzt_Object *obj)
+{
+    if (!obj)
+        return NULL;
+
+    switch (obj->bzzt_type)
+    {
+    case ZZT_AMMO:
+        return "ZZT_AMMO";
+        break;
+    case ZZT_SOLID:
+        return "ZZT_SOLID";
+        break;
+    case ZZT_FAKE:
+        return "ZZT_FAKE";
+        break;
+    case ZZT_BREAKABLE:
+        return "ZZT_BREAKABLE";
+        break;
+    case ZZT_WATER:
+        return "ZZT_WATER";
+        break;
+    case ZZT_EDGE:
+        return "ZZT_EDGE";
+        break;
+    case ZZT_FOREST:
+        return "ZZT_FOREST";
+        break;
+    case ZZT_EMPTY:
+        return "ZZT_EMPTY";
+        break;
+    default:
+        return "UNKOWN TYPE";
+        break;
+    }
+}
+
 // Parse a ZZT tile and convert it to a Bzzt Object.
 Bzzt_Object *Bzzt_Object_From_ZZT_Tile(ZZTblock *block, int x, int y)
 {
-    if (!block || x > block->width || y > block->height)
+    if (!block || x >= block->width || y >= block->height)
         return NULL;
 
     // Get tile visual layer

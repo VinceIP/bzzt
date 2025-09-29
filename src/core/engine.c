@@ -70,7 +70,6 @@ static void play_init(Engine *e)
         Debug_Printf(LOG_ENGINE, "Error loading ZZT world %s", file);
         return;
     }
-    e->world->boards_current = 12;
 }
 
 static void load_splash_screen(UI *ui)
