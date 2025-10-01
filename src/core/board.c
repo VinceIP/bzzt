@@ -87,17 +87,38 @@ Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw)
 {
     if (!zw)
         return NULL;
+
     ZZTblock *block = zztBoardGetBlock(zw);
-    Bzzt_Board *bzztBoard = Bzzt_Board_Create(zztBoardGetTitle(zw), block->width, block->height);
-    for (int y = 0; y < bzztBoard->height; ++y)
+    Bzzt_Board *bzzt_board = Bzzt_Board_Create(zztBoardGetTitle(zw), block->width, block->height);
+
+    bzzt_board->board_n = zztBoardGetBoard_n(zw);
+    bzzt_board->board_s = zztBoardGetBoard_s(zw);
+    bzzt_board->board_e = zztBoardGetBoard_e(zw);
+    bzzt_board->board_w = zztBoardGetBoard_w(zw);
+
+    bzzt_board->max_shots = zztBoardGetMaxshots(zw);
+    bzzt_board->darkness = zztBoardGetDarkness(zw);
+    bzzt_board->reenter = zztBoardGetReenter(zw);
+    bzzt_board->reenter_x = zztBoardGetReenter_x(zw);
+    bzzt_board->reenter_y = zztBoardGetReenter_y(zw);
+    bzzt_board->time_limit = zztBoardGetTimelimit(zw);
+
+    const char *msg = (const char *)zztBoardGetMessage(zw);
+    if (msg)
     {
-        for (int x = 0; x < bzztBoard->width; ++x)
+        strncpy(bzzt_board->message, msg, sizeof(bzzt_board->message) - 1);
+        bzzt_board->message[sizeof(bzzt_board->message) - 1] = '\0';
+    }
+
+    for (int y = 0; y < bzzt_board->height; ++y)
+    {
+        for (int x = 0; x < bzzt_board->width; ++x)
         {
             Bzzt_Object *o = Bzzt_Object_From_ZZT_Tile(block, x, y);
             if (o)
-                Bzzt_Board_Add_Object(bzztBoard, o);
+                Bzzt_Board_Add_Object(bzzt_board, o);
         }
     }
 
-    return bzztBoard;
+    return bzzt_board;
 }

@@ -48,7 +48,50 @@ static bool handle_board_edge_move(Bzzt_World *w, int new_x, int new_y)
     // tbd
     if (!w)
         return false;
-    return false;
+
+    Bzzt_Board *current_board = w->boards[w->boards_current];
+    uint8_t next_board_idx = 0;
+    int entry_x = w->player->x;
+    int entry_y = w->player->y;
+
+    if (new_x < 0)
+    {
+        next_board_idx = current_board->board_w;
+        entry_x = current_board->width - 1;
+        entry_y = w->player->y;
+    }
+    else if (new_x >= current_board->width)
+    {
+        next_board_idx = current_board->board_e;
+        entry_x = 0;
+        entry_y = w->player->y;
+    }
+    else if (new_y < 0)
+    {
+        next_board_idx = current_board->board_n;
+        entry_x = w->player->x;
+        entry_y = current_board->height - 1;
+    }
+    else if (new_y >= current_board->height)
+    {
+        next_board_idx = current_board->board_s;
+        entry_x = w->player->x;
+        entry_y = 0;
+    }
+
+    if (next_board_idx == 0 || next_board_idx >= w->boards_count)
+        return false;
+
+    w->boards_current = next_board_idx;
+    w->player->x = entry_x;
+    w->player->y = entry_y;
+
+    // temp add new player
+    Bzzt_Board *new_board = w->boards[w->boards_current];
+    w->player->id = 0;
+    Bzzt_Board_Add_Object(new_board, w->player);
+
+    return true;
 }
 
 static void move_player_to(Bzzt_World *w, int new_x, int new_y)
