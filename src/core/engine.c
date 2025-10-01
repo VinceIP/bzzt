@@ -63,7 +63,7 @@ static void init_camera(Engine *e)
 
 static void play_init(Engine *e)
 {
-    char *file = "BURGERJ.ZZT";
+    char *file = "TOWN.ZZT";
     e->world = Bzzt_World_From_ZZT_World(file);
     if (!e->world)
     {
@@ -185,6 +185,8 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
         break;
 
     case ENGINE_STATE_PLAY:
+        if (e->world)
+            Bzzt_World_Update(e->world, i);
         break;
 
     case ENGINE_STATE_EDIT:

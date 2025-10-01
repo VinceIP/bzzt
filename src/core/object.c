@@ -115,6 +115,9 @@ bool Bzzt_Object_Is_Walkable(Bzzt_Object *obj)
     case ZZT_FAKE:
     case ZZT_WATER:
     case ZZT_FOREST:
+    case ZZT_GEM:
+    case ZZT_AMMO:
+    case ZZT_TORCH:
         return true;
         break;
 
@@ -166,37 +169,137 @@ Interaction_Type Bzzt_Object_Get_Interaction_Type(Bzzt_Object *obj)
 const char *Bzzt_Object_Get_Type_Name(Bzzt_Object *obj)
 {
     if (!obj)
-        return NULL;
+        return "NULL";
 
     switch (obj->bzzt_type)
     {
-    case ZZT_AMMO:
-        return "ZZT_AMMO";
-        break;
-    case ZZT_SOLID:
-        return "ZZT_SOLID";
-        break;
-    case ZZT_FAKE:
-        return "ZZT_FAKE";
-        break;
-    case ZZT_BREAKABLE:
-        return "ZZT_BREAKABLE";
-        break;
-    case ZZT_WATER:
-        return "ZZT_WATER";
-        break;
-    case ZZT_EDGE:
-        return "ZZT_EDGE";
-        break;
-    case ZZT_FOREST:
-        return "ZZT_FOREST";
-        break;
     case ZZT_EMPTY:
-        return "ZZT_EMPTY";
-        break;
+        return "Empty";
+    case ZZT_EDGE:
+        return "Board Edge";
+    case ZZT_MESSAGETIMER:
+        return "Message Timer";
+    case ZZT_MONITOR:
+        return "Monitor";
+    case ZZT_PLAYER:
+        return "Player";
+    case ZZT_AMMO:
+        return "Ammo";
+    case ZZT_TORCH:
+        return "Torch";
+    case ZZT_GEM:
+        return "Gem";
+    case ZZT_KEY:
+        return "Key";
+    case ZZT_DOOR:
+        return "Door";
+    case ZZT_SCROLL:
+        return "Scroll";
+    case ZZT_PASSAGE:
+        return "Passage";
+    case ZZT_DUPLICATOR:
+        return "Duplicator";
+    case ZZT_BOMB:
+        return "Bomb";
+    case ZZT_ENERGIZER:
+        return "Energizer";
+    case ZZT_STAR:
+        return "Star";
+    case ZZT_CWCONV:
+        return "Clockwise Conveyor";
+    case ZZT_CCWCONV:
+        return "Counter-Clockwise Conveyor";
+    case ZZT_BULLET:
+        return "Bullet";
+    case ZZT_WATER:
+        return "Water";
+    case ZZT_FOREST:
+        return "Forest";
+    case ZZT_SOLID:
+        return "Solid Wall";
+    case ZZT_NORMAL:
+        return "Normal Wall";
+    case ZZT_BREAKABLE:
+        return "Breakable Wall";
+    case ZZT_BOULDER:
+        return "Boulder";
+    case ZZT_NSSLIDER:
+        return "North-South Slider";
+    case ZZT_EWSLIDER:
+        return "East-West Slider";
+    case ZZT_FAKE:
+        return "Fake Wall";
+    case ZZT_INVISIBLE:
+        return "Invisible Wall";
+    case ZZT_BLINK:
+        return "Blinkwall";
+    case ZZT_TRANSPORTER:
+        return "Transporter";
+    case ZZT_LINE:
+        return "Line";
+    case ZZT_RICOCHET:
+        return "Ricochet";
+    case ZZT_BLINKHORIZ:
+        return "Horizontal Blinkwall Ray";
+    case ZZT_BEAR:
+        return "Bear";
+    case ZZT_RUFFIAN:
+        return "Ruffian";
+    case ZZT_OBJECT:
+        return "Object";
+    case ZZT_SLIME:
+        return "Slime";
+    case ZZT_SHARK:
+        return "Shark";
+    case ZZT_SPINNINGGUN:
+        return "Spinning Gun";
+    case ZZT_PUSHER:
+        return "Pusher";
+    case ZZT_LION:
+        return "Lion";
+    case ZZT_TIGER:
+        return "Tiger";
+    case ZZT_BLINKVERT:
+        return "Vertical Blinkwall Ray";
+    case ZZT_CENTHEAD:
+        return "Centipede Head";
+    case ZZT_CENTBODY:
+        return "Centipede Segment";
+    case ZZT_CUSTOMTEXT:
+        return "Custom Text";
+    case ZZT_BLUETEXT:
+        return "Blue Text";
+    case ZZT_GREENTEXT:
+        return "Green Text";
+    case ZZT_CYANTEXT:
+        return "Cyan Text";
+    case ZZT_REDTEXT:
+        return "Red Text";
+    case ZZT_PURPLETEXT:
+        return "Purple Text";
+    case ZZT_YELLOWTEXT:
+        return "Yellow Text";
+    case ZZT_WHITETEXT:
+        return "White Text";
+
+    // Extended text types (Super ZZT compatibility tbd)
+    case ZZT_BBLUETEXT:
+        return "Bright Blue Text";
+    case ZZT_BGREENTEXT:
+        return "Bright Green Text";
+    case ZZT_BCYANTEXT:
+        return "Bright Cyan Text";
+    case ZZT_BREDTEXT:
+        return "Bright Red Text";
+    case ZZT_BPURPLETEXT:
+        return "Bright Purple Text";
+    case ZZT_BYELLOWTEXT:
+        return "Bright Yellow Text";
+    case ZZT_BWHITETEXT:
+        return "Bright White Text";
+
     default:
-        return "UNKOWN TYPE";
-        break;
+        return "Unknown";
     }
 }
 

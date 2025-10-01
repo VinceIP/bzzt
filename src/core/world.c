@@ -64,14 +64,17 @@ static bool handle_player_touch(Bzzt_World *w, Bzzt_Object *target, int dx, int 
 
     // tbd
     Interaction_Type type = Bzzt_Object_Get_Interaction_Type(target);
+    const char *type_name = Bzzt_Object_Get_Type_Name(target);
+    Debug_Printf(LOG_LEVEL_DEBUG, "Player touched %s at (%d, %d).", type_name, target->x, target->y);
     switch (type)
     {
+    case INTERACTION_GEM:
+        Bzzt_Board_Remove_Object(w->boards[w->boards_current], target->id);
+        break;
     default:
         break;
     }
 
-    const char *type_name = Bzzt_Object_Get_Type_Name(Bzzt_Object * obj);
-    Debug_Printf(LOG_LEVEL_DEBUG, "Player touched %s at (%d, %d).", type_name, target->x, target->y);
     return true;
 }
 
@@ -106,7 +109,18 @@ static bool do_player_move(Bzzt_World *w, int dx, int dy)
     if (!target || Bzzt_Object_Is_Walkable(target))
     {
         move_player_to(w, new_x, new_y);
-        return true;
+        if (target)
+        {
+            switch (target->bzzt_type)
+            {
+            case ZZT_AMMO:
+            case ZZT_TORCH:
+            case ZZT_GEM:
+                return handle_player_touch(w, target, dx, dy);
+            default:
+                return true;
+            }
+        }
     }
 
     return handle_player_touch(w, target, dx, dy);

@@ -65,14 +65,20 @@ void Renderer_Draw_Board(Renderer *r, const Bzzt_Board *b)
 
     clear_board(r, b);
 
+    Bzzt_Object *player;
+
     for (int i = 0; i < b->object_count; ++i)
     {
         if (b->objects[i])
         {
-            int col = (int)(i % b->width);
-            int row = (int)(i / b->width);
-
-            Renderer_Draw_Cell(r, col, row, b->objects[i]->cell.glyph, b->objects[i]->cell.fg, b->objects[i]->cell.bg);
+            Bzzt_Object *obj = b->objects[i];
+            if (obj->bzzt_type == ZZT_PLAYER)
+                player = obj;
+            if (obj != player)
+                Renderer_Draw_Cell(r, obj->x, obj->y, obj->cell.glyph,
+                                   obj->cell.fg, obj->cell.bg);
         }
     }
+
+    Renderer_Draw_Cell(r, player->x, player->y, player->cell.glyph, player->cell.fg, player->cell.bg);
 }
