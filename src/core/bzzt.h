@@ -60,7 +60,8 @@ typedef struct Bzzt_Stat
     int16_t step_x, step_y;
     int16_t cycle;
 
-    int16_t p1, p2, p3; // generic zzt parameters
+    uint8_t data[3];
+    uint8_t data_label[3];
     int16_t follower, leader;
 
     Bzzt_Tile under;
@@ -111,7 +112,6 @@ typedef struct Bzzt_Board
     char message[59];             // board entry message
     uint8_t reenter_x, reenter_y; // Re-enter coordinates
     int16_t time_limit;
-
 } Bzzt_Board;
 
 typedef struct Bzzt_World
@@ -124,8 +124,6 @@ typedef struct Bzzt_World
     Bzzt_Board **boards;
     int boards_count, boards_cap, boards_current;
     Bzzt_Board *start_board;
-
-    Bzzt_Stat *player;
 
     /*for zzt support*/
     int16_t ammo, gems, health, torches, score;
@@ -162,16 +160,17 @@ Bzzt_Object *Bzzt_Object_Create(uint8_t glyph, Color_Bzzt fg, Color_Bzzt bg, int
 // Destroy a Bzzt_Object
 void Bzzt_Object_Destroy(Bzzt_Object *o);
 
-// Convert a tile in a ZZT block to a Bzzt Object
-Bzzt_Object *Bzzt_Object_From_ZZT_Tile(ZZTblock *block, int x, int y);
-
 // Return true if object can be walked on top of.
-bool Bzzt_Object_Is_Walkable(Bzzt_Object *obj);
+bool Bzzt_Tile_Is_Walkable(Bzzt_Tile tile);
 
 // Return interaction type of an object.
-Interaction_Type Bzzt_Object_Get_Interaction_Type(Bzzt_Object *obj);
+Interaction_Type Bzzt_Tile_Get_Interaction_Type(Bzzt_Tile tile);
 
-const char *Bzzt_Object_Get_Type_Name(Bzzt_Object *obj);
+const char *Bzzt_Tile_Get_Type_Name(Bzzt_Tile tile);
+
+Bzzt_Stat *Bzzt_Stat_From_ZZT_Param(ZZTparam *param, ZZTtile tile, int x, int y);
+
+Bzzt_Tile Bzzt_Tile_From_ZZT_Tile(ZZTblock *block, int x, int y);
 
 /* -- --*/
 
@@ -186,11 +185,22 @@ void Bzzt_Board_Destroy(Bzzt_Board *b);
 // Add an object to a board's object array.
 Bzzt_Object *Bzzt_Board_Add_Object(Bzzt_Board *b, Bzzt_Object *o);
 
+// Add a stat to a board.
+Bzzt_Stat *Bzzt_Board_Add_Stat(Bzzt_Board *b, Bzzt_Stat *s);
+
 // Remove an object from a board by its unique object id.
-void Bzzt_Board_Remove_Object(Bzzt_Board *b, int id);
+void Bzzt_Board_Remove_Stat(Bzzt_Board *b, int id);
+
+Bzzt_Stat *Bzzt_Board_Get_Stat_At(Bzzt_Board *b, int x, int y);
+
+int Bzzt_Board_Get_Stat_Index(Bzzt_Board *b, Bzzt_Stat *stat);
 
 // Return a Bzzt object by its unique object id.
 Bzzt_Object *Bzzt_Board_Get_Object(Bzzt_Board *b, int id);
+
+Bzzt_Tile Bzzt_Board_Get_Tile(Bzzt_Board *b, int x, int y);
+
+bool Bzzt_Board_Set_Tile(Bzzt_Board *b, int x, int y, Bzzt_Tile tile);
 
 // Convert the currently selected board in a ZZT world to a Bzzt board
 Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw);

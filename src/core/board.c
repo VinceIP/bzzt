@@ -2,21 +2,37 @@
 #include <stdlib.h>
 #include <string.h>
 #include "bzzt.h"
+#include "debugger.h"
 
-#define START_CAP 64
+#define START_CAP 16
 
 Bzzt_Board *Bzzt_Board_Create(const char *name, int w, int h)
 {
     Bzzt_Board *b = malloc(sizeof(Bzzt_Board));
+
     if (!b)
         return NULL;
+
     b->width = w;
     b->height = h;
-    b->object_cap = START_CAP;
-    b->objects = malloc(sizeof(Bzzt_Object *) * START_CAP);
+
+    b->stat_cap = START_CAP;
+    b->stat_count = 0;
+    b->stats = malloc(sizeof(Bzzt_Stat *) * START_CAP);
+    if (!b->stats)
+    {
+        Debug_Log(LOG_LEVEL_ERROR, LOG_BOARD, "Failed to allocate stats while creating board '%s'", name);
+        return NULL;
+    }
+
+    b->tiles = calloc(w * h, sizeof(Bzzt_Tile));
+    if (!b->tiles)
+    {
+        Debug_Log(LOG_LEVEL_ERROR, LOG_BOARD, "Failed to allocate tiles while creating board '%s'", name);
+        return NULL;
+    }
+
     b->name = strdup(name ? name : "Untitled");
-    b->object_count = 0;
-    b->object_next_id = 1;
     return b;
 }
 
@@ -25,62 +41,129 @@ Bzzt_Board *Bzzt_Board_Create(const char *name, int w, int h)
  *
  * @param b Target board.
  */
-static int board_grow(Bzzt_Board *b)
+static int grow_stats(Bzzt_Board *b)
 {
-    int new_cap = b->object_cap * 2;
-    Bzzt_Object **tmp = realloc(b->objects, new_cap * sizeof(Bzzt_Object *));
+    int new_cap = b->stat_cap * 2;
+    Bzzt_Stat **tmp = realloc(b->stats, new_cap * sizeof(Bzzt_Stat *));
     if (!tmp)
         return -1;
 
-    b->objects = tmp;
-    b->object_cap = new_cap;
+    b->stats = tmp;
+    b->stat_cap = new_cap;
     return 0;
 }
 
 void Bzzt_Board_Destroy(Bzzt_Board *b)
 {
-    for (int i = 0; i < b->object_count; ++i)
+    if (!b)
+        return;
+
+    // Free all stats;
+    for (int i = 0; i < b->stat_count; ++i)
     {
-        Bzzt_Object_Destroy(b->objects[i]);
+        if (b->stats[i])
+        {
+            if (b->stats[i]->program)
+                free(b->stats[i]->program);
+
+            free(b->stats[i]);
+        }
     }
-    free(b->objects);
-    free(b->name);
+
+    int len = b->width * b->height;
+
+    free(b->stats);
+    free(b->tiles);
     free(b);
 }
 
-Bzzt_Object *Bzzt_Board_Add_Object(Bzzt_Board *b, Bzzt_Object *o)
+Bzzt_Stat *Bzzt_Board_Add_Stat(Bzzt_Board *b, Bzzt_Stat *s)
 {
-    if (b->object_count == b->object_cap && board_grow(b) != 0)
+    if (!b || !s)
         return NULL;
 
-    o->id = b->object_next_id++;
-    b->objects[b->object_count++] = o;
-    return o;
+    if (b->stat_count >= b->stat_cap && grow_stats(b) != 0)
+        return NULL;
+
+    b->stats[b->stat_count++] = s;
+
+    return s;
 }
 
-void Bzzt_Board_Remove_Object(Bzzt_Board *b, int id)
+void Bzzt_Board_Remove_Stat(Bzzt_Board *b, int idx)
 {
-    for (int i = 0; i < b->object_count; ++i)
+    if (!b || idx < 0 || idx >= b->stat_count)
+        return;
+
+    Bzzt_Stat *stat = b->stats[idx];
+    if (stat && stat->program)
+        free(stat->program);
+
+    for (int i = 0; i < b->stat_count; ++i)
     {
-        if (b->objects[i]->id == id)
-        {
-            Bzzt_Object_Destroy(b->objects[i]);
-            b->objects[i] = b->objects[--b->object_count];
-            return;
-        }
+        if (b->stats[i]->follower > idx)
+            b->stats[i]->follower--;
+        else if (b->stats[i]->follower == idx)
+            b->stats[i]->follower = -1;
+
+        if (b->stats[i]->leader > idx)
+            b->stats[i]->leader--;
+        else if (b->stats[i]->leader == idx)
+            b->stats[i]->leader = -1;
     }
+
+    free(stat);
+
+    for (int i = idx + 1; i < b->stat_count; ++i)
+        b->stats[i - 1] = b->stats[i];
+
+    b->stat_count--;
 }
 
-Bzzt_Object *Bzzt_Board_Get_Object(Bzzt_Board *b, int id)
+Bzzt_Stat *Bzzt_Board_Get_Stat_At(Bzzt_Board *b, int x, int y)
 {
-    for (int i = 0; i < b->object_count; ++i)
+    if (!b)
+        return NULL;
+
+    for (int i = 0; i < b->stat_count; ++i)
     {
-        if (b->objects[i]->id == id)
-        {
-            return b->objects[i];
-        }
+        if (b->stats[i]->x == x && b->stats[i]->y == y)
+            return b->stats[i];
     }
     return NULL;
+}
+
+int Bzzt_Board_Get_Stat_Index(Bzzt_Board *b, Bzzt_Stat *stat)
+{
+    if (!b || !stat)
+        return -1;
+
+    for (int i = 0; i < b->stat_count; ++i)
+    {
+        if (b->stats[i] == stat)
+            return i;
+    }
+    return -1;
+}
+
+Bzzt_Tile Bzzt_Board_Get_Tile(Bzzt_Board *b, int x, int y)
+{
+    if (!b || x < 0 || x >= b->width || y < 0 || y >= b->height)
+    {
+        Bzzt_Tile dud = {0};
+        return dud;
+    }
+
+    return b->tiles[y * b->width + x];
+}
+
+bool Bzzt_Board_Set_Tile(Bzzt_Board *b, int x, int y, Bzzt_Tile tile)
+{
+    if (!b || x < 0 || x >= b->width || y < 0 || y >= b->height)
+        return false;
+
+    b->tiles[y * b->width + x] = tile;
+    return true;
 }
 
 Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw)
@@ -95,7 +178,6 @@ Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw)
     bzzt_board->board_s = zztBoardGetBoard_s(zw);
     bzzt_board->board_e = zztBoardGetBoard_e(zw);
     bzzt_board->board_w = zztBoardGetBoard_w(zw);
-
     bzzt_board->max_shots = zztBoardGetMaxshots(zw);
     bzzt_board->darkness = zztBoardGetDarkness(zw);
     bzzt_board->reenter = zztBoardGetReenter(zw);
@@ -110,13 +192,28 @@ Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw)
         bzzt_board->message[sizeof(bzzt_board->message) - 1] = '\0';
     }
 
+    // Populate tiles
     for (int y = 0; y < bzzt_board->height; ++y)
     {
         for (int x = 0; x < bzzt_board->width; ++x)
         {
-            Bzzt_Object *o = Bzzt_Object_From_ZZT_Tile(block, x, y);
-            if (o)
-                Bzzt_Board_Add_Object(bzzt_board, o);
+            Bzzt_Tile tile = Bzzt_Tile_From_ZZT_Tile(block, x, y);
+            Bzzt_Board_Set_Tile(bzzt_board, x, y, tile);
+        }
+    }
+
+    if (block->params && block->paramcount > 0)
+    {
+        for (int i = 0; i < block->paramcount; ++i)
+        {
+            ZZTparam *param = block->params[i];
+            if (param)
+            {
+                ZZTtile tile = zztTileAt(block, param->x, param->y);
+                Bzzt_Stat *stat = Bzzt_Stat_From_ZZT_Param(param, tile, param->x, param->y);
+                if (stat)
+                    Bzzt_Board_Add_Stat(bzzt_board, stat);
+            }
         }
     }
 

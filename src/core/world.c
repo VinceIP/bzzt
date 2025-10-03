@@ -28,92 +28,107 @@ static bool grow_boards_array(Bzzt_World *w)
     return true;
 }
 
-static Bzzt_Object *get_object_at(Bzzt_Board *board, int x, int y)
+static void move_stat_to(Bzzt_Board *board, Bzzt_Stat *stat, int new_x, int new_y)
 {
-    if (!board || x >= board->width || x < 0 || y > board->height || y < 0)
-        return NULL;
+    Bzzt_Tile stat_tile = Bzzt_Board_Get_Tile(board, stat->x, stat->y);
+    Bzzt_Tile new_under = Bzzt_Board_Get_Tile(board, new_x, new_y);
 
-    for (int i = 0; i < board->object_count; ++i)
-    {
-        if (board->objects[i]->x == x && board->objects[i]->y == y)
-        {
-            return board->objects[i];
-        }
-    }
-    return NULL;
+    Bzzt_Board_Set_Tile(board, stat->x, stat->y, stat->under);
+
+    stat->under = new_under;
+
+    stat->x = new_x;
+    stat->y = new_y;
+
+    Bzzt_Board_Set_Tile(board, new_x, new_y, stat_tile);
 }
 
 static bool handle_board_edge_move(Bzzt_World *w, int new_x, int new_y)
 {
-    // tbd
     if (!w)
         return false;
 
-    Bzzt_Board *current_board = w->boards[w->boards_current];
+    Bzzt_Board *old_board = w->boards[w->boards_current];
+    Bzzt_Stat *old_player = old_board->stats[0];
+
     uint8_t next_board_idx = 0;
-    int entry_x = w->player->x;
-    int entry_y = w->player->y;
+
+    if (new_x < 0)
+        next_board_idx = old_board->board_w;
+    else if (new_x >= old_board->width)
+        next_board_idx = old_board->board_e;
+    else if (new_y < 0)
+        next_board_idx = old_board->board_n;
+    else if (new_y >= old_board->height)
+        next_board_idx = old_board->board_s;
+
+    if (next_board_idx == 0 || next_board_idx > w->boards_count)
+    {
+        Debug_Log(LOG_WARNING, LOG_WORLD, "Tried to transition to invalid board index.");
+        return false;
+    }
+
+    Bzzt_Board *new_board = w->boards[next_board_idx];
+
+    int entry_x, entry_y;
 
     if (new_x < 0)
     {
-        next_board_idx = current_board->board_w;
-        entry_x = current_board->width - 1;
-        entry_y = w->player->y;
+        entry_x = new_board->width - 1;
+        entry_y = old_player->y;
     }
-    else if (new_x >= current_board->width)
+    else if (new_x >= old_board->width)
     {
-        next_board_idx = current_board->board_e;
         entry_x = 0;
-        entry_y = w->player->y;
+        entry_y = old_player->y;
     }
     else if (new_y < 0)
     {
-        next_board_idx = current_board->board_n;
-        entry_x = w->player->x;
-        entry_y = current_board->height - 1;
+        entry_x = old_player->x;
+        entry_y = new_board->height - 1;
     }
-    else if (new_y >= current_board->height)
+    else if (new_y >= old_board->height)
     {
-        next_board_idx = current_board->board_s;
-        entry_x = w->player->x;
+        entry_x = old_player->x;
         entry_y = 0;
     }
 
-    if (next_board_idx == 0 || next_board_idx >= w->boards_count)
-        return false;
-
+    Bzzt_Board_Set_Tile(old_board, old_player->x, old_player->y, old_player->under);
     w->boards_current = next_board_idx;
-    w->player->x = entry_x;
-    w->player->y = entry_y;
+    Bzzt_Stat *new_player = new_board->stats[0];
+    Bzzt_Tile entry_under = Bzzt_Board_Get_Tile(new_board, entry_x, entry_y);
+    Bzzt_Board_Set_Tile(new_board, new_player->x, new_player->y, new_player->under);
+    new_player->x = entry_x;
+    new_player->y = entry_y;
+    new_player->under = entry_under;
 
-    // temp add new player
-    Bzzt_Board *new_board = w->boards[w->boards_current];
-    w->player->id = 0;
-    Bzzt_Board_Add_Object(new_board, w->player);
+    Bzzt_Tile player_tile = {0};
+    player_tile.element = ZZT_PLAYER;
+    player_tile.glyph = 2;
+    player_tile.fg = COLOR_WHITE;
+    player_tile.bg = COLOR_BLUE;
+    player_tile.visible = true;
 
+    Bzzt_Board_Set_Tile(new_board, entry_x, entry_y, player_tile);
     return true;
 }
 
-static void move_player_to(Bzzt_World *w, int new_x, int new_y)
+static bool handle_player_touch(Bzzt_World *w, Bzzt_Stat *target_stat, int x, int y)
 {
-    w->player->x = new_x;
-    w->player->y = new_y;
-}
-
-static bool handle_player_touch(Bzzt_World *w, Bzzt_Object *target, int dx, int dy)
-{
-    if (!w || !target)
+    if (!w || !target_stat)
         return false;
 
+    Bzzt_Board *board = w->boards[w->boards_current];
+    Bzzt_Tile tile = Bzzt_Board_Get_Tile(board, target_stat->x, target_stat->y);
+
     // tbd
-    Interaction_Type type = Bzzt_Object_Get_Interaction_Type(target);
-    const char *type_name = Bzzt_Object_Get_Type_Name(target);
-    Debug_Printf(LOG_LEVEL_DEBUG, "Player touched %s at (%d, %d).", type_name, target->x, target->y);
+    Interaction_Type type = Bzzt_Tile_Get_Interaction_Type(tile);
+    const char *type_name = Bzzt_Tile_Get_Type_Name(tile);
+    Debug_Printf(LOG_LEVEL_DEBUG, "Player touched %s at (%d, %d).", type_name, target_stat->x, target_stat->y);
+
+    // Handle solid, interactable tiles here
     switch (type)
     {
-    case INTERACTION_GEM:
-        Bzzt_Board_Remove_Object(w->boards[w->boards_current], target->id);
-        break;
     default:
         break;
     }
@@ -121,16 +136,26 @@ static bool handle_player_touch(Bzzt_World *w, Bzzt_Object *target, int dx, int 
     return true;
 }
 
-static void update_player_direction(Bzzt_World *w, InputState *in)
+static void update_stat_direction(Bzzt_Stat *stat, int dx, int dy)
 {
-    if (in->dx > 0)
-        w->player->dir = DIR_RIGHT;
-    else if (in->dx < 0)
-        w->player->dir = DIR_LEFT;
-    else if (in->dy > 0)
-        w->player->dir = DIR_DOWN;
-    else if (in->dy < 0)
-        w->player->dir = DIR_UP;
+    if (dx != 0)
+        stat->step_x = (dx > 0) ? 1 : -1;
+    if (dy != 0)
+        stat->step_y = (dy > 0) ? 1 : -1;
+}
+
+static bool handle_item_pickup(Bzzt_Board *b, int x, int y, Bzzt_Tile item)
+{
+    Bzzt_Tile empty = {0};
+    Bzzt_Board_Set_Tile(b, x, y, empty);
+    switch (item.element)
+    {
+    case ZZT_AMMO:
+        break;
+    case ZZT_GEM:
+        Debug_Printf(LOG_WORLD, "Picked up a gem!");
+        return true;
+    }
 }
 
 static bool do_player_move(Bzzt_World *w, int dx, int dy)
@@ -138,35 +163,45 @@ static bool do_player_move(Bzzt_World *w, int dx, int dy)
     if (dx == 0 && dy == 0)
         return false;
 
-    Bzzt_Board *board = w->boards[w->boards_current];
-    int new_x = w->player->x + dx;
-    int new_y = w->player->y + dy;
+    Bzzt_Board *current_board = w->boards[w->boards_current];
+    if (!current_board || current_board->stat_count == 0)
+        return false;
 
-    if (new_x < 0 || new_x >= board->width || new_y < 0 || new_y >= board->height)
+    Bzzt_Stat *player = current_board->stats[0];
+    if (!player)
+        return false;
+
+    int new_x = player->x + dx;
+    int new_y = player->y + dy;
+
+    if (new_x < 0 || new_x >= current_board->width || new_y < 0 || new_y >= current_board->height)
     {
         return handle_board_edge_move(w, new_x, new_y);
     }
 
-    Bzzt_Object *target = get_object_at(board, new_x, new_y);
+    Bzzt_Tile target = Bzzt_Board_Get_Tile(current_board, new_x, new_y);
 
-    if (!target || Bzzt_Object_Is_Walkable(target))
+    // If won't collide with anything
+    if (Bzzt_Tile_Is_Walkable(target))
     {
-        move_player_to(w, new_x, new_y);
-        if (target)
+        move_stat_to(current_board, player, new_x, new_y);
+        // If moved on to item pickup
+        switch (target.element)
         {
-            switch (target->bzzt_type)
-            {
-            case ZZT_AMMO:
-            case ZZT_TORCH:
-            case ZZT_GEM:
-                return handle_player_touch(w, target, dx, dy);
-            default:
-                return true;
-            }
+        case ZZT_AMMO:
+        case ZZT_TORCH:
+        case ZZT_GEM:
+            return handle_item_pickup(current_board, new_x, new_y, target);
+        default:
+            return true;
         }
     }
+    // If we will collide with something, see if it has a stat and touch it
+    Bzzt_Stat *stat = Bzzt_Board_Get_Stat_At(current_board, new_x, new_y);
+    if (stat)
+        return handle_player_touch(w, stat, new_x, new_y);
 
-    return handle_player_touch(w, target, dx, dy);
+    return false;
 }
 
 static void update_player(Bzzt_World *w, InputState *in)
@@ -174,8 +209,18 @@ static void update_player(Bzzt_World *w, InputState *in)
     if (!in->anyDirPressed || in->delayLock)
         return;
 
-    do_player_move(w, in->dx, in->dy);
-    update_player_direction(w, in);
+    Bzzt_Board *current_board = w->boards[w->boards_current];
+
+    if (!current_board || current_board->stat_count == 0)
+        return;
+
+    Bzzt_Stat *player = current_board->stats[0];
+
+    if (!player)
+        return;
+
+    if (do_player_move(w, in->dx, in->dy))
+        update_stat_direction(player, in->dx, in->dy);
 }
 
 Bzzt_World *Bzzt_World_Create(char *title)
@@ -227,7 +272,6 @@ void Bzzt_World_Destroy(Bzzt_World *w)
     w->boards_current = 0;
     w->doUnload = false;
     w->loaded = false;
-    w->player = NULL;
     free(w->boards);
     free(w);
 }
@@ -240,8 +284,7 @@ void Bzzt_World_Update(Bzzt_World *w, InputState *in)
         return;
     }
 
-    if (w->player)
-        update_player(w, in);
+    update_player(w, in);
 }
 
 void Bzzt_World_Add_Board(Bzzt_World *w, Bzzt_Board *b)
@@ -280,7 +323,6 @@ Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
         bw->boards[0] = NULL;
         bw->boards_count = 0;
         bw->boards_current = 0;
-        bw->player = NULL;
     }
 
     int boardCount = zztWorldGetBoardcount(zw);
@@ -295,19 +337,20 @@ Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
     bw->boards_current = (int)zztWorldGetStartboard(zw);
     bw->start_board = bw->boards[bw->boards_current];
 
-    // Instantiate player object on start board
-    Bzzt_Board *starting_board = bw->boards[bw->boards_current];
-    for (int i = 0; i < starting_board->object_count; ++i)
+    // verify player exists
+    if (bw->start_board->stat_count > 0)
     {
-        if (starting_board->objects[i]->bzzt_type == ZZT_PLAYER)
+        Bzzt_Stat *player_stat = bw->start_board->stats[0];
+        Bzzt_Tile player_tile = Bzzt_Board_Get_Tile(bw->start_board, player_stat->x, player_stat->y);
+        if (player_tile.element != ZZT_PLAYER)
         {
-            bw->player = starting_board->objects[i];
-            break;
+            Debug_Log(LOG_LEVEL_WARN, LOG_WORLD, "Stat[0] is not a player.");
         }
     }
-
-    if (!bw->player)
-        Debug_Printf(LOG_WORLD, "Warning: No player found in ZZT world.");
+    else
+    {
+        Debug_Log(LOG_LEVEL_WARN, LOG_WORLD, "Found no stats on start board.");
+    }
 
     zztWorldFree(zw);
 

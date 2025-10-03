@@ -60,25 +60,18 @@ static void clear_board(Renderer *r, Bzzt_Board *b)
 
 void Renderer_Draw_Board(Renderer *r, const Bzzt_Board *b)
 {
-    if (!r || !b || !b->objects || b->object_count == 0)
+    if (!r || !b)
         return;
 
     clear_board(r, b);
 
-    Bzzt_Object *player;
-
-    for (int i = 0; i < b->object_count; ++i)
+    //draw tiles
+    for (int y = 0; y < b->height; ++y)
     {
-        if (b->objects[i])
+        for (int x = 0; x < b->width; ++x)
         {
-            Bzzt_Object *obj = b->objects[i];
-            if (obj->bzzt_type == ZZT_PLAYER)
-                player = obj;
-            if (obj != player)
-                Renderer_Draw_Cell(r, obj->x, obj->y, obj->cell.glyph,
-                                   obj->cell.fg, obj->cell.bg);
+            Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, x, y);
+            Renderer_Draw_Cell(r, x, y, tile.glyph, tile.fg, tile.bg);
         }
     }
-
-    Renderer_Draw_Cell(r, player->x, player->y, player->cell.glyph, player->cell.fg, player->cell.bg);
 }
