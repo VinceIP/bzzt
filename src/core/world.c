@@ -9,6 +9,8 @@
 #include "debugger.h"
 #include "zzt.h"
 
+#define BLINK_RATE_DEFAULT 267 // in ms
+
 static bool grow_boards_array(Bzzt_World *w)
 {
     int old_cap = w->boards_cap;
@@ -113,22 +115,73 @@ static bool handle_board_edge_move(Bzzt_World *w, int new_x, int new_y)
     return true;
 }
 
-static bool handle_player_touch(Bzzt_World *w, Bzzt_Stat *target_stat, int x, int y)
+static bool switch_board_to(Bzzt_World *w, int idx, int x, int y)
 {
-    if (!w || !target_stat)
+    if (w->boards_count < idx || idx <= 0 || w->boards_current == idx)
+    {
+        Debug_Log(LOG_WARNING, LOG_WORLD, "Tried to transition to invalid board index.");
+        return false;
+    }
+    Bzzt_Board *new_board = w->boards[idx];
+
+    if (x >= new_board->width || x < 0 || y >= new_board->height || y < 0)
+    {
+        Debug_Log(LOG_WARNING, LOG_WORLD, "Tried to transition to invalid board coordinates.");
+        return false;
+    }
+
+    Bzzt_Board *old_board = w->boards[w->boards_current];
+    Bzzt_Stat *old_player = old_board->stats[0];
+
+    w->boards_current = w->boards[idx];
+
+    Bzzt_Stat *new_player = new_board->stats[0];
+
+    Bzzt_Board_Set_Tile(old_board, old_player->x, old_player->y, old_player->under);
+    Bzzt_Tile entry_under = Bzzt_Board_Get_Tile(new_board, x, y);
+    Bzzt_Board_Set_Tile(new_board, new_player->x, new_player->y, new_player->under);
+    new_player->x = x;
+    new_player->y = y;
+    new_player->under = entry_under;
+
+    Bzzt_Tile player_tile = {0};
+    player_tile.element = ZZT_PLAYER;
+    player_tile.glyph = 2;
+    player_tile.fg = COLOR_WHITE;
+    player_tile.bg = COLOR_BLUE;
+    player_tile.visible = true;
+
+    Bzzt_Board_Set_Tile(new_board, x, y, player_tile);
+    return true;
+}
+
+static bool handle_passage_touch(Bzzt_World *w)
+{
+    Bzzt_Stat *passage_stat = Bzzt_Board_Get_Stat_At(board, x, y);
+    if (passage_stat)
+    {
+        switch_board_to(w, passage_stat->data[3], ) break;
+    }
+}
+
+static bool handle_player_touch(Bzzt_World *w, Bzzt_Tile tile, int x, int y)
+{
+    if (!w)
         return false;
 
     Bzzt_Board *board = w->boards[w->boards_current];
-    Bzzt_Tile tile = Bzzt_Board_Get_Tile(board, target_stat->x, target_stat->y);
+    Bzzt_Stat *player = board->stats[0];
+    Bzzt_Tile player_tile = Bzzt_Board_Get_Tile(board, player->x, player->y);
 
-    // tbd
     Interaction_Type type = Bzzt_Tile_Get_Interaction_Type(tile);
     const char *type_name = Bzzt_Tile_Get_Type_Name(tile);
-    Debug_Printf(LOG_LEVEL_DEBUG, "Player touched %s at (%d, %d).", type_name, target_stat->x, target_stat->y);
+    Debug_Printf(LOG_LEVEL_DEBUG, "Player touched %s at (%d, %d).", type_name, x, y);
 
     // Handle solid, interactable tiles here
-    switch (type)
+    switch (tile.element)
     {
+    case ZZT_PASSAGE:
+        return handle_passage_touch(w);
     default:
         break;
     }
@@ -147,14 +200,23 @@ static void update_stat_direction(Bzzt_Stat *stat, int dx, int dy)
 static bool handle_item_pickup(Bzzt_Board *b, int x, int y, Bzzt_Tile item)
 {
     Bzzt_Tile empty = {0};
-    Bzzt_Board_Set_Tile(b, x, y, empty);
+    Bzzt_Stat *player = b->stats[0];
+    player->under = empty;
     switch (item.element)
     {
     case ZZT_AMMO:
-        break;
     case ZZT_GEM:
-        Debug_Printf(LOG_WORLD, "Picked up a gem!");
+    case ZZT_TORCH:
+    case ZZT_ENERGIZER:
+    case ZZT_KEY:
+    case ZZT_SCROLL:
+        Debug_Printf(LOG_WORLD, "Picked up: %s", Bzzt_Tile_Get_Type_Name(item));
         return true;
+    case ZZT_FOREST:
+        Debug_Printf(LOG_WORLD, "Moved through the forest.");
+        return true;
+    default:
+        return false;
     }
 }
 
@@ -191,17 +253,17 @@ static bool do_player_move(Bzzt_World *w, int dx, int dy)
         case ZZT_AMMO:
         case ZZT_TORCH:
         case ZZT_GEM:
+        case ZZT_KEY:
+        case ZZT_ENERGIZER:
+        case ZZT_SCROLL:
+        case ZZT_FOREST:
             return handle_item_pickup(current_board, new_x, new_y, target);
         default:
-            return true;
+            break;
         }
     }
-    // If we will collide with something, see if it has a stat and touch it
-    Bzzt_Stat *stat = Bzzt_Board_Get_Stat_At(current_board, new_x, new_y);
-    if (stat)
-        return handle_player_touch(w, stat, new_x, new_y);
 
-    return false;
+    return handle_player_touch(w, target, new_x, new_y);
 }
 
 static void update_player(Bzzt_World *w, InputState *in)
@@ -253,6 +315,12 @@ Bzzt_World *Bzzt_World_Create(char *title)
     w->boards_count = 1;
     w->doUnload = false;
     w->loaded = true;
+
+    w->blink_delay_rate = BLINK_RATE_DEFAULT;
+    w->blink_timer = 0.0;
+    w->allow_blink = true; // blink on by default
+    w->blink_state = false;
+
     return w;
 }
 
@@ -282,6 +350,17 @@ void Bzzt_World_Update(Bzzt_World *w, InputState *in)
     {
         Bzzt_World_Destroy(w);
         return;
+    }
+
+    if (w->allow_blink)
+    {
+        double delta_time = GetFrameTime() * 1000.0;
+        w->blink_timer += delta_time;
+        if (w->blink_timer >= w->blink_delay_rate)
+        {
+            w->blink_state = !w->blink_state;
+            w->blink_timer = 0.0;
+        }
     }
 
     update_player(w, in);

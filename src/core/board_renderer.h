@@ -13,5 +13,6 @@
 #include "renderer.h"
 
 typedef struct Bzzt_Board Bzzt_Board;
+typedef struct Bzzt_World Bzzt_World;
 
-void Renderer_Draw_Board(Renderer *, const Bzzt_Board *);
+void Renderer_Draw_Board(Renderer *, Bzzt_World *, const Bzzt_Board *);

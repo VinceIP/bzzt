@@ -68,6 +68,8 @@ bool Bzzt_Tile_Is_Walkable(Bzzt_Tile tile)
     case ZZT_GEM:
     case ZZT_AMMO:
     case ZZT_TORCH:
+    case ZZT_ENERGIZER:
+    case ZZT_KEY:
         return true;
         break;
 
@@ -252,9 +254,11 @@ Bzzt_Tile Bzzt_Tile_From_ZZT_Tile(ZZTblock *block, int x, int y)
 
     uint8_t fg_idx = attr & 0x0F;
     uint8_t bg_idx = (attr >> 4) & 0x0F;
+    bool blink = (attr & 0x80) != 0;
 
     tile.fg = bzzt_get_color(fg_idx);
     tile.bg = bzzt_get_color(bg_idx);
+    tile.blink = blink;
 
     ZZTtile zzt_tile = zztTileAt(block, x, y);
     tile.element = zzt_tile.type;
@@ -297,9 +301,11 @@ Bzzt_Stat *Bzzt_Stat_From_ZZT_Param(ZZTparam *param, ZZTtile tile, int x, int y)
 
     uint8_t fg_idx = param->ucolor & 0x0F;
     uint8_t bg_idx = (param->ucolor >> 4) & 0x0F;
+    bool blink = (param->ucolor & 0x80) != 0;
     stat->under.fg = bzzt_get_color(fg_idx);
     stat->under.bg = bzzt_get_color(bg_idx);
     stat->under.visible = true;
+    stat->under.blink = blink;
 
     if (param->program && param->length > 0)
     {

@@ -48,7 +48,7 @@ typedef enum
 // A Bzzt cell.
 typedef struct Bzzt_Tile
 {
-    bool visible;
+    bool visible, blink;
     uint8_t element;
     uint8_t glyph;
     Color_Bzzt fg, bg;
@@ -124,6 +124,12 @@ typedef struct Bzzt_World
     Bzzt_Board **boards;
     int boards_count, boards_cap, boards_current;
     Bzzt_Board *start_board;
+
+    bool allow_blink, blink_state;
+    int blink_delay_rate; // In ms
+    double blink_timer;   // Ms since last blink
+
+    bool paused;
 
     /*for zzt support*/
     int16_t ammo, gems, health, torches, score;

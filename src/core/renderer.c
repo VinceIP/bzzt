@@ -281,7 +281,8 @@ void Renderer_Update(Renderer *r, Engine *e)
         }
         break;
     case ENGINE_STATE_PLAY:
-        Renderer_Draw_Board(r, e->world->boards[e->world->boards_current]);
+        if (e->world)
+            Renderer_Draw_Board(r, e->world, e->world->boards[e->world->boards_current]);
         break;
     case ENGINE_STATE_EDIT:
     {

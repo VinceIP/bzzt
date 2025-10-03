@@ -58,20 +58,38 @@ static void clear_board(Renderer *r, Bzzt_Board *b)
     }
 }
 
-void Renderer_Draw_Board(Renderer *r, const Bzzt_Board *b)
+void Renderer_Draw_Board(Renderer *r, Bzzt_World *w, const Bzzt_Board *b)
 {
     if (!r || !b)
         return;
 
     clear_board(r, b);
 
-    //draw tiles
+    // draw tiles
     for (int y = 0; y < b->height; ++y)
     {
         for (int x = 0; x < b->width; ++x)
         {
             Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, x, y);
-            Renderer_Draw_Cell(r, x, y, tile.glyph, tile.fg, tile.bg);
+            if (tile.blink && w->allow_blink && !w->blink_state)
+            {
+                // blink off
+                if (tile.element == ZZT_WATER)
+                    Renderer_Draw_Cell(r, x, y, ' ', tile.bg, tile.bg);
+                // For blink enabled stats, draw under tile if any
+                else
+                {
+                    Bzzt_Stat *stat = Bzzt_Board_Get_Stat_At(w->boards[w->boards_current], x, y);
+                    if (stat)
+                    {
+                        Renderer_Draw_Cell(r, x, y, stat->under.glyph, stat->under.fg, stat->under.bg);
+                    }
+                }
+            }
+            else
+            {
+                Renderer_Draw_Cell(r, x, y, tile.glyph, tile.fg, tile.bg);
+            }
         }
     }
 }
