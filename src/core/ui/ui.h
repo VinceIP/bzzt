@@ -18,7 +18,7 @@
 
 struct Color;
 typedef struct Renderer Renderer;
-typedef struct Bzzt_Cell Bzzt_Cell;
+typedef struct Bzzt_Tile Bzzt_Tile;
 typedef struct cJSON cJSON;
 typedef struct UISurface UISurface;
 typedef struct UIOverlay UIOverlay;
@@ -102,7 +102,7 @@ typedef struct UIElement
 {
     ElementType type;
     UIProperties properties;
-    Bzzt_Cell *cells;
+    Bzzt_Tile *cells;
     int cell_count;
     void *child;
 } UIElement;
@@ -129,7 +129,7 @@ typedef struct UIButton
 typedef struct UISurface
 {
     UIProperties properties;
-    Bzzt_Cell *cells;
+    Bzzt_Tile *cells;
     int cell_count;
     UIOverlay **overlays;
     int overlays_count, overlays_cap;

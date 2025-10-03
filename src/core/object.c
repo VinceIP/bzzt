@@ -17,7 +17,7 @@
 
 // TBD: assign object ids
 
-static void set_zzt_data_labels(Bzzt_Param *bzzt_param, ZZTtile tile)
+static void set_zzt_data_labels(Bzzt_Stat *bzzt_param, ZZTtile tile)
 {
     for (int i = 0; i < 3; ++i)
     {
@@ -26,7 +26,7 @@ static void set_zzt_data_labels(Bzzt_Param *bzzt_param, ZZTtile tile)
     }
 }
 
-static void bzzt_param_destroy(Bzzt_Param *param)
+static void bzzt_param_destroy(Bzzt_Stat *param)
 {
     if (!param)
         return;
@@ -36,12 +36,12 @@ static void bzzt_param_destroy(Bzzt_Param *param)
 }
 
 // Convert zzt param data to bzzt equivalent.
-static Bzzt_Param *bzzt_param_from_zzt_param(ZZTparam *zzt_param, ZZTtile tile)
+static Bzzt_Stat *bzzt_param_from_zzt_param(ZZTparam *zzt_param, ZZTtile tile)
 {
     if (!zzt_param)
         return NULL;
 
-    Bzzt_Param *param = malloc(sizeof(Bzzt_Param));
+    Bzzt_Stat *param = malloc(sizeof(Bzzt_Stat));
     if (!param)
     {
         Debug_Printf(LOG_WORLD, "Error allocating zzt object param.");

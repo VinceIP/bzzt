@@ -46,24 +46,29 @@ typedef enum
 } Interaction_Type;
 
 // A Bzzt cell.
-typedef struct Bzzt_Cell
+typedef struct Bzzt_Tile
 {
     bool visible;
+    uint8_t element;
     uint8_t glyph;
     Color_Bzzt fg, bg;
-} Bzzt_Cell;
+} Bzzt_Tile;
 
-typedef struct Bzzt_Param
+typedef struct Bzzt_Stat
 {
+    int x, y;
+    int16_t step_x, step_y;
     int16_t cycle;
-    int16_t x_step, y_step;
-    uint8_t data[3];       // Generic data - intelligence, delay, etc
-    uint8_t data_label[3]; // What each data slot represents
+
+    int16_t p1, p2, p3; // generic zzt parameters
+    int16_t follower, leader;
+
+    Bzzt_Tile under;
 
     char *program;
     size_t program_length;
     size_t program_counter;
-} Bzzt_Param;
+} Bzzt_Stat;
 
 /**
  * @brief A Bzzt object.
@@ -74,10 +79,10 @@ typedef struct Bzzt_Object
     int id;         // Unique object id
     int x, y;       // Coordinates in world units
     Direction dir;  // This object's direction.
-    Bzzt_Cell cell; // Reference to this object's visual data
+    Bzzt_Tile cell; // Reference to this object's visual data
 
     uint8_t bzzt_type;
-    Bzzt_Param *param;
+    Bzzt_Stat *param;
     uint8_t under_type;
     uint8_t under_color;
 
@@ -90,12 +95,13 @@ typedef struct Bzzt_Object
  */
 typedef struct Bzzt_Board
 {
-    int width, height; // Dimensions. Defaults to 80x25
+    char *name;        // Name of this board
+    int width, height; // Dimensions. Defaults to 60x25
 
-    Bzzt_Object **objects;                        // Dynamic array of all objects on this board.
-    int object_count, object_cap, object_next_id; // Array properties
+    Bzzt_Tile *tiles;
 
-    char *name; // Name of this board
+    Bzzt_Stat **stats;
+    int stat_count, stat_cap;
 
     /*for zzt support*/
     uint8_t max_shots;
@@ -116,12 +122,10 @@ typedef struct Bzzt_World
     uint32_t version;
 
     Bzzt_Board **boards;
-    int boards_count;
-    int boards_cap;
-    int boards_current;
-
-    Bzzt_Object *player;
+    int boards_count, boards_cap, boards_current;
     Bzzt_Board *start_board;
+
+    Bzzt_Stat *player;
 
     /*for zzt support*/
     int16_t ammo, gems, health, torches, score;

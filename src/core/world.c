@@ -258,7 +258,7 @@ Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
 {
     if (!file)
     {
-        Debug_Printf(LOG_ENGINE, "Invalid or unprovided ZZT filename.");
+        Debug_Printf(LOG_ENGINE, "Invalid ZZT world.");
         return NULL;
     }
 

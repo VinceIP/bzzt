@@ -311,7 +311,7 @@ static void draw_ui_surface(Renderer *r, UISurface *s)
         int width = s->properties.w;
         for (int i = 0; i < s->cell_count; i++)
         {
-            Bzzt_Cell c = s->cells[i];
+            Bzzt_Tile c = s->cells[i];
             if (c.visible)
             {
                 int x = s->properties.x + (i % width);

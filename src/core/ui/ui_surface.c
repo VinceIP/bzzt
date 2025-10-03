@@ -25,7 +25,7 @@ UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool e
 
     surface->cell_count = w * h;
 
-    surface->cells = calloc(surface->cell_count, sizeof(Bzzt_Cell));
+    surface->cells = calloc(surface->cell_count, sizeof(Bzzt_Tile));
     if (!surface->cells)
         goto fail;
 
