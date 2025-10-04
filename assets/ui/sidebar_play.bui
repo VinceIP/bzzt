@@ -19,7 +19,7 @@ surfaces:
             x: 0
             y: 0
           - type: text
-            value: '\b7\f0      ZZT      '
+            value: '\b7\f0      bzzt      '
             x: 0
             y: 0
           - type: text
@@ -73,3 +73,30 @@ surfaces:
           y: 3
           name: "quit button"
           text: '\f0\b7 Q \f14\b1 Quit'
+          input_bindings:
+            - type: keyboard
+              key: KEY_Q
+          events:
+            on_down: "title_button_quit"
+
+        - type: button
+          x: 2
+          y: 5
+          name: "about button"
+          text: '\f0\b3 A \f15\b1 About bzzt!'
+        - type: button
+          x: 2
+          y: 5
+          name: "high scores button"
+          text: '\f0\b7 H \f14\b1 High Scores'
+        - type: button
+          x: 2
+          y: 5
+          name: "editor button"
+          text: '\f0\b3 E \f14\b1 Board Editor'
+
+        - type: button
+          x: 2
+          y: 7
+          name: "speed button"
+          text: '\f0\b7 S \f14\b1 Game speed:'

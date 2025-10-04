@@ -22,7 +22,24 @@
 #include "bzzt.h"
 #include "raylib.h"
 
-static void load_splash_screen(UI *ui);
+static void action_title_button_quit(UIActionContext *ctx)
+{
+    if (!ctx || !ctx->engine)
+        return;
+
+    Debug_Log(LOG_LEVEL_DEBUG, LOG_UI, "Quit button pressed. Event type: %d", ctx->event_type);
+}
+
+static void engine_register_actions(Engine *e)
+{
+    if (!e || !e->action_registry)
+        return;
+    Debug_Log(LOG_DEBUG, LOG_UI, "Registering engine UI actions...");
+
+    UIAction_Register(e->action_registry, "title_button_quit", action_title_button_quit);
+}
+
+static void load_splash_screen(UI *ui, UIActionRegistry *registry);
 
 static void init_cursor(Engine *e)
 {
@@ -61,24 +78,27 @@ static void init_camera(Engine *e)
     e->camera->cell_height = 32;
 }
 
-static void play_init(Engine *e)
+static void zzt_title_init(Engine *e)
 {
     char *file = "TOWN.ZZT";
     e->world = Bzzt_World_From_ZZT_World(file);
+
     if (!e->world)
     {
         Debug_Printf(LOG_ENGINE, "Error loading ZZT world %s", file);
         return;
     }
+
     if (e->ui)
     {
         UI_Destroy(e->ui);
         e->ui = UI_Create(true, true);
         UI_Load_From_BUI(e->ui, "assets/ui/sidebar_play.bui");
+        UI_Resolve_Button_Actions(e->ui, e->action_registry);
     }
 }
 
-static void load_splash_screen(UI *ui)
+static void load_splash_screen(UI *ui, UIActionRegistry *registry)
 {
     if (!ui)
     {
@@ -93,7 +113,10 @@ static void load_splash_screen(UI *ui)
         return;
     }
     else
+    {
         Debug_Printf(LOG_ENGINE, "Engine reports success loading UI from .bui.");
+        UI_Resolve_Button_Actions(ui, registry);
+    }
 }
 
 void Engine_Set_State(Engine *e, EngineState next)
@@ -116,7 +139,7 @@ void Engine_Set_State(Engine *e, EngineState next)
                 Editor_Destroy(e);
         }
 
-        load_splash_screen(e->ui);
+        load_splash_screen(e->ui, e->action_registry);
         break;
 
     case ENGINE_STATE_EDIT:
@@ -133,10 +156,8 @@ void Engine_Set_State(Engine *e, EngineState next)
 
     case ENGINE_STATE_PLAY:
         if (e->world)
-        {
-            e->world->doUnload = true;
-        }
-        play_init(e);
+            e->world->doUnload;
+        zzt_title_init(e);
         break;
     }
 }
@@ -159,6 +180,8 @@ bool Engine_Init(Engine *e, InputState *in)
     init_cursor(e);
 
     e->ui = UI_Create(true, true);
+    e->action_registry = UIAction_Registry_Create();
+    engine_register_actions(e);
 
     init_camera(e);
 
@@ -181,6 +204,9 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
         e->cursor->position = Handle_Cursor_Move(e->cursor->position, i, m, e->camera, e->camera->viewport.rect);
     }
 
+    if (e->ui)
+        UI_Update_Button_Events(e->ui, e);
+
     switch (e->state)
     {
     case ENGINE_STATE_SPLASH:
@@ -192,7 +218,9 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
 
     case ENGINE_STATE_PLAY:
         if (e->world)
+        {
             Bzzt_World_Update(e->world, i);
+        }
         break;
 
     case ENGINE_STATE_EDIT:
@@ -224,6 +252,9 @@ void Engine_Quit(Engine *e)
 
     if (e->ui)
         UI_Destroy(e->ui);
+
+    if (e->action_registry)
+        UIAction_Registry_Destroy(e->action_registry);
 
     for (int i = 0; i < 8; ++i)
     {

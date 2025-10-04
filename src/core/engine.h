@@ -20,6 +20,7 @@ typedef struct Bzzt_Camera Bzzt_Camera;
 typedef struct InputState InputState;
 typedef struct MouseState MouseState;
 typedef struct Editor Editor;
+typedef struct UIActionRegistry UIActionRegistry;
 
 typedef enum EngineState
 {
@@ -58,6 +59,7 @@ typedef struct Engine
     InputState *input;
     Bzzt_Camera *camera;
     BzztCharset *charsets[8]; // Loaded charsets (slot 0 = default)
+    UIActionRegistry *action_registry;
     // Renderer renderer;
     // Input input;
     bool running;

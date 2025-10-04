@@ -63,6 +63,7 @@ void Renderer_Draw_Board(Renderer *r, Bzzt_World *w, const Bzzt_Board *b)
     if (!r || !b)
         return;
 
+    // tbd - update only changed tiles rather than clear every frame
     clear_board(r, b);
 
     // draw tiles
@@ -70,22 +71,24 @@ void Renderer_Draw_Board(Renderer *r, Bzzt_World *w, const Bzzt_Board *b)
     {
         for (int x = 0; x < b->width; ++x)
         {
+            Bzzt_Stat *stat = Bzzt_Board_Get_Stat_At(w->boards[w->boards_current], x, y);
             Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, x, y);
             if (tile.blink && w->allow_blink && !w->blink_state)
             {
                 // blink off
                 if (tile.element == ZZT_WATER)
                     Renderer_Draw_Cell(r, x, y, ' ', tile.bg, tile.bg);
-                // For blink enabled stats, draw under tile if any
+                // For blink enabled stats, draw under tile if any (mainly for blinking player when paused)
                 else
                 {
-                    Bzzt_Stat *stat = Bzzt_Board_Get_Stat_At(w->boards[w->boards_current], x, y);
                     if (stat)
-                    {
                         Renderer_Draw_Cell(r, x, y, stat->under.glyph, stat->under.fg, stat->under.bg);
-                    }
                 }
             }
+            // Quick hack - skip drawing player if on title screen, but draw its under tile if any
+            else if (w->boards_current == 0 && tile.element == ZZT_PLAYER)
+                Renderer_Draw_Cell(r, x, y, stat->under.glyph, stat->under.fg, stat->under.bg);
+            // Otherwise, draw tile normally
             else
             {
                 Renderer_Draw_Cell(r, x, y, tile.glyph, tile.fg, tile.bg);

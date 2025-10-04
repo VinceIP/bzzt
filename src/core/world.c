@@ -426,8 +426,8 @@ void Bzzt_World_Update(Bzzt_World *w, InputState *in)
             w->blink_timer = 0.0;
         }
     }
-
-    update_player(w, in);
+    if (!w->boards_current == 0)
+        update_player(w, in);
 }
 
 void Bzzt_World_Add_Board(Bzzt_World *w, Bzzt_Board *b)
@@ -477,7 +477,7 @@ Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
         Bzzt_World_Add_Board(bw, b);
     }
 
-    bw->boards_current = (int)zztWorldGetStartboard(zw);
+    bw->boards_current = 0;
     bw->start_board = bw->boards[bw->boards_current];
 
     // verify player exists

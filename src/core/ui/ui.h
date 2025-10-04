@@ -22,6 +22,7 @@ typedef struct Bzzt_Tile Bzzt_Tile;
 typedef struct cJSON cJSON;
 typedef struct UISurface UISurface;
 typedef struct UIOverlay UIOverlay;
+typedef struct UIButton UIButton;
 
 typedef enum ElementType
 {
@@ -73,6 +74,33 @@ typedef enum
     BIND_STR
 } BindType;
 
+typedef enum
+{
+    UI_EVENT_DOWN,
+    UI_EVENT_PRESS,
+    UI_EVENT_RELEASE
+} UIEventType;
+
+typedef struct
+{
+    enum
+    {
+        KEYBOARD,
+        MOUSE,
+        GAMEPAD
+    } type;
+    int code;
+} UIInputBinding;
+
+// Holds all possible input codes for a button, max of 8
+typedef struct
+{
+    UIInputBinding bindings[8];
+    int count;
+} UIInputBindingSet;
+
+#define UI_ACTION_REGISTRY_MAX 256
+
 typedef struct
 {
     const void *ptr;
@@ -119,12 +147,66 @@ typedef struct UIElement_Text
     bool owns_ud;
 } UIElement_Text;
 
+// Exposes UI and engine features to UI actions
+typedef struct Engine Engine;
+typedef struct
+{
+    Engine *engine;
+    UIElement *element;
+    UIButton *button;
+    UIEventType event_type; // Which type of event triggered this
+    void *user_data;        // Optional custom data
+} UIActionContext;
+
+typedef struct
+{
+    enum
+    {
+        C_FUNCTION,
+        BOOP_FUNCTION
+    } type; // Whether an action is bound to an internal C function of a boop function
+
+    union
+    {
+        void (*c_func)(UIActionContext *ctx);
+        struct
+        {
+            void *script_vm;
+            void *function_ref;
+        } boop_func; // tbd
+    } handler;
+} UIActionHandler;
+
+// Stores string names from .bui and resolved handlers for event types
+typedef struct
+{
+    char *on_down_action;
+    char *on_press_action;
+    char *on_release_action;
+
+    UIActionHandler on_down_handler;
+    UIActionHandler on_press_handler;
+    UIActionHandler on_release_handler;
+} UIButtonEvents;
+
+// Global lookup table mapping action name strings from bui to
+// executable handlers.
+typedef struct UIActionRegistry
+{
+    char *action_names[UI_ACTION_REGISTRY_MAX];
+    UIActionHandler handlers[UI_ACTION_REGISTRY_MAX];
+    int count;
+} UIActionRegistry;
+
 typedef struct UIButton
 {
     UIElement base;
     UIButtonAction onClick;
     void *ud;
     UIElement_Text *label;
+
+    UIInputBindingSet input_bindings;
+    UIButtonEvents events;
 } UIButton;
 
 typedef struct UISurface
@@ -205,6 +287,22 @@ UIElement_Text *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool w
 UIButton *UIButton_Create(UIOverlay *o, const char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg, Color_Bzzt bg, bool visible, bool enabled, bool expand, UIAlign align, const char *caption, UIButtonAction cb, void *ud);
 TextBinding *UIBinding_Text_Create(const void *ptr, const char *fmt,
                                    BindType type);
+
+// Initialize UI action registry
+UIActionRegistry *UIAction_Registry_Create(void);
+// Destroy UI action registry
+void UIAction_Registry_Destroy(UIActionRegistry *registry);
+// Register a C function with a string name
+bool UIAction_Register(UIActionRegistry *registry, const char *name, void (*c_func)(UIActionContext *ctx));
+// Resolve action name to handler
+bool UIAction_Resolve(UIActionRegistry *registry, const char *name, UIActionHandler *out_handler);
+// Execute action handler
+void UIAction_Execute(UIActionHandler *handler, UIActionContext *ctx);
+// Resolve all button actions in loaded UI
+void UI_Resolve_Button_Actions(UI *ui, UIActionRegistry *registry);
+// Update all butons to check inputs and fire events
+void UI_Update_Button_Events(UI *ui, Engine *engine);
+
 const char *UIBinding_Text_Format(void *ud);
 
 const char *pass_through_caption(void *ud);

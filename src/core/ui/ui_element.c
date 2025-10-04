@@ -180,3 +180,8 @@ UIButton *UIButton_Create(UIOverlay *o, const char *name, int id, int x, int y, 
     b->label->base.properties.parent = b;
     return b;
 }
+
+UIElement *UIElement_Find_By_Name(UI *ui, const char *e)
+{
+    
+}

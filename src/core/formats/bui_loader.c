@@ -15,11 +15,12 @@
 #include "bzzt.h"
 #include "debugger.h"
 #include <cyaml/cyaml.h>
-#include <stdlib.h>
-#include <string.h>
 #include <strings.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static const char *pass_through(void *ud)
 {
@@ -79,7 +80,20 @@ static void measure_text(const char *str, int *w, int *h)
         *h = lines;
 }
 
-// Using pointers for booleans allows us to detect if the field was omitted in the YAML file.
+typedef struct
+{
+    char *on_down;
+    char *on_press;
+    char *on_release;
+} YamlButtonEvents;
+
+typedef struct
+{
+    char *type;   // keboard, mouse, gamepad
+    char *key;    // key_q, key_enter, etc
+    char *button; // mouse_left, gamepad_button_a, etc
+} YamlInputBinding;
+
 typedef struct
 {
     char *type;
@@ -95,6 +109,11 @@ typedef struct
     bool *visible;
     bool *enabled;
     bool expand;
+
+    YamlInputBinding *input_bindings;
+    unsigned input_bindings_count;
+
+    YamlButtonEvents *events;
 } YamlElement;
 
 typedef struct
@@ -223,7 +242,25 @@ static UIAlign align_from_string(const char *s)
 }
 
 // --- CYAML schema ---
-// Using CYAML_FIELD_BOOL_PTR for 'visible' and 'enabled' allows us to detect when they are omitted.
+
+static const cyaml_schema_field_t input_binding_fields[] = {
+    CYAML_FIELD_STRING_PTR("type", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlInputBinding, type, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_STRING_PTR("key", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlInputBinding, key, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_STRING_PTR("button", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlInputBinding, button, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_END};
+
+static const cyaml_schema_value_t input_binding_schema = {
+    CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, YamlInputBinding, input_binding_fields)};
+
+static const cyaml_schema_field_t button_events_fields[] = {
+    CYAML_FIELD_STRING_PTR("on_down", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlButtonEvents, on_down, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_STRING_PTR("on_press", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlButtonEvents, on_press, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_STRING_PTR("on_release", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlButtonEvents, on_release, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_END};
+
+static const cyaml_schema_value_t button_events_schema = {
+    CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, YamlButtonEvents, button_events_fields)};
+
 static const cyaml_schema_field_t element_fields[] = {
     CYAML_FIELD_STRING_PTR("type", CYAML_FLAG_POINTER, YamlElement, type, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("name", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, name, 0, CYAML_UNLIMITED),
@@ -242,6 +279,11 @@ static const cyaml_schema_field_t element_fields[] = {
     CYAML_FIELD_BOOL_PTR("visible", CYAML_FLAG_OPTIONAL, YamlElement, visible),
     CYAML_FIELD_BOOL_PTR("enabled", CYAML_FLAG_OPTIONAL, YamlElement, enabled),
     CYAML_FIELD_BOOL("expand", CYAML_FLAG_OPTIONAL, YamlElement, expand),
+
+    CYAML_FIELD_SEQUENCE("input_bindings", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, input_bindings,
+                         &input_binding_schema, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_MAPPING_PTR("events", CYAML_FLAG_OPTIONAL, YamlElement, events, button_events_fields),
+
     CYAML_FIELD_END};
 
 static const cyaml_schema_value_t element_schema = {
@@ -289,6 +331,68 @@ static const cyaml_schema_field_t root_fields[] = {CYAML_FIELD_SEQUENCE("surface
 
 static const cyaml_schema_value_t root_schema = {
     CYAML_VALUE_MAPPING(CYAML_FLAG_POINTER, YamlUIRoot, root_fields)};
+
+static int parse_raylib_key(const char *key_str)
+{
+    if (!key_str)
+        return 0;
+
+    // handle common keys
+    // tbd - make case insensitive
+    if (strcmp(key_str, "KEY_Q") == 0)
+        return KEY_Q;
+    if (strcmp(key_str, "KEY_P") == 0)
+        return KEY_P;
+    if (strcmp(key_str, "KEY_E") == 0)
+        return KEY_E;
+    if (strcmp(key_str, "KEY_ENTER") == 0)
+        return KEY_ENTER;
+    if (strcmp(key_str, "KEY_SPACE") == 0)
+        return KEY_SPACE;
+    if (strcmp(key_str, "KEY_ESCAPE") == 0)
+        return KEY_ESCAPE;
+    if (strcmp(key_str, "KEY_Y") == 0)
+        return KEY_Y;
+    if (strcmp(key_str, "KEY_N") == 0)
+        return KEY_N;
+
+    Debug_Log(LOG_LEVEL_WARN, LOG_UI, "Unknown key: %s", key_str);
+    return 0;
+}
+
+static int parse_raylib_mouse_button(const char *button_str)
+{
+    if (!button_str)
+        return 0;
+
+    if (strcmp(button_str, "MOUSE_LEFT") == 0)
+        return MOUSE_LEFT_BUTTON;
+    if (strcmp(button_str, "MOUSE_RIGHT") == 0)
+        return MOUSE_RIGHT_BUTTON;
+    if (strcmp(button_str, "MOUSE_MIDDLE") == 0)
+        return MOUSE_MIDDLE_BUTTON;
+
+    Debug_Log(LOG_LEVEL_WARN, LOG_UI, "Unknown mouse button: %s", button_str);
+    return 0;
+}
+
+static int parse_raylib_gamepad_button(const char *button_str)
+{
+    if (!button_str)
+        return 0;
+
+    if (strcmp(button_str, "GAMEPAD_BUTTON_A") == 0)
+        return GAMEPAD_BUTTON_RIGHT_FACE_DOWN;
+    if (strcmp(button_str, "GAMEPAD_BUTTON_B") == 0)
+        return GAMEPAD_BUTTON_RIGHT_FACE_RIGHT;
+    if (strcmp(button_str, "GAMEPAD_BUTTON_X") == 0)
+        return GAMEPAD_BUTTON_RIGHT_FACE_LEFT;
+    if (strcmp(button_str, "GAMEPAD_BUTTON_Y") == 0)
+        return GAMEPAD_BUTTON_RIGHT_FACE_UP;
+
+    Debug_Log(LOG_LEVEL_WARN, LOG_UI, "Unknown gamepad button: %s", button_str);
+    return 0;
+}
 
 bool UI_Load_From_BUI(UI *ui, const char *path)
 {
@@ -457,6 +561,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                 bool is_elem_visible = ye->visible ? *ye->visible : true;
                 bool is_elem_enabled = ye->enabled ? *ye->enabled : true;
 
+                // handle buttons
                 if (strcasecmp(ye->type, "Button") == 0)
                 {
                     const char *src = ye->text ? ye->text : "";
@@ -465,16 +570,62 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                     UIButton *btn = UIButton_Create(ov, ye->name, eid, ye->x, y_cursor + ye->y, ye->z, ye->w, ye->h, ye->padding,
                                                     elem_fg, elem_bg,
                                                     is_elem_visible, is_elem_enabled,
-                                                    ye->expand, align, caption, NULL, NULL);
+                                                    ye->expand, align, caption,
+                                                    NULL, NULL);
 
                     int mw, mh;
                     measure_text(caption ? caption : "", &mw, &mh);
                     btn->base.properties.w = ye->w > 0 ? ye->w : mw;
                     btn->base.properties.h = ye->h > 0 ? ye->h : mh;
+
+                    if (ye->input_bindings && ye->input_bindings_count > 0)
+                    {
+                        btn->input_bindings.count = 0;
+                        for (int i = 0; i < ye->input_bindings_count && i < 8; ++i)
+                        {
+                            YamlInputBinding *yb = &ye->input_bindings[i];
+                            UIInputBinding *ib =
+                                &btn->input_bindings.bindings[btn->input_bindings.count];
+
+                            if (strcmp(yb->type, "keyboard") == 0)
+                            {
+                                ib->type = KEYBOARD;
+                                ib->code = parse_raylib_key(yb->key);
+                                if (ib->code != 0)
+                                    btn->input_bindings.count++;
+                            }
+                            else if (strcmp(yb->type, "mouse") == 0)
+                            {
+                                ib->type = MOUSE;
+                                ib->code = parse_raylib_mouse_button(yb->button);
+                                if (ib->code != 0)
+                                    btn->input_bindings.count++;
+                            }
+                            else if (strcmp(yb->type, "gamepad") == 0)
+                            {
+                                ib->type = GAMEPAD;
+                                ib->code = parse_raylib_gamepad_button(yb->button);
+                                if (ib->code != 0)
+                                    btn->input_bindings.count++;
+                            }
+                        }
+                    }
+
+                    if (ye->events)
+                    {
+                        if (ye->events->on_down)
+                            btn->events.on_down_action = strdup(ye->events->on_down);
+                        if (ye->events->on_press)
+                            btn->events.on_press_action = strdup(ye->events->on_press);
+                        if (ye->events->on_release)
+                            btn->events.on_release_action = strdup(ye->events->on_release);
+                    }
+
                     UIOverlay_Add_New_Element(ov, (UIElement *)btn);
                     int step = (btn->base.properties.h > 0 ? btn->base.properties.h : 1) + yo->spacing;
                     y_cursor += step;
                 }
+
                 else if (strcasecmp(ye->type, "text") == 0)
                 {
                     char *dup = ye->text ? strdup(ye->text) : strdup("");
