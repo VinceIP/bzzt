@@ -9,7 +9,7 @@
 #include "debugger.h"
 #include "zzt.h"
 
-#define BLINK_RATE_DEFAULT 267 // in ms
+#define BLINK_RATE_DEFAULT 269 // in ms
 
 static bool grow_boards_array(Bzzt_World *w)
 {
@@ -117,7 +117,7 @@ static bool handle_board_edge_move(Bzzt_World *w, int new_x, int new_y)
 
 static bool switch_board_to(Bzzt_World *w, int idx, int x, int y)
 {
-    if (w->boards_count < idx || idx <= 0 || w->boards_current == idx)
+    if (w->boards_count < idx || idx < 0 || w->boards_current == idx)
     {
         Debug_Log(LOG_WARNING, LOG_WORLD, "Tried to transition to invalid board index.");
         return false;
@@ -133,7 +133,7 @@ static bool switch_board_to(Bzzt_World *w, int idx, int x, int y)
     Bzzt_Board *old_board = w->boards[w->boards_current];
     Bzzt_Stat *old_player = old_board->stats[0];
 
-    w->boards_current = w->boards[idx];
+    w->boards_current = idx;
 
     Bzzt_Stat *new_player = new_board->stats[0];
 
@@ -155,13 +155,71 @@ static bool switch_board_to(Bzzt_World *w, int idx, int x, int y)
     return true;
 }
 
-static bool handle_passage_touch(Bzzt_World *w)
+static void set_pause(Bzzt_World *w, bool pause)
 {
-    Bzzt_Stat *passage_stat = Bzzt_Board_Get_Stat_At(board, x, y);
-    if (passage_stat)
+    if (!w)
+        return;
+
+    Bzzt_Board *current_board = w->boards[w->boards_current];
+    Bzzt_Stat *player = current_board->stats[0];
+    Bzzt_Tile tile = Bzzt_Board_Get_Tile(current_board, player->x, player->y);
+
+    if (pause)
+        tile.blink = true;
+    else
+        tile.blink = false;
+
+    Bzzt_Board_Set_Tile(current_board, player->x, player->y, tile);
+
+    w->paused = pause;
+}
+
+static bool handle_passage_touch(Bzzt_World *w, int x, int y)
+{
+    if (!w)
+        return false;
+
+    Bzzt_Board *current_board = w->boards[w->boards_current];
+    Bzzt_Stat *passage = Bzzt_Board_Get_Stat_At(current_board, x, y);
+    if (!passage)
+        return false;
+
+    int target_board_idx = passage->data[2];
+
+    if (target_board_idx <= 0 || target_board_idx >= w->boards_count)
+        return false;
+
+    Bzzt_Board *target_board = w->boards[target_board_idx];
+
+    Bzzt_Tile passage_tile = Bzzt_Board_Get_Tile(current_board, passage->x, passage->y);
+    Color_Bzzt passage_fg = passage_tile.fg;
+    Color_Bzzt passage_bg = passage_tile.bg;
+
+    Bzzt_Stat *matching_passage = NULL;
+
+    int dest_x = target_board->width / 2;  // If no matching passage is found on target board,
+    int dest_y = target_board->height / 2; // coords default to center of board
+
+    // Search for linking passage
+    for (int i = 0; i < target_board->stat_count; ++i)
     {
-        switch_board_to(w, passage_stat->data[3], ) break;
+        Bzzt_Stat *s = target_board->stats[i];
+        Bzzt_Tile t = Bzzt_Board_Get_Tile(target_board, s->x, s->y);
+        if (t.element == ZZT_PASSAGE &&
+            bzzt_color_equals(t.fg, passage_fg) &&
+            bzzt_color_equals(t.bg, passage_bg))
+            matching_passage = s;
     }
+
+    if (matching_passage != NULL)
+    {
+        dest_x = matching_passage->x;
+        dest_y = matching_passage->y;
+    }
+
+    switch_board_to(w, target_board_idx, dest_x, dest_y);
+    set_pause(w, true);
+    return true;
 }
 
 static bool handle_player_touch(Bzzt_World *w, Bzzt_Tile tile, int x, int y)
@@ -181,7 +239,7 @@ static bool handle_player_touch(Bzzt_World *w, Bzzt_Tile tile, int x, int y)
     switch (tile.element)
     {
     case ZZT_PASSAGE:
-        return handle_passage_touch(w);
+        return handle_passage_touch(w, x, y);
     default:
         break;
     }
@@ -236,8 +294,10 @@ static bool do_player_move(Bzzt_World *w, int dx, int dy)
     int new_x = player->x + dx;
     int new_y = player->y + dy;
 
+    // If trying to move past board bounds, try moving to adjacent board
     if (new_x < 0 || new_x >= current_board->width || new_y < 0 || new_y >= current_board->height)
     {
+        // Quirk - if paused, ZZT stays paused during board edge transition
         return handle_board_edge_move(w, new_x, new_y);
     }
 
@@ -262,6 +322,10 @@ static bool do_player_move(Bzzt_World *w, int dx, int dy)
             break;
         }
     }
+
+    // Unpause is player managed to move 1 tile
+    if (w->paused)
+        set_pause(w, false);
 
     return handle_player_touch(w, target, new_x, new_y);
 }

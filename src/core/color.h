@@ -1,12 +1,12 @@
 /**
  * @file color.h
  * @author Vince Patterson (vinceip532@gmail.com)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2025-08-09
- * 
+ *
  * @copyright Copyright (c) 2025
- * 
+ *
  */
 
 #pragma once
@@ -78,4 +78,9 @@ static const Color_Bzzt BZZT_PALETTE[17] = {
 static inline Color_Bzzt bzzt_get_color(uint8_t idx)
 {
     return BZZT_PALETTE[idx & 0x0F];
+}
+
+static inline bool bzzt_color_equals(Color_Bzzt a, Color_Bzzt b)
+{
+    return a.r == b.r && a.g == b.g && a.b == b.b;
 }
