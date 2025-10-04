@@ -30,7 +30,7 @@ UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool e
         goto fail;
 
     UIProperties props = {
-        name, id, x, y, z, w, h, 0, visible, enabled, false, l};
+        name, id, x, y, z, w, h, 0, visible, enabled, false, ALIGN_LEFT, l};
     surface->properties = props;
 
     // Init empty cells

@@ -215,7 +215,10 @@ static void draw_ui_element(Renderer *r, UIOverlay *overlay, UIElement *element,
         if (str)
         {
             // For text elements, the alignment is applied to the text *within* the element's bounding box.
-            draw_text(r, str, abs_x, abs_y, element->properties.w, element->properties.h, text_elem->fg, text_elem->bg, overlay->align);
+            draw_text(r, str, abs_x, abs_y, element->properties.w,
+                      element->properties.h,
+                      text_elem->fg, text_elem->bg,
+                      element->properties.align != ALIGN_LEFT ? element->properties.align : overlay->align);
         }
         break;
     }
@@ -262,7 +265,6 @@ static void draw_ui_overlay(Renderer *r, UISurface *surface, UIOverlay *overlay)
     int overlay_abs_x = surface->properties.x + overlay->properties.x;
     int overlay_abs_y = surface->properties.y + overlay->properties.y;
 
-    // --- REFINED: Define the container for alignment. ---
     // If the overlay has its own width, that's the container. Otherwise, it's the parent surface.
     int container_w = overlay->properties.w > 0 ? overlay->properties.w : surface->properties.w;
 
@@ -275,13 +277,18 @@ static void draw_ui_overlay(Renderer *r, UISurface *surface, UIOverlay *overlay)
 
         int element_abs_x;
 
-        // --- REFINED: Alignment logic is now applied to the ELEMENT'S POSITION. ---
-        if (overlay->align == ALIGN_CENTER)
+        // Use elements align if it's explicitly set, otherwise fall back to align setting of parent overlay
+        UIAlign effective_align =
+            (element->properties.align != ALIGN_LEFT || !overlay->align)
+                ? element->properties.align
+                : overlay->align;
+
+        if (effective_align == ALIGN_CENTER)
         {
             // Center the element within the container, then apply its own x as an offset.
             element_abs_x = overlay_abs_x + (container_w - element->properties.w) / 2 + element->properties.x;
         }
-        else if (overlay->align == ALIGN_RIGHT)
+        else if (effective_align == ALIGN_RIGHT)
         {
             // Right-align the element, then apply its own x as an offset.
             element_abs_x = overlay_abs_x + container_w - element->properties.w + element->properties.x;

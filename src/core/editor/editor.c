@@ -56,7 +56,7 @@ static void handle_keys(Engine *e, InputState *in)
 
             const char *prompt_str = "Really quit?\n(Y/N)";
             char *dup_prompt = strdup(prompt_str);
-            UIElement_Text *prompt_text = UIText_Create(1, 4, COLOR_WHITE, COLOR_TRANSPARENT, false, pass_through_caption, dup_prompt, true);
+            UIElement_Text *prompt_text = UIText_Create(1, 4, COLOR_WHITE, COLOR_TRANSPARENT, false, ALIGN_LEFT, pass_through_caption, dup_prompt, true);
             UIOverlay_Add_New_Element(overlay, (UIElement *)prompt_text);
 
             e->editor->state = EDITOR_STATE_WAITING_FOR_KEY;

@@ -70,6 +70,12 @@ static void play_init(Engine *e)
         Debug_Printf(LOG_ENGINE, "Error loading ZZT world %s", file);
         return;
     }
+    if (e->ui)
+    {
+        UI_Destroy(e->ui);
+        e->ui = UI_Create(true, true);
+        UI_Load_From_BUI(e->ui, "assets/ui/sidebar_play.bui");
+    }
 }
 
 static void load_splash_screen(UI *ui)

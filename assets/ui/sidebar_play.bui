@@ -1,0 +1,75 @@
+# -- sidebar_play.bui
+
+surfaces:
+  - name: "Sidebar Header"
+    layer: 0
+    width: 20
+    height: 6
+    fg: blue
+    bg: blue
+    x: 60
+    y: 0
+    z: 0
+    overlays:
+      - name: "banner"
+        align: center
+        elements:
+          - type: text
+            value: '\f15\b1- - - - -'
+            x: 0
+            y: 0
+          - type: text
+            value: '\b7\f0      ZZT      '
+            x: 0
+            y: 0
+          - type: text
+            value: '\f15\b1- - - - -'
+            x: 0
+            y: 0
+
+  - name: "Sidebar Title Screen"
+    layer: 0
+    width: 20
+    height: 20
+    fg: blue
+    bg: blue
+    x: 60
+    y: 5
+    z: 0
+    overlays:
+    - name: "Title Screen Content"
+      align: left
+      y: 0
+      elements:
+        - type: text
+          align: center
+          value: '\f11\b1Pick a command:'
+
+        - type: button
+          align: left
+          name: "world button"
+          x: 2
+          y: 1
+          text: '\f0\b3 W \f14\b1 World:'
+
+        - type: text
+          align: right
+          x: -3
+          y: 1
+          value: '\f15\b1 234567'
+        
+        - type: button
+          x: 2
+          y: 3
+          name: "play button"
+          text: '\f0\b7 P \f15\b1 Play'
+        - type: button
+          x: 2
+          y: 3
+          name: "restore button"
+          text: '\f0\b3 R \f14\b1 Restore game'
+        - type: button
+          x: 2
+          y: 3
+          name: "quit button"
+          text: '\f0\b7 Q \f14\b1 Quit'

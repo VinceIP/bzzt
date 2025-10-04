@@ -94,6 +94,7 @@ typedef struct UIProperties
     bool visible;
     bool enabled;
     bool expand;
+    UIAlign align;
     void *parent;
 } UIProperties;
 
@@ -195,13 +196,13 @@ void UIOverlay_Add_New_Element(UIOverlay *o, UIElement *e);
 void UIOverlay_Print(UIOverlay *ov, Color_Bzzt fg, Color_Bzzt bg, bool wrap, const char *fmt, ...);
 UIOverlay *UIOverlay_Find_By_Name(UI *ui, const char *name);
 
-UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg, Color_Bzzt bg, bool visible, bool enabled, bool expand, ElementType type);
+UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg, Color_Bzzt bg, bool visible, bool enabled, bool expand, UIAlign align, ElementType type);
 void UIElement_Update(UIElement *e);
 void UIElement_Destroy(UIElement *e);
 UIElement *UIElement_Find_By_Name(UI *ui, const char *e);
 
-UIElement_Text *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool wrap, const char *(*cb)(void *ud), void *ud, bool owns_ud);
-UIButton *UIButton_Create(UIOverlay *o, const char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg, Color_Bzzt bg, bool visible, bool enabled, bool expand, const char *caption, UIButtonAction cb, void *ud);
+UIElement_Text *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool wrap, UIAlign align, const char *(*cb)(void *ud), void *ud, bool owns_ud);
+UIButton *UIButton_Create(UIOverlay *o, const char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg, Color_Bzzt bg, bool visible, bool enabled, bool expand, UIAlign align, const char *caption, UIButtonAction cb, void *ud);
 TextBinding *UIBinding_Text_Create(const void *ptr, const char *fmt,
                                    BindType type);
 const char *UIBinding_Text_Format(void *ud);

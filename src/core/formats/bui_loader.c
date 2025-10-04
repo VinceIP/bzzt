@@ -91,6 +91,7 @@ typedef struct
     char *value;
     char *fg;
     char *bg;
+    char *align;
     bool *visible;
     bool *enabled;
     bool expand;
@@ -237,6 +238,7 @@ static const cyaml_schema_field_t element_fields[] = {
     CYAML_FIELD_STRING_PTR("value", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, value, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("fg", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, fg, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("bg", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, bg, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_STRING_PTR("align", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, align, 0, CYAML_UNLIMITED),
     CYAML_FIELD_BOOL_PTR("visible", CYAML_FLAG_OPTIONAL, YamlElement, visible),
     CYAML_FIELD_BOOL_PTR("enabled", CYAML_FLAG_OPTIONAL, YamlElement, enabled),
     CYAML_FIELD_BOOL("expand", CYAML_FLAG_OPTIONAL, YamlElement, expand),
@@ -287,8 +289,6 @@ static const cyaml_schema_field_t root_fields[] = {CYAML_FIELD_SEQUENCE("surface
 
 static const cyaml_schema_value_t root_schema = {
     CYAML_VALUE_MAPPING(CYAML_FLAG_POINTER, YamlUIRoot, root_fields)};
-
-// --- Loader --------------------------------------------------------
 
 bool UI_Load_From_BUI(UI *ui, const char *path)
 {
@@ -461,11 +461,11 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                 {
                     const char *src = ye->text ? ye->text : "";
                     char *caption = strdup(src);
-
+                    UIAlign align = align_from_string(ye->align);
                     UIButton *btn = UIButton_Create(ov, ye->name, eid, ye->x, y_cursor + ye->y, ye->z, ye->w, ye->h, ye->padding,
                                                     elem_fg, elem_bg,
                                                     is_elem_visible, is_elem_enabled,
-                                                    ye->expand, caption, NULL, NULL);
+                                                    ye->expand, align, caption, NULL, NULL);
 
                     int mw, mh;
                     measure_text(caption ? caption : "", &mw, &mh);
@@ -478,8 +478,9 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                 else if (strcasecmp(ye->type, "text") == 0)
                 {
                     char *dup = ye->text ? strdup(ye->text) : strdup("");
+                    UIAlign align = align_from_string(ye->align);
 
-                    UIElement_Text *txt = UIText_Create(ye->x, y_cursor + ye->y, elem_fg, elem_bg, false, pass_through, dup, true);
+                    UIElement_Text *txt = UIText_Create(ye->x, y_cursor + ye->y, elem_fg, elem_bg, false, align, pass_through, dup, true);
                     txt->base.properties.name = ye->name ? strdup(ye->name) : NULL;
                     txt->base.properties.id = eid;
                     txt->base.properties.z = ye->z;
