@@ -1,6 +1,7 @@
 # -- sidebar_play.bui
 
 surfaces:
+  # - header - always visible
   - name: "Sidebar Header"
     layer: 0
     width: 20
@@ -26,6 +27,11 @@ surfaces:
             value: '\f15\b1- - - - -'
             x: 0
             y: 0
+          - type: text
+            align: center
+            x: 0
+            y: 1
+            value: '\f11\b1Pick a command:'
 
   - name: "Sidebar Title Screen"
     layer: 0
@@ -37,14 +43,42 @@ surfaces:
     y: 5
     z: 0
     overlays:
-    - name: "Title Screen Content"
+    - name: "Title Confirm Quit"
       align: left
       y: 0
+      enabled: false
+      visible: false
       elements:
         - type: text
           align: center
-          value: '\f11\b1Pick a command:'
+          y: 1
+          value: '\f15\b1Quit to main menu?'
+        - type: button
+          name: "confirm quit button"
+          text: '\f0\b3 Y \f15\b1 Yes'
+          x: 2
+          y: 2
+          input_bindings: 
+            - type: keyboard
+              key: KEY_Y
+          events:
+            on_down: "btn_confirm_quit"
+            
+        - type: button
+          name: "cancel quit button"
+          text: '\f0\b7 N \f15\b1 No'
+          x: 2
+          y: 2
+          input_bindings:
+            - type: keyboard
+              key: KEY_N
+          events:
+            on_down: "btn_toggle_quit"
 
+    - name: "Title Screen Buttons"
+      align: left
+      y: 0
+      elements:
         - type: button
           align: left
           name: "world button"
@@ -63,6 +97,13 @@ surfaces:
           y: 3
           name: "play button"
           text: '\f0\b7 P \f15\b1 Play'
+          input_bindings:
+            - type: keyboard
+              key: KEY_P
+          events:
+            on_down: "btn_title_press_play"
+
+
         - type: button
           x: 2
           y: 3
@@ -77,7 +118,7 @@ surfaces:
             - type: keyboard
               key: KEY_Q
           events:
-            on_down: "title_button_quit"
+            on_down: "btn_toggle_quit"
 
         - type: button
           x: 2

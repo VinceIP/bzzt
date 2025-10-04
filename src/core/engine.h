@@ -51,6 +51,7 @@ typedef struct Cursor
 typedef struct Engine
 {
     EngineState state;
+    EngineState pending_state;
     UI *ui;
     Editor *editor;
     Bzzt_World *world;
@@ -66,6 +67,7 @@ typedef struct Engine
     bool firstBoot;
     bool debugShow;
     bool edit_mode_init_done;
+    bool has_pending_state;
 } Engine;
 
 bool Engine_Init(Engine *e, InputState *in);

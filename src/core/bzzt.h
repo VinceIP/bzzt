@@ -112,6 +112,8 @@ typedef struct Bzzt_Board
     char message[59];             // board entry message
     uint8_t reenter_x, reenter_y; // Re-enter coordinates
     int16_t time_limit;
+
+    int idx;
 } Bzzt_Board;
 
 typedef struct Bzzt_World
@@ -124,6 +126,7 @@ typedef struct Bzzt_World
     Bzzt_Board **boards;
     int boards_count, boards_cap, boards_current;
     Bzzt_Board *start_board;
+    uint16_t start_board_idx;
 
     bool allow_blink, blink_state;
     int blink_delay_rate; // In ms
@@ -220,8 +223,8 @@ void Bzzt_World_Add_Board(Bzzt_World *world, Bzzt_Board *board);
 int Bzzt_World_Load(Bzzt_World *w, const char *path);
 int Bzzt_World_Save(Bzzt_World *w, const char *path);
 void Bzzt_World_Destroy(Bzzt_World *w);
-
 void Bzzt_World_Update(Bzzt_World *w, InputState *in);
+bool Bzzt_World_Switch_Board_To(Bzzt_World *w, int board_idx, int x, int y);
 
 // Convert a ZZT world to a Bzzt world
 Bzzt_World *Bzzt_World_From_ZZT_World(char *file);

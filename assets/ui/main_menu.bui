@@ -36,11 +36,23 @@ surfaces:
             text: '\f10P\f15lay'
             bg: cyan
             fg: yellow
+            input_bindings:
+              - type: keyboard
+                key: KEY_P
+            events:
+              on_down: "splash_press_play"
+
           - type: Button
             bg: cyan
             name: "btnEditor"
             text: '\f10E\f15ditor'
+
           - type: Button
             name: "btnQuit"
             text: '\f2Q\f15uit'
             bg: cyan
+            input_bindings:
+              - type: keyboard
+                key: KEY_Q
+            events:
+              on_down: "splash_press_quit"

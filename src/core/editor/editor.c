@@ -104,14 +104,8 @@ void Editor_Update(Engine *e, InputState *in)
     handle_keys(e, in);
 }
 
-void Editor_Destroy(Engine *e)
+void Editor_Destroy(Editor *editor)
 {
-    if (!e)
-        return;
-
-    if (!e->editor)
-        return;
-
-    free(e->editor);
-    e->editor = NULL;
+    if(!editor) return;
+    free(editor);
 }

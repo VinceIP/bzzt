@@ -302,6 +302,7 @@ void UIAction_Execute(UIActionHandler *handler, UIActionContext *ctx);
 void UI_Resolve_Button_Actions(UI *ui, UIActionRegistry *registry);
 // Update all butons to check inputs and fire events
 void UI_Update_Button_Events(UI *ui, Engine *engine);
+void UI_Reset_Button_State(void);
 
 const char *UIBinding_Text_Format(void *ud);
 

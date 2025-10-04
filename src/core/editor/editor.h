@@ -30,4 +30,4 @@ typedef struct Editor
 
 void Editor_Update(Engine *, InputState *);
 void Editor_Init(Engine *);
-void Editor_Destroy(Engine *);
+void Editor_Destroy(Editor *editor);

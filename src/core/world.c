@@ -440,6 +440,15 @@ void Bzzt_World_Add_Board(Bzzt_World *w, Bzzt_Board *b)
     w->boards[w->boards_count++] = b;
 }
 
+// Exposed version of this
+bool Bzzt_World_Switch_Board_To(Bzzt_World *w, int board_idx, int x, int y)
+{
+    if (!w || w->boards_current == board_idx || w->boards_count < board_idx)
+        return false;
+
+    switch_board_to(w, board_idx, x, y);
+}
+
 Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
 {
     if (!file)
@@ -474,11 +483,15 @@ Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
     {
         zztBoardSelect(zw, i);
         Bzzt_Board *b = Bzzt_Board_From_ZZT_Board(zw);
+        if (!b)
+            return NULL;
+        b->idx = i;
         Bzzt_World_Add_Board(bw, b);
     }
 
     bw->boards_current = 0;
-    bw->start_board = bw->boards[bw->boards_current];
+    bw->start_board_idx = zztWorldGetStartboard(zw);
+    bw->start_board = bw->boards[bw->start_board_idx];
 
     // verify player exists
     if (bw->start_board->stat_count > 0)

@@ -15,6 +15,10 @@
 #include "debugger.h"
 #include "engine.h"
 
+static bool keys_down_last_frame[512] = {0};
+static bool mouse_down_last_frame[8] = {0};
+static bool gamepad_down_last_frame[32] = {0};
+
 // Initialize UI action registry
 UIActionRegistry *UIAction_Registry_Create(void)
 {
@@ -214,40 +218,39 @@ void UI_Update_Button_Events(UI *ui, Engine *engine)
 
                     UIButton *btn = (UIButton *)elem;
 
-                    bool is_active = false;
+                    // Check if ANY of this button's bindings are active
+                    bool is_down_now = false;
+                    bool was_down_last = false;
+
                     for (int i = 0; i < btn->input_bindings.count; ++i)
                     {
                         UIInputBinding *binding = &btn->input_bindings.bindings[i];
+
                         switch (binding->type)
                         {
                         case KEYBOARD:
                             if (IsKeyDown(binding->code))
-                                is_active = true;
+                                is_down_now = true;
+                            if (keys_down_last_frame[binding->code])
+                                was_down_last = true;
                             break;
+
                         case MOUSE:
-                            // tbd: check mouse pos over button
+                            // TODO: check mouse pos over button
                             if (IsMouseButtonDown(binding->code))
-                                is_active = true;
+                                is_down_now = true;
+                            if (mouse_down_last_frame[binding->code])
+                                was_down_last = true;
                             break;
+
                         case GAMEPAD:
                             if (IsGamepadButtonDown(0, binding->code))
-                                is_active = true;
+                                is_down_now = true;
+                            if (gamepad_down_last_frame[binding->code])
+                                was_down_last = true;
                             break;
                         }
-
-                        if (is_active)
-                            break;
                     }
-
-                    static bool was_pressed[4096] = {0};
-                    int btn_id = btn->base.properties.id;
-
-                    // likely a problem
-                    if (btn_id < 0 || btn_id >= 4096)
-                        continue;
-
-                    bool was_pressed_last = was_pressed[btn_id];
-                    bool is_pressed_now = is_active;
 
                     UIActionContext ctx = {
                         .engine = engine,
@@ -255,36 +258,50 @@ void UI_Update_Button_Events(UI *ui, Engine *engine)
                         .button = btn,
                         .user_data = NULL};
 
-                    // Fire on_down event
-                    if (is_pressed_now && !was_pressed_last)
+                    // Fire on_down event (key transitioned from UP to DOWN)
+                    if (is_down_now && !was_down_last)
                     {
                         ctx.event_type = UI_EVENT_DOWN;
-                        // if (btn->events.on_down_handler.type != 0)
                         if (btn->events.on_down_handler.handler.c_func)
                             UIAction_Execute(&btn->events.on_down_handler, &ctx);
                     }
 
-                    // Fire on_press event
-                    if (is_pressed_now && was_pressed_last)
+                    // Fire on_press event (key held down)
+                    if (is_down_now && was_down_last)
                     {
                         ctx.event_type = UI_EVENT_PRESS;
-                        // if (btn->events.on_press_handler.type != 0)
                         if (btn->events.on_press_handler.handler.c_func)
                             UIAction_Execute(&btn->events.on_press_handler, &ctx);
                     }
 
-                    // Fire on_release event
-                    if (!is_pressed_now && was_pressed_last)
+                    // Fire on_release event (key transitioned from DOWN to UP)
+                    if (!is_down_now && was_down_last)
                     {
                         ctx.event_type = UI_EVENT_RELEASE;
-                        // if (btn->events.on_release_handler.type != 0)
                         if (btn->events.on_release_handler.handler.c_func)
                             UIAction_Execute(&btn->events.on_release_handler, &ctx);
                     }
 
-                    was_pressed[btn_id] = is_pressed_now;
+                    //was_pressed[btn_id] = is_pressed_now;
                 }
             }
         }
+    }
+    UI_Reset_Button_State();
+}
+
+void UI_Reset_Button_State(void)
+{
+    for (int i = 0; i < 512; ++i)
+    {
+        keys_down_last_frame[i] = IsKeyDown(i);
+    }
+    for (int i = 0; i < 8; ++i)
+    {
+        mouse_down_last_frame[i] = IsMouseButtonDown(i);
+    }
+    for (int i = 0; i < 32; ++i)
+    {
+        gamepad_down_last_frame[i] = IsGamepadButtonDown(0, i);
     }
 }

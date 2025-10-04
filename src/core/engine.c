@@ -22,21 +22,71 @@
 #include "bzzt.h"
 #include "raylib.h"
 
-static void action_title_button_quit(UIActionContext *ctx)
+static void btn_title_press_play(UIActionContext *ctx)
+{
+    if (!ctx || !ctx->engine || !ctx->engine->world)
+        return;
+
+    Debug_Printf(LOG_ENGINE, "pressed");
+    Bzzt_World *world = ctx->engine->world;
+    Bzzt_Board *start_board = world->start_board;
+    Bzzt_Stat *player = start_board->stats[0];
+    int idx = start_board->idx;
+    Debug_Printf(LOG_ENGINE, "idx: %d", idx);
+
+    Bzzt_World_Switch_Board_To(ctx->engine->world, idx, player->x, player->y);
+}
+
+static void btn_toggle_quit(UIActionContext *ctx)
 {
     if (!ctx || !ctx->engine)
         return;
 
-    Debug_Log(LOG_LEVEL_DEBUG, LOG_UI, "Quit button pressed. Event type: %d", ctx->event_type);
+    UIOverlay *overlay_buttons = UIOverlay_Find_By_Name(ctx->engine->ui, "Title Screen Buttons");
+    UIOverlay *overlay_confirm_quit_buttons = UIOverlay_Find_By_Name(ctx->engine->ui, "Title Confirm Quit");
+    if (overlay_buttons && overlay_confirm_quit_buttons)
+    {
+        overlay_buttons->properties.enabled = !overlay_buttons->properties.enabled;
+        overlay_buttons->properties.visible = !overlay_buttons->properties.visible;
+        overlay_confirm_quit_buttons->properties.enabled = !overlay_confirm_quit_buttons->properties.enabled;
+        overlay_confirm_quit_buttons->properties.visible = !overlay_confirm_quit_buttons->properties.visible;
+    }
+}
+
+static void btn_confirm_quit(UIActionContext *ctx)
+{
+    if (!ctx || !ctx->engine)
+        return;
+
+    Engine_Set_State(ctx->engine, ENGINE_STATE_SPLASH);
+}
+
+static void splash_press_play(UIActionContext *ctx)
+{
+    if (!ctx || !ctx->engine)
+        return;
+    Engine_Set_State(ctx->engine, ENGINE_STATE_PLAY);
+}
+
+static void splash_press_quit(UIActionContext *ctx)
+{
+    if (!ctx || !ctx->engine)
+        return;
+    Debug_Log(LOG_LEVEL_DEBUG, LOG_ENGINE, "Quitting");
+    ctx->engine->input->quit = true;
 }
 
 static void engine_register_actions(Engine *e)
 {
     if (!e || !e->action_registry)
         return;
-    Debug_Log(LOG_DEBUG, LOG_UI, "Registering engine UI actions...");
+    Debug_Log(LOG_LEVEL_DEBUG, LOG_UI, "Registering engine UI actions...");
 
-    UIAction_Register(e->action_registry, "title_button_quit", action_title_button_quit);
+    UIAction_Register(e->action_registry, "btn_confirm_quit", btn_confirm_quit);
+    UIAction_Register(e->action_registry, "btn_toggle_quit", btn_toggle_quit);
+    UIAction_Register(e->action_registry, "btn_title_press_play", btn_title_press_play);
+    UIAction_Register(e->action_registry, "splash_press_play", splash_press_play);
+    UIAction_Register(e->action_registry, "splash_press_quit", splash_press_quit);
 }
 
 static void load_splash_screen(UI *ui, UIActionRegistry *registry);
@@ -95,6 +145,7 @@ static void zzt_title_init(Engine *e)
         e->ui = UI_Create(true, true);
         UI_Load_From_BUI(e->ui, "assets/ui/sidebar_play.bui");
         UI_Resolve_Button_Actions(e->ui, e->action_registry);
+        UI_Reset_Button_State();
     }
 }
 
@@ -119,11 +170,13 @@ static void load_splash_screen(UI *ui, UIActionRegistry *registry)
     }
 }
 
-void Engine_Set_State(Engine *e, EngineState next)
+static void apply_state_change(Engine *e)
 {
-    if (!e)
+    if (!e || !e->has_pending_state)
         return;
 
+    e->has_pending_state = false;
+    EngineState next = e->pending_state;
     e->state = next;
 
     switch (next)
@@ -134,9 +187,14 @@ void Engine_Set_State(Engine *e, EngineState next)
             if (e->ui)
                 UI_Destroy(e->ui);
             e->ui = UI_Create(true, true);
+            if (!e->ui)
+            {
+                Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed creating new UI after state change.");
+                return;
+            }
 
             if (e->editor)
-                Editor_Destroy(e);
+                Editor_Destroy(e->editor);
         }
 
         load_splash_screen(e->ui, e->action_registry);
@@ -157,9 +215,24 @@ void Engine_Set_State(Engine *e, EngineState next)
     case ENGINE_STATE_PLAY:
         if (e->world)
             e->world->doUnload;
+        if (e->editor)
+        {
+            Editor_Destroy(e->editor);
+            e->editor = NULL;
+        }
         zzt_title_init(e);
         break;
     }
+}
+
+void Engine_Set_State(Engine *e, EngineState next)
+{
+    if (!e)
+        return;
+
+    e->pending_state = next;
+    e->has_pending_state = true;
+    Debug_Log(LOG_LEVEL_DEBUG, LOG_ENGINE, "State change queued: %d -> %d", e->state, e->pending_state);
 }
 
 bool Engine_Init(Engine *e, InputState *in)
@@ -171,11 +244,13 @@ bool Engine_Init(Engine *e, InputState *in)
     Debug_Printf(LOG_ENGINE, "Initializing bzzt engine.");
 
     e->world = NULL;
+    e->editor = NULL;
     e->running = true;
     e->debugShow = false;
     e->edit_mode_init_done = false;
     e->input = in;
     e->firstBoot = true;
+    e->has_pending_state = false;
 
     init_cursor(e);
 
@@ -190,6 +265,7 @@ bool Engine_Init(Engine *e, InputState *in)
         e->charsets[i] = NULL;
 
     Engine_Set_State(e, ENGINE_STATE_SPLASH);
+    apply_state_change(e);
 
     e->firstBoot = false;
     return true;
@@ -210,10 +286,6 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
     switch (e->state)
     {
     case ENGINE_STATE_SPLASH:
-        if (i->E_pressed)
-            Engine_Set_State(e, ENGINE_STATE_EDIT);
-        else if (i->P_pressed)
-            Engine_Set_State(e, ENGINE_STATE_PLAY);
         break;
 
     case ENGINE_STATE_PLAY:
@@ -230,6 +302,8 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
     default:
         break;
     }
+
+    apply_state_change(e);
 }
 
 void Engine_Quit(Engine *e)

@@ -60,10 +60,29 @@ void UIElement_Destroy(UIElement *e)
     case UI_ELEM_BUTTON:
     {
         UIButton *b = (UIButton *)e;
+
+        if (b->events.on_down_action)
+        {
+            free(b->events.on_down_action);
+            b->events.on_down_action = NULL;
+        }
+        if (b->events.on_press_action)
+        {
+            free(b->events.on_press_action);
+            b->events.on_press_action = NULL;
+        }
+        if (b->events.on_release_action)
+        {
+            free(b->events.on_release_action);
+            b->events.on_release_action = NULL;
+        }
+
+        // Free label and name
         if (b->label)
             UIElement_Destroy((UIElement *)b->label);
         if (b->base.properties.name)
             free(b->base.properties.name);
+
         free(b);
         break;
     }
@@ -183,5 +202,4 @@ UIButton *UIButton_Create(UIOverlay *o, const char *name, int id, int x, int y, 
 
 UIElement *UIElement_Find_By_Name(UI *ui, const char *e)
 {
-    
 }
