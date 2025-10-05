@@ -157,7 +157,7 @@ UIOverlay *UIOverlay_Find_By_Name(UI *ui, const char *name)
             for (int k = 0; k < surface->overlays_count; ++k)
             {
                 UIOverlay *overlay = surface->overlays[k];
-                if (overlay->properties.name && strcmp(overlay->properties.name, name) == 0)
+                if (overlay && overlay->properties.name && strcmp(overlay->properties.name, name) == 0)
                 {
                     return overlay;
                 }

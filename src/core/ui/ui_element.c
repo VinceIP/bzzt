@@ -90,7 +90,7 @@ void UIElement_Destroy(UIElement *e)
     case UI_ELEM_TEXT:
     {
         UIElement_Text *t = (UIElement_Text *)e;
-        if (t->ud)
+        if (t->ud && t->owns_ud)
             free(t->ud);
         if (e->properties.name)
             free(e->properties.name);
@@ -200,6 +200,30 @@ UIButton *UIButton_Create(UIOverlay *o, const char *name, int id, int x, int y, 
     return b;
 }
 
-UIElement *UIElement_Find_By_Name(UI *ui, const char *e)
+UIElement *UIElement_Find_By_Name(UI *ui, const char *name)
 {
+    if (!ui || !name)
+        return NULL;
+
+    for (int i = 0; i < ui->layer_count; ++i)
+    {
+        UILayer *layer = ui->layers[i];
+        for (int j = 0; j < layer->surface_count; ++j)
+        {
+            UISurface *surface = layer->surfaces[j];
+            for (int k = 0; k < surface->overlays_count; ++k)
+            {
+                UIOverlay *overlay = surface->overlays[k];
+                for (int l = 0; l < overlay->elements_count; ++l)
+                {
+                    UIElement *elem = overlay->elements[l];
+                    if (elem && elem->properties.name && strcmp(elem->properties.name, name) == 0)
+                        return elem;
+                }
+            }
+        }
+    }
+
+    Debug_Log(LOG_LEVEL_WARN, LOG_UI, "Failed to find a UIElement named '%s'", name);
+    return NULL;
 }

@@ -11,6 +11,7 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include "debugger.h"
 #include "engine.h"
 #include "input.h"
@@ -22,18 +23,25 @@
 #include "bzzt.h"
 #include "raylib.h"
 
+static UIOverlay *overlay_title_screen_display;
+static UIOverlay *overlay_play_screen_display;
+static UIOverlay *overlay_confirm_quit_buttons;
+static UIElement_Text *text_quit;
+
 static void btn_title_press_play(UIActionContext *ctx)
 {
     if (!ctx || !ctx->engine || !ctx->engine->world)
         return;
 
-    Debug_Printf(LOG_ENGINE, "pressed");
+    overlay_play_screen_display->properties.enabled = true;
+    overlay_play_screen_display->properties.visible = true;
+    overlay_title_screen_display->properties.enabled = false;
+    overlay_title_screen_display->properties.visible = false;
+
     Bzzt_World *world = ctx->engine->world;
     Bzzt_Board *start_board = world->start_board;
     Bzzt_Stat *player = start_board->stats[0];
     int idx = start_board->idx;
-    Debug_Printf(LOG_ENGINE, "idx: %d", idx);
-
     Bzzt_World_Switch_Board_To(ctx->engine->world, idx, player->x, player->y);
 }
 
@@ -42,15 +50,16 @@ static void btn_toggle_quit(UIActionContext *ctx)
     if (!ctx || !ctx->engine)
         return;
 
-    UIOverlay *overlay_buttons = UIOverlay_Find_By_Name(ctx->engine->ui, "Title Screen Buttons");
-    UIOverlay *overlay_confirm_quit_buttons = UIOverlay_Find_By_Name(ctx->engine->ui, "Title Confirm Quit");
-    if (overlay_buttons && overlay_confirm_quit_buttons)
-    {
-        overlay_buttons->properties.enabled = !overlay_buttons->properties.enabled;
-        overlay_buttons->properties.visible = !overlay_buttons->properties.visible;
-        overlay_confirm_quit_buttons->properties.enabled = !overlay_confirm_quit_buttons->properties.enabled;
-        overlay_confirm_quit_buttons->properties.visible = !overlay_confirm_quit_buttons->properties.visible;
-    }
+    int board_idx = ctx->engine->world->boards_current;
+    if (board_idx == 0)
+        strcpy(text_quit->ud, "Quit to title?");
+    else
+        strcpy(text_quit->ud, "End the game?");
+
+    overlay_title_screen_display->properties.enabled = !overlay_title_screen_display->properties.enabled;
+    overlay_title_screen_display->properties.visible = !overlay_title_screen_display->properties.visible;
+    overlay_confirm_quit_buttons->properties.enabled = !overlay_confirm_quit_buttons->properties.enabled;
+    overlay_confirm_quit_buttons->properties.visible = !overlay_confirm_quit_buttons->properties.visible;
 }
 
 static void btn_confirm_quit(UIActionContext *ctx)
@@ -58,7 +67,17 @@ static void btn_confirm_quit(UIActionContext *ctx)
     if (!ctx || !ctx->engine)
         return;
 
-    Engine_Set_State(ctx->engine, ENGINE_STATE_SPLASH);
+    int board_idx = ctx->engine->world->boards_current;
+    if (board_idx == 0)
+        Engine_Set_State(ctx->engine, ENGINE_STATE_SPLASH);
+    else
+    {
+        // Change to title board
+        Bzzt_Board *title_board = ctx->engine->world->boards[0];
+        Bzzt_Stat *player = title_board->stats[0];
+        Bzzt_World_Switch_Board_To(ctx->engine->world, 0, player->x, player->y);
+        btn_toggle_quit(ctx); // And disable the prompt
+    }
 }
 
 static void splash_press_play(UIActionContext *ctx)
@@ -74,6 +93,21 @@ static void splash_press_quit(UIActionContext *ctx)
         return;
     Debug_Log(LOG_LEVEL_DEBUG, LOG_ENGINE, "Quitting");
     ctx->engine->input->quit = true;
+}
+
+// Attempt to find all sidebar bui components used for zzt play mode
+// fix this later
+static bool find_sidebar_components(UI *ui)
+{
+    if (!ui)
+        return false;
+
+    overlay_title_screen_display = UIOverlay_Find_By_Name(ui, "Title Screen Display");
+    overlay_play_screen_display = UIOverlay_Find_By_Name(ui, "play screen display");
+    overlay_confirm_quit_buttons = UIOverlay_Find_By_Name(ui, "Title Confirm Quit");
+    text_quit = UIElement_Find_By_Name(ui, "quit prompt text");
+
+    return true;
 }
 
 static void engine_register_actions(Engine *e)
@@ -146,6 +180,8 @@ static void zzt_title_init(Engine *e)
         UI_Load_From_BUI(e->ui, "assets/ui/sidebar_play.bui");
         UI_Resolve_Button_Actions(e->ui, e->action_registry);
         UI_Reset_Button_State();
+        if (!find_sidebar_components(e->ui))
+            Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to find all sidebar UI components.");
     }
 }
 
@@ -195,6 +231,12 @@ static void apply_state_change(Engine *e)
 
             if (e->editor)
                 Editor_Destroy(e->editor);
+        }
+
+        if (e->world)
+        {
+            Bzzt_World_Destroy(e->world);
+            e->world = NULL;
         }
 
         load_splash_screen(e->ui, e->action_registry);

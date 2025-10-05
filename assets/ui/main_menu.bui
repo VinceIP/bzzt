@@ -9,6 +9,7 @@ surfaces:
     x: 36
     y: 8
     z: 0
+
     overlays:
       - name: "banner text"
         align: center
@@ -16,6 +17,7 @@ surfaces:
           - type: text
             name: "banner text"
             value: '\f10bzzt\n\f7version\f0 0.1'
+
   - name: "Main Menu"
     layer: 0
     width: 10
@@ -33,6 +35,7 @@ surfaces:
         elements:
           - type: Button
             name: "btnPlay"
+            y: 0
             text: '\f10P\f15lay'
             bg: cyan
             fg: yellow
@@ -45,10 +48,12 @@ surfaces:
           - type: Button
             bg: cyan
             name: "btnEditor"
+            y: 2
             text: '\f10E\f15ditor'
 
           - type: Button
             name: "btnQuit"
+            y: 4
             text: '\f2Q\f15uit'
             bg: cyan
             input_bindings:

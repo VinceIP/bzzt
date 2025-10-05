@@ -1,11 +1,11 @@
 # -- sidebar_play.bui
-
+# -- shows during zzt play mode
 surfaces:
   # - header - always visible
   - name: "Sidebar Header"
     layer: 0
     width: 20
-    height: 6
+    height: 3
     fg: blue
     bg: blue
     x: 60
@@ -17,127 +17,141 @@ surfaces:
         elements:
           - type: text
             value: '\f15\b1- - - - -'
-            x: 0
             y: 0
           - type: text
             value: '\b7\f0      bzzt      '
             x: 0
-            y: 0
+            y: 1
           - type: text
             value: '\f15\b1- - - - -'
             x: 0
-            y: 0
-          - type: text
-            align: center
-            x: 0
-            y: 1
-            value: '\f11\b1Pick a command:'
+            y: 2
 
-  - name: "Sidebar Title Screen"
+  - name: "Sidebar"
     layer: 0
     width: 20
-    height: 20
+    height: 23
     fg: blue
     bg: blue
     x: 60
-    y: 5
+    y: 3
     z: 0
     overlays:
-    - name: "Title Confirm Quit"
-      align: left
-      y: 0
-      enabled: false
-      visible: false
-      elements:
-        - type: text
-          align: center
-          y: 1
-          value: '\f15\b1Quit to main menu?'
-        - type: button
-          name: "confirm quit button"
-          text: '\f0\b3 Y \f15\b1 Yes'
-          x: 2
-          y: 2
-          input_bindings: 
-            - type: keyboard
-              key: KEY_Y
-          events:
-            on_down: "btn_confirm_quit"
-            
-        - type: button
-          name: "cancel quit button"
-          text: '\f0\b7 N \f15\b1 No'
-          x: 2
-          y: 2
-          input_bindings:
-            - type: keyboard
-              key: KEY_N
-          events:
-            on_down: "btn_toggle_quit"
+      # enabled when Q pressed
+      - name: "Title Confirm Quit"
+        align: left
+        y: 0
+        enabled: false
+        visible: false
+        elements:
+          - type: text
+            name: "quit prompt text"
+            align: center
+            y: 2
+            value: ""
+          - type: button
+            name: "confirm quit button"
+            text: '\f0\b3 Y \f15\b1 Yes'
+            x: 2
+            y: 4
+            input_bindings:
+              - type: keyboard
+                key: KEY_Y
+            events:
+              on_down: "btn_confirm_quit"
 
-    - name: "Title Screen Buttons"
-      align: left
-      y: 0
-      elements:
-        - type: button
-          align: left
-          name: "world button"
-          x: 2
-          y: 1
-          text: '\f0\b3 W \f14\b1 World:'
+          - type: button
+            name: "cancel quit button"
+            text: '\f0\b7 N \f15\b1 No'
+            x: 2
+            y: 5
+            input_bindings:
+              - type: keyboard
+                key: KEY_N
+            events:
+              on_down: "btn_toggle_quit"
+          # --
 
-        - type: text
-          align: right
-          x: -3
-          y: 1
-          value: '\f15\b1 234567'
-        
-        - type: button
-          x: 2
-          y: 3
-          name: "play button"
-          text: '\f0\b7 P \f15\b1 Play'
-          input_bindings:
-            - type: keyboard
-              key: KEY_P
-          events:
-            on_down: "btn_title_press_play"
+        # enabled during play
+      - name: "play screen display"
+        align: left
+        y: 3
+        enabled: false
+        visible: false
+        elements:
+          - type: text
+            name: "health"
+            x: 2
+            value: '\c002 Health: '
 
+        # enabled at world title
+      - name: "Title Screen Display"
+        align: left
+        y: 2
+        elements:
+          - type: text
+            name: "pick a command"
+            y: 0
+            align: center
+            value: '\f11\b1Pick a command:'
+          - type: button
+            align: left
+            name: "world button"
+            x: 2
+            y: 2
+            text: '\f0\b3 W \f14\b1 World:'
 
-        - type: button
-          x: 2
-          y: 3
-          name: "restore button"
-          text: '\f0\b3 R \f14\b1 Restore game'
-        - type: button
-          x: 2
-          y: 3
-          name: "quit button"
-          text: '\f0\b7 Q \f14\b1 Quit'
-          input_bindings:
-            - type: keyboard
-              key: KEY_Q
-          events:
-            on_down: "btn_toggle_quit"
+          - type: text
+            align: right
+            x: -3
+            y: 3
+            value: '\f15\b1 234567'
 
-        - type: button
-          x: 2
-          y: 5
-          name: "about button"
-          text: '\f0\b3 A \f15\b1 About bzzt!'
-        - type: button
-          x: 2
-          y: 5
-          name: "high scores button"
-          text: '\f0\b7 H \f14\b1 High Scores'
-        - type: button
-          x: 2
-          y: 5
-          name: "editor button"
-          text: '\f0\b3 E \f14\b1 Board Editor'
+          - type: button
+            x: 2
+            y: 6
+            name: "play button"
+            text: '\f0\b7 P \f15\b1 Play'
+            input_bindings:
+              - type: keyboard
+                key: KEY_P
+            events:
+              on_down: "btn_title_press_play"
 
-        - type: button
-          x: 2
-          y: 7
-          name: "speed button"
-          text: '\f0\b7 S \f14\b1 Game speed:'
+          - type: button
+            x: 2
+            y: 7
+            name: "restore button"
+            text: '\f0\b3 R \f14\b1 Restore game'
+          - type: button
+            x: 2
+            y: 8
+            name: "quit button"
+            text: '\f0\b7 Q \f14\b1 Quit'
+            input_bindings:
+              - type: keyboard
+                key: KEY_Q
+            events:
+              on_down: "btn_toggle_quit"
+
+          - type: button
+            x: 2
+            y: 10
+            name: "about button"
+            text: '\f0\b3 A \f15\b1 About bzzt!'
+          - type: button
+            x: 2
+            y: 11
+            name: "high scores button"
+            text: '\f0\b7 H \f14\b1 High Scores'
+          - type: button
+            x: 2
+            y: 12
+            name: "editor button"
+            text: '\f0\b3 E \f14\b1 Board Editor'
+
+          - type: button
+            x: 2
+            y: 15
+            name: "speed button"
+            text: '\f0\b7 S \f14\b1 Game speed:'

@@ -75,13 +75,15 @@ void UISurface_Destroy(UISurface *s)
 
     if (s->overlays)
     {
-        if (s->overlays_count > 0)
+        for (int i = 0; i < s->overlays_count; ++i)
         {
-            for (int i = 0; i < s->overlays_count; ++i)
+            if (s->overlays[i])
             {
+                s->overlays[i]->surface = NULL;
                 UIOverlay_Destroy(s->overlays[i]);
             }
         }
+
         free(s->overlays);
     }
     if (s->properties.name)

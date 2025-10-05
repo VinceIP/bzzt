@@ -519,7 +519,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                                       is_overlay_visible, is_overlay_enabled,
                                       layout, anchor, align, yo->spacing);
             UIOverlay *ov = surface->overlays[surface->overlays_count - 1];
-            int y_cursor = 0;
+            //int y_cursor = 0;
 
             // Elements
             for (unsigned ei = 0; ei < yo->elements_count && ok; ++ei)
@@ -567,7 +567,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                     const char *src = ye->text ? ye->text : "";
                     char *caption = strdup(src);
                     UIAlign align = align_from_string(ye->align);
-                    UIButton *btn = UIButton_Create(ov, ye->name, eid, ye->x, y_cursor + ye->y, ye->z, ye->w, ye->h, ye->padding,
+                    UIButton *btn = UIButton_Create(ov, ye->name, eid, ye->x, ye->y, ye->z, ye->w, ye->h, ye->padding,
                                                     elem_fg, elem_bg,
                                                     is_elem_visible, is_elem_enabled,
                                                     ye->expand, align, caption,
@@ -623,7 +623,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
 
                     UIOverlay_Add_New_Element(ov, (UIElement *)btn);
                     int step = (btn->base.properties.h > 0 ? btn->base.properties.h : 1) + yo->spacing;
-                    y_cursor += step;
+                    //y_cursor += step;
                 }
 
                 else if (strcasecmp(ye->type, "text") == 0)
@@ -631,7 +631,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                     char *dup = ye->text ? strdup(ye->text) : strdup("");
                     UIAlign align = align_from_string(ye->align);
 
-                    UIElement_Text *txt = UIText_Create(ye->x, y_cursor + ye->y, elem_fg, elem_bg, false, align, pass_through, dup, true);
+                    UIElement_Text *txt = UIText_Create(ye->x, ye->y, elem_fg, elem_bg, false, align, pass_through, dup, true);
                     txt->base.properties.name = ye->name ? strdup(ye->name) : NULL;
                     txt->base.properties.id = eid;
                     txt->base.properties.z = ye->z;
@@ -646,7 +646,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                     txt->base.properties.h = ye->h > 0 ? ye->h : mh;
                     UIOverlay_Add_New_Element(ov, (UIElement *)txt);
                     int step = (txt->base.properties.h > 0 ? txt->base.properties.h : 1) + yo->spacing;
-                    y_cursor += step;
+                    //y_cursor += step;
                 }
             }
         }

@@ -52,9 +52,11 @@ static LineMetrics get_next_line_metrics(const char **str_ptr)
 
     while (*metrics.end != '\0' && *metrics.end != '\n' && !(*metrics.end == '\\' && *(metrics.end + 1) == 'n'))
     {
-        if (*metrics.end == '\\' && (*(metrics.end + 1) == 'f' || *(metrics.end + 1) == 'b'))
+        if (*metrics.end == '\\' && (*(metrics.end + 1) == 'f' ||
+                                     *(metrics.end + 1) == 'b' ||
+                                     *(metrics.end + 1) == 'c'))
         {
-            metrics.end += 2; // Skip over '\f' or '\b'
+            metrics.end += 2; // Skip over '\f' or '\b or \c'
             while (isdigit((unsigned char)*metrics.end))
                 metrics.end++;
         }
@@ -156,41 +158,58 @@ static void draw_text(Renderer *r, const char *str,
         const char *line_p = line.start;
         while (line_p < line.end)
         {
-            if (*line_p == '\\' && (*(line_p + 1) == 'f' || *(line_p + 1) == 'b'))
+            if (*line_p == '\\')
             {
-                char type = *(line_p + 1);
-                line_p += 2;
-                char num_buf[MAX_COLOR_CODE_DIGITS + 1] = {0};
-                int num_len = 0;
-                while (isdigit((unsigned char)*line_p) && num_len < MAX_COLOR_CODE_DIGITS)
+                if ((*(line_p + 1) == 'f' || *(line_p + 1) == 'b') || *(line_p + 1) == 'c')
                 {
-                    num_buf[num_len++] = *line_p++;
-                }
-                int color_index = atoi(num_buf);
+                    char type = *(line_p + 1);
+                    line_p += 2;
+                    char num_buf[MAX_COLOR_CODE_DIGITS + 1] = {0};
+                    int num_len = 0;
+                    while (isdigit((unsigned char)*line_p) && num_len < MAX_COLOR_CODE_DIGITS)
+                    {
+                        num_buf[num_len++] = *line_p++;
+                    }
+                    int value = atoi(num_buf);
 
-                if (color_index == BZ_TRANSPARENT)
-                {
-                    if (type == 'f')
-                        current_fg = COLOR_TRANSPARENT;
+                    if (type == 'c')
+                    {
+                        // Draw the character immediately and advance cursor
+                        if (safe_maxW <= 0 || (cursor_x >= x && cursor_x < x + safe_maxW))
+                        {
+                            if (cursor_x >= 0 && cursor_y >= 0)
+                            {
+                                Renderer_Draw_Cell(r, cursor_x, cursor_y, (unsigned char)value,
+                                                   current_fg, current_bg);
+                            }
+                        }
+                        cursor_x++;
+                    }
+
+                    else if (value == BZ_TRANSPARENT)
+                    {
+                        if (type == 'f')
+                            current_fg = COLOR_TRANSPARENT;
+                        else
+                            current_bg = COLOR_TRANSPARENT;
+                    }
                     else
-                        current_bg = COLOR_TRANSPARENT;
+                    {
+                        if (type == 'f')
+                            current_fg = bzzt_get_color(value);
+                        else
+                            current_bg = bzzt_get_color(value);
+                    }
+                    continue;
                 }
-                else
-                {
-                    if (type == 'f')
-                        current_fg = bzzt_get_color(color_index);
-                    else
-                        current_bg = bzzt_get_color(color_index);
-                }
-                continue;
             }
-
             if (safe_maxW <= 0 || (cursor_x >= x && cursor_x < x + safe_maxW))
             {
                 if (cursor_x >= 0 && cursor_y >= 0)
                 {
                     unsigned char cp437_glyph = unicode_to_cp437(*line_p);
-                    Renderer_Draw_Cell(r, cursor_x, cursor_y, cp437_glyph, current_fg, current_bg);
+                    Renderer_Draw_Cell(r, cursor_x, cursor_y, cp437_glyph,
+                                       current_fg, current_bg);
                 }
             }
 
