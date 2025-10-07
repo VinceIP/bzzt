@@ -138,8 +138,9 @@ static bool switch_board_to(Bzzt_World *w, int idx, int x, int y)
     Bzzt_Stat *new_player = new_board->stats[0];
 
     Bzzt_Board_Set_Tile(old_board, old_player->x, old_player->y, old_player->under);
-    Bzzt_Tile entry_under = Bzzt_Board_Get_Tile(new_board, x, y);
     Bzzt_Board_Set_Tile(new_board, new_player->x, new_player->y, new_player->under);
+    Bzzt_Tile entry_under = Bzzt_Board_Get_Tile(new_board, x, y);
+
     new_player->x = x;
     new_player->y = y;
     new_player->under = entry_under;
@@ -152,26 +153,13 @@ static bool switch_board_to(Bzzt_World *w, int idx, int x, int y)
     player_tile.visible = true;
 
     Bzzt_Board_Set_Tile(new_board, x, y, player_tile);
-    return true;
-}
 
-static void set_pause(Bzzt_World *w, bool pause)
-{
-    if (!w)
-        return;
-
-    Bzzt_Board *current_board = w->boards[w->boards_current];
-    Bzzt_Stat *player = current_board->stats[0];
-    Bzzt_Tile tile = Bzzt_Board_Get_Tile(current_board, player->x, player->y);
-
-    if (pause)
-        tile.blink = true;
+    if (idx == 0)
+        w->on_title = true;
     else
-        tile.blink = false;
+        w->on_title = false;
 
-    Bzzt_Board_Set_Tile(current_board, player->x, player->y, tile);
-
-    w->paused = pause;
+    return true;
 }
 
 static bool handle_passage_touch(Bzzt_World *w, int x, int y)
@@ -218,7 +206,7 @@ static bool handle_passage_touch(Bzzt_World *w, int x, int y)
     }
 
     switch_board_to(w, target_board_idx, dest_x, dest_y);
-    set_pause(w, true);
+    Bzzt_World_Set_Pause(w, true);
     return true;
 }
 
@@ -325,7 +313,7 @@ static bool do_player_move(Bzzt_World *w, int dx, int dy)
 
     // Unpause is player managed to move 1 tile
     if (w->paused)
-        set_pause(w, false);
+        Bzzt_World_Set_Pause(w, false);
 
     return handle_player_touch(w, target, new_x, new_y);
 }
@@ -379,6 +367,7 @@ Bzzt_World *Bzzt_World_Create(char *title)
     w->boards_count = 1;
     w->doUnload = false;
     w->loaded = true;
+    w->on_title = false;
 
     w->blink_delay_rate = BLINK_RATE_DEFAULT;
     w->blink_timer = 0.0;
@@ -426,7 +415,7 @@ void Bzzt_World_Update(Bzzt_World *w, InputState *in)
             w->blink_timer = 0.0;
         }
     }
-    if (!w->boards_current == 0)
+    if (w->boards_current != 0)
         update_player(w, in);
 }
 
@@ -446,7 +435,26 @@ bool Bzzt_World_Switch_Board_To(Bzzt_World *w, int board_idx, int x, int y)
     if (!w || w->boards_current == board_idx || w->boards_count < board_idx)
         return false;
 
-    switch_board_to(w, board_idx, x, y);
+    return switch_board_to(w, board_idx, x, y);
+}
+
+void Bzzt_World_Set_Pause(Bzzt_World *w, bool pause)
+{
+    if (!w)
+        return;
+
+    Bzzt_Board *current_board = w->boards[w->boards_current];
+    Bzzt_Stat *player = current_board->stats[0];
+    Bzzt_Tile tile = Bzzt_Board_Get_Tile(current_board, player->x, player->y);
+
+    if (pause)
+        tile.blink = true;
+    else
+        tile.blink = false;
+
+    Bzzt_Board_Set_Tile(current_board, player->x, player->y, tile);
+
+    w->paused = pause;
 }
 
 Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
@@ -507,6 +515,8 @@ Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
     {
         Debug_Log(LOG_LEVEL_WARN, LOG_WORLD, "Found no stats on start board.");
     }
+
+    bw->on_title = true;
 
     zztWorldFree(zw);
 

@@ -133,6 +133,7 @@ typedef struct Bzzt_World
     double blink_timer;   // Ms since last blink
 
     bool paused;
+    bool on_title;
 
     /*for zzt support*/
     int16_t ammo, gems, health, torches, score;
@@ -225,6 +226,7 @@ int Bzzt_World_Save(Bzzt_World *w, const char *path);
 void Bzzt_World_Destroy(Bzzt_World *w);
 void Bzzt_World_Update(Bzzt_World *w, InputState *in);
 bool Bzzt_World_Switch_Board_To(Bzzt_World *w, int board_idx, int x, int y);
+void Bzzt_World_Set_Pause(Bzzt_World *w, bool pause);
 
 // Convert a ZZT world to a Bzzt world
 Bzzt_World *Bzzt_World_From_ZZT_World(char *file);

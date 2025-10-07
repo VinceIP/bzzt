@@ -122,7 +122,6 @@ UIOverlay *UISurface_Add_New_Overlay(UISurface *s, char *name, int id, int x, in
 
 void UISurface_Update(UISurface *s)
 {
-    // ... (no changes in this function)
     if (!s || !s->properties.visible)
         return;
     for (int i = 0; i < s->overlays_count; ++i)

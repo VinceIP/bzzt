@@ -224,6 +224,6 @@ UIElement *UIElement_Find_By_Name(UI *ui, const char *name)
         }
     }
 
-    Debug_Log(LOG_LEVEL_WARN, LOG_UI, "Failed to find a UIElement named '%s'", name);
+    Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to find a UIElement named '%s'", name);
     return NULL;
 }

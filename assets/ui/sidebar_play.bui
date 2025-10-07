@@ -37,8 +37,8 @@ surfaces:
     y: 3
     z: 0
     overlays:
-      # enabled when Q pressed
-      - name: "Title Confirm Quit"
+      # enabled when Q pressed or pause
+      - name: "confirm quit buttons"
         align: left
         y: 0
         enabled: false
@@ -75,14 +75,120 @@ surfaces:
         # enabled during play
       - name: "play screen display"
         align: left
-        y: 3
+        y: 4
         enabled: false
         visible: false
         elements:
+          # - player status
           - type: text
             name: "health"
             x: 2
-            value: '\c002 Health: '
+            value: '\c002  \f14Health:100'
+          - type: text
+            name: "ammo"
+            x: 2
+            y: 1
+            value: '\f11\c132    \f14Ammo:0'
+          - type: text
+            name: "torches"
+            x: 2
+            y: 2
+            value: '\f6\c157 \f14Torches:0'
+          - type: text
+            name: "gems"
+            x: 2
+            y: 3
+            value: '\f11\c004    \f14Gems:0'
+          - type: text
+            name: "score"
+            x: 2
+            y: 4
+            value: '\f14    Score:'
+          - type: text
+            name: "keys"
+            x: 2
+            y: 5
+            value: '\f15\c12    \f14Keys:'
+            # -keys go here later
+
+          # play controls
+          - type: button
+            name: "torch button"
+            text: '\f0\b3 T \f15\b1 Torch'
+            x: 2
+            y: 7
+            input_bindings:
+              - type: keyboard
+                key: KEY_T
+            events:
+              on_down: ""
+          - type: button
+            name: "be quiet button"
+            text: '\f0\b7 B \f15\b1 Be quiet'
+            x: 2
+            y: 8
+            input_bindings:
+              - type: keyboard
+                key: KEY_B
+            events:
+              on_down: ""
+          - type: button
+            name: "help button"
+            text: '\f0\b3 H \f15\b1 Help'
+            x: 2
+            y: 9
+            input_bindings:
+              - type: keyboard
+                key: KEY_H
+            events:
+              on_down: ""
+
+          - type: text
+            name: "move text"
+            text: '\f0\b7 \c024\c025\c026\f15\b1 Move'
+            x: 7
+            y: 11
+          - type: text
+            name: "shoot button"
+            text: '\f0\b3 Shift \c024\c025\c026\f15\b1 Shoot'
+            x: 1
+            y: 12
+            input_bindings:
+              - type: keyboard
+                key: KEY_H
+            events:
+              on_down: ""
+
+          - type: button
+            name: "save button"
+            text: '\f0\b7 S \f15\b1 Save'
+            x: 2
+            y: 14
+            input_bindings:
+              - type: keyboard
+                key: KEY_S
+            events:
+              on_down: ""
+          - type: button
+            name: "pause button"
+            text: '\f0\b3 P \f15\b1 Pause'
+            x: 2
+            y: 15
+            input_bindings:
+              - type: keyboard
+                key: KEY_P
+            events:
+              on_down: ""
+          - type: button
+            name: "play mode quit button"
+            text: '\f0\b7 Q \f15\b1 Quit'
+            x: 2
+            y: 16
+            input_bindings:
+              - type: keyboard
+                key: KEY_Q
+            events:
+              on_down: "btn_toggle_quit"
 
         # enabled at world title
       - name: "Title Screen Display"

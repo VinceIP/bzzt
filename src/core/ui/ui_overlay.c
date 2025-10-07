@@ -164,5 +164,6 @@ UIOverlay *UIOverlay_Find_By_Name(UI *ui, const char *name)
             }
         }
     }
+    Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to find a UIOverlay named '%s'", name);
     return NULL;
 }

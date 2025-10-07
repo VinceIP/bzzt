@@ -273,7 +273,7 @@ void Renderer_Update(Renderer *r, Engine *e)
     BeginShaderMode(r->glyphShader);
     switch (e->state)
     {
-    case ENGINE_STATE_SPLASH:
+    case ENGINE_STATE_MENU:
         // if (e->world) Renderer_Draw_Board(r, e->world->boards[e->world->boards_current]);
         if (e->ui)
         {

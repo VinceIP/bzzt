@@ -23,26 +23,29 @@
 #include "bzzt.h"
 #include "raylib.h"
 
-static UIOverlay *overlay_title_screen_display;
-static UIOverlay *overlay_play_screen_display;
-static UIOverlay *overlay_confirm_quit_buttons;
-static UIElement_Text *text_quit;
+#define ZZT_FILE "TOWN.ZZT" // temp file load
 
+// Pressing p at zzt title screen
 static void btn_title_press_play(UIActionContext *ctx)
 {
     if (!ctx || !ctx->engine || !ctx->engine->world)
         return;
 
-    overlay_play_screen_display->properties.enabled = true;
-    overlay_play_screen_display->properties.visible = true;
-    overlay_title_screen_display->properties.enabled = false;
-    overlay_title_screen_display->properties.visible = false;
+    UIContext *ui_ctx = &ctx->engine->ui_ctx;
+    if (!ui_ctx)
+        return;
+
+    ui_ctx->play_mode.overlay_play_screen_display->properties.enabled = true;
+    ui_ctx->play_mode.overlay_play_screen_display->properties.visible = true;
+    ui_ctx->title_mode.overlay_title_screen_display->properties.enabled = false;
+    ui_ctx->title_mode.overlay_title_screen_display->properties.visible = false;
 
     Bzzt_World *world = ctx->engine->world;
     Bzzt_Board *start_board = world->start_board;
     Bzzt_Stat *player = start_board->stats[0];
     int idx = start_board->idx;
     Bzzt_World_Switch_Board_To(ctx->engine->world, idx, player->x, player->y);
+    Bzzt_World_Set_Pause(world, true);
 }
 
 static void btn_toggle_quit(UIActionContext *ctx)
@@ -52,12 +55,20 @@ static void btn_toggle_quit(UIActionContext *ctx)
 
     int board_idx = ctx->engine->world->boards_current;
     if (board_idx == 0)
-        strcpy(text_quit->ud, "Quit to title?");
+        strcpy(text_prompt->ud, "Quit to title?");
     else
-        strcpy(text_quit->ud, "End the game?");
+        strcpy(text_prompt->ud, "End the game?");
 
-    overlay_title_screen_display->properties.enabled = !overlay_title_screen_display->properties.enabled;
-    overlay_title_screen_display->properties.visible = !overlay_title_screen_display->properties.visible;
+    if (ctx->engine->world->on_title)
+    {
+        overlay_title_screen_display->properties.enabled = !overlay_title_screen_display->properties.enabled;
+        overlay_title_screen_display->properties.visible = !overlay_title_screen_display->properties.visible;
+    }
+    else if (!ctx->engine->world->on_title)
+    {
+        overlay_play_screen_display->properties.enabled = !overlay_play_screen_display->properties.enabled;
+        overlay_play_screen_display->properties.visible = !overlay_play_screen_display->properties.visible;
+    }
     overlay_confirm_quit_buttons->properties.enabled = !overlay_confirm_quit_buttons->properties.enabled;
     overlay_confirm_quit_buttons->properties.visible = !overlay_confirm_quit_buttons->properties.visible;
 }
@@ -69,7 +80,7 @@ static void btn_confirm_quit(UIActionContext *ctx)
 
     int board_idx = ctx->engine->world->boards_current;
     if (board_idx == 0)
-        Engine_Set_State(ctx->engine, ENGINE_STATE_SPLASH);
+        Engine_Set_State(ctx->engine, ENGINE_STATE_MENU);
     else
     {
         // Change to title board
@@ -95,22 +106,52 @@ static void splash_press_quit(UIActionContext *ctx)
     ctx->engine->input->quit = true;
 }
 
-// Attempt to find all sidebar bui components used for zzt play mode
-// fix this later
-static bool find_sidebar_components(UI *ui)
+static bool verify_ui_components(EngineState state)
 {
-    if (!ui)
+}
+
+// Attempt to find all sidebar bui components used for zzt play mode
+static bool register_ui_components(Engine *e)
+{
+    if (!e)
         return false;
 
-    overlay_title_screen_display = UIOverlay_Find_By_Name(ui, "Title Screen Display");
-    overlay_play_screen_display = UIOverlay_Find_By_Name(ui, "play screen display");
-    overlay_confirm_quit_buttons = UIOverlay_Find_By_Name(ui, "Title Confirm Quit");
-    text_quit = UIElement_Find_By_Name(ui, "quit prompt text");
+    UI *ui = e->ui;
+    if (!ui)
+    {
+        Debug_Log(LOG_LEVEL_WARN, LOG_UI, "Tried to find UI components while no UI exists.");
+        return false;
+    }
+
+    UIContext *ctx = e->ui_ctx;
+
+    switch (e->state)
+    {
+    case ENGINE_STATE_MENU:
+        break;
+
+    case ENGINE_STATE_TITLE:
+        ctx->title_mode.overlay_title_screen_display = UIOverlay_Find_By_Name(ui, "Title Screen Display");
+        ctx->title_mode.overlay_confirm_quit_buttons = UIOverlay_Find_By_Name(ui, "confirm quit buttons");
+        ctx->title_mode.text_prompt = UIElement_Find_By_Name(ui, "quit prompt text");
+        break;
+
+    case ENGINE_STATE_PLAY:
+        ctx->play_mode.overlay_play_screen_display = UIOverlay_Find_By_Name(ui, "play screen display");
+        ctx->play_mode.overlay_confirm_quit_buttons = UIOverlay_Find_By_Name(ui, "confirm quit buttons");
+        ctx->play_mode.text_prompt = UIElement_Find_By_Name(ui, "quit prompt text");
+        break;
+
+    case ENGINE_STATE_EDIT:
+        break;
+    }
+
+    text_prompt = UIElement_Find_By_Name(ui, "quit prompt text");
 
     return true;
 }
 
-static void engine_register_actions(Engine *e)
+static void register_ui_actions(Engine *e)
 {
     if (!e || !e->action_registry)
         return;
@@ -164,7 +205,7 @@ static void init_camera(Engine *e)
 
 static void zzt_title_init(Engine *e)
 {
-    char *file = "TOWN.ZZT";
+    char *file = ZZT_FILE;
     e->world = Bzzt_World_From_ZZT_World(file);
 
     if (!e->world)
@@ -180,7 +221,7 @@ static void zzt_title_init(Engine *e)
         UI_Load_From_BUI(e->ui, "assets/ui/sidebar_play.bui");
         UI_Resolve_Button_Actions(e->ui, e->action_registry);
         UI_Reset_Button_State();
-        if (!find_sidebar_components(e->ui))
+        if (!register_ui_components(e->ui))
             Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to find all sidebar UI components.");
     }
 }
@@ -217,7 +258,7 @@ static void apply_state_change(Engine *e)
 
     switch (next)
     {
-    case ENGINE_STATE_SPLASH:
+    case ENGINE_STATE_MENU:
         if (!e->firstBoot) // Only refresh the UI if the engine has not just been initialized
         {
             if (e->ui)
@@ -230,7 +271,10 @@ static void apply_state_change(Engine *e)
             }
 
             if (e->editor)
+            {
                 Editor_Destroy(e->editor);
+                e->editor = NULL;
+            }
         }
 
         if (e->world)
@@ -255,8 +299,6 @@ static void apply_state_change(Engine *e)
         break;
 
     case ENGINE_STATE_PLAY:
-        if (e->world)
-            e->world->doUnload;
         if (e->editor)
         {
             Editor_Destroy(e->editor);
@@ -265,6 +307,10 @@ static void apply_state_change(Engine *e)
         zzt_title_init(e);
         break;
     }
+}
+
+static void sync_ui_to_world_state(Engine *e)
+{
 }
 
 void Engine_Set_State(Engine *e, EngineState next)
@@ -298,7 +344,8 @@ bool Engine_Init(Engine *e, InputState *in)
 
     e->ui = UI_Create(true, true);
     e->action_registry = UIAction_Registry_Create();
-    engine_register_actions(e);
+    register_ui_actions(e);
+    e->ui_ctx = malloc(sizeof(UIContext));
 
     init_camera(e);
 
@@ -306,7 +353,7 @@ bool Engine_Init(Engine *e, InputState *in)
     for (int i = 0; i < 8; ++i)
         e->charsets[i] = NULL;
 
-    Engine_Set_State(e, ENGINE_STATE_SPLASH);
+    Engine_Set_State(e, ENGINE_STATE_MENU);
     apply_state_change(e);
 
     e->firstBoot = false;
@@ -327,7 +374,7 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
 
     switch (e->state)
     {
-    case ENGINE_STATE_SPLASH:
+    case ENGINE_STATE_MENU:
         break;
 
     case ENGINE_STATE_PLAY:
@@ -372,11 +419,16 @@ void Engine_Quit(Engine *e)
     if (e->action_registry)
         UIAction_Registry_Destroy(e->action_registry);
 
+    if (e->ui_ctx)
+        free(e->ui_ctx);
+
     for (int i = 0; i < 8; ++i)
     {
         if (e->charsets[i] && e->charsets[i]->pixels)
         {
             free(e->charsets[i]->pixels);
         }
+        free(e->charsets);
+        e->charsets[i] = NULL;
     }
 }
