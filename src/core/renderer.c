@@ -280,6 +280,7 @@ void Renderer_Update(Renderer *r, Engine *e)
             Renderer_Draw_UI(r, e->ui);
         }
         break;
+    case ENGINE_STATE_TITLE:
     case ENGINE_STATE_PLAY:
         if (e->ui)
             Renderer_Draw_UI(r, e->ui);
