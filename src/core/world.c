@@ -243,7 +243,7 @@ static void update_stat_direction(Bzzt_Stat *stat, int dx, int dy)
         stat->step_y = (dy > 0) ? 1 : -1;
 }
 
-static bool handle_item_pickup(Bzzt_Board *b, int x, int y, Bzzt_Tile item)
+static bool handle_item_pickup(Bzzt_World *w, Bzzt_Board *b, int x, int y, Bzzt_Tile item)
 {
     Bzzt_Tile empty = {0};
     Bzzt_Stat *player = b->stats[0];
@@ -251,12 +251,18 @@ static bool handle_item_pickup(Bzzt_Board *b, int x, int y, Bzzt_Tile item)
     switch (item.element)
     {
     case ZZT_AMMO:
+        w->ammo += 5;
+        return true;
     case ZZT_GEM:
+        w->gems++;
+        w->score += 10;
+        return true;
     case ZZT_TORCH:
+        w->torches++;
+        return true;
     case ZZT_ENERGIZER:
     case ZZT_KEY:
     case ZZT_SCROLL:
-        Debug_Printf(LOG_WORLD, "Picked up: %s", Bzzt_Tile_Get_Type_Name(item));
         return true;
     case ZZT_FOREST:
         Debug_Printf(LOG_WORLD, "Moved through the forest.");
@@ -296,19 +302,7 @@ static bool do_player_move(Bzzt_World *w, int dx, int dy)
     {
         move_stat_to(current_board, player, new_x, new_y);
         // If moved on to item pickup
-        switch (target.element)
-        {
-        case ZZT_AMMO:
-        case ZZT_TORCH:
-        case ZZT_GEM:
-        case ZZT_KEY:
-        case ZZT_ENERGIZER:
-        case ZZT_SCROLL:
-        case ZZT_FOREST:
-            return handle_item_pickup(current_board, new_x, new_y, target);
-        default:
-            break;
-        }
+        handle_item_pickup(w, current_board, new_x, new_y, target);
     }
 
     // Unpause is player managed to move 1 tile
@@ -500,6 +494,15 @@ Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
     bw->boards_current = 0;
     bw->start_board_idx = zztWorldGetStartboard(zw);
     bw->start_board = bw->boards[bw->start_board_idx];
+
+    bw->ammo = 0;
+    bw->gems = 0;
+    bw->energizer_cycles = 0;
+    bw->health = 100;
+    // keys
+    bw->score = 0;
+    bw->torch_cycles = 0;
+    bw->torches = 0;
 
     // verify player exists
     if (bw->start_board->stat_count > 0)

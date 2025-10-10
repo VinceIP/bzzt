@@ -37,6 +37,33 @@ surfaces:
     y: 3
     z: 0
     overlays:
+      # - text prompts
+      - name: "overlay text prompt"
+        enabled: enabled
+        visible: enabled
+        elements:
+          - type: text
+            enabled: false
+            visible: false
+            name: "quit to menu text"
+            align: center
+            y: 2
+            value: "Quit to main menu?"
+          - type: text
+            enabled: false
+            visible: false
+            name: "quit to title text"
+            align: center
+            y: 2
+            value: "End the game?"
+          - type: text
+            enabled: false
+            visible: false
+            name: "pausing text"
+            align: center
+            y: 2
+            value: "Pausing..."
+
       # enabled when Q pressed or pause
       - name: "confirm quit buttons"
         align: left
@@ -44,11 +71,6 @@ surfaces:
         enabled: false
         visible: false
         elements:
-          - type: text
-            name: "quit prompt text"
-            align: center
-            y: 2
-            value: ""
           - type: button
             name: "confirm quit button"
             text: '\f0\b3 Y \f15\b1 Yes'
@@ -101,9 +123,9 @@ surfaces:
             value: '\f11\c004    \f14Gems:0'
           - type: text
             name: "score"
-            x: 2
+            x: 6
             y: 4
-            value: '\f14    Score:'
+            value: ''
           - type: text
             name: "keys"
             x: 2
@@ -178,7 +200,7 @@ surfaces:
               - type: keyboard
                 key: KEY_P
             events:
-              on_down: ""
+              on_down: "btn_press_pause"
           - type: button
             name: "play mode quit button"
             text: '\f0\b7 Q \f15\b1 Quit'

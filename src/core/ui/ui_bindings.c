@@ -35,6 +35,9 @@ const char *UIBinding_Text_Format(void *ud)
     case BIND_INT:
         snprintf(b->buf, sizeof b->buf, b->fmt ? b->fmt : "%d", *(const int *)b->ptr); // Format the data if it exists and store it into b->buf
         break;
+    case BIND_INT16:
+        snprintf(b->buf, sizeof b->buf, b->fmt ? b->fmt : "%d", (int)*(const int16_t *)b->ptr);
+        break;
     case BIND_FLOAT:
         snprintf(b->buf, sizeof b->buf, b->fmt ? b->fmt : "%.2f", *(const float *)b->ptr);
         break;
@@ -42,6 +45,23 @@ const char *UIBinding_Text_Format(void *ud)
         snprintf(b->buf, sizeof b->buf, b->fmt ? b->fmt : "%s", (const char *)b->ptr);
     }
     return b->buf;
+}
+
+void UIText_Rebind_To_Data(UIElement_Text *text, const void *ptr, const char *fmt, BindType type)
+{
+    if (!text)
+        return;
+
+    if (text->owns_ud && text->ud)
+        free(text->ud);
+
+    TextBinding *binding = UIBinding_Text_Create(ptr, fmt, type);
+    if (!binding)
+        return;
+
+    text->textCallback = UIBinding_Text_Format;
+    text->ud = binding;
+    text->owns_ud = true;
 }
 
 const char *pass_through_caption(void *ud) { return (const char *)ud; }

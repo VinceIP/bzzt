@@ -70,6 +70,7 @@ typedef struct PlaysciiAsset
 typedef enum
 {
     BIND_INT,
+    BIND_INT16,
     BIND_FLOAT,
     BIND_STR
 } BindType;
@@ -263,6 +264,8 @@ void UILayer_Destroy(UILayer *l);
 UISurface *UILayer_Add_New_Surface(UILayer *l, char *name, int id, bool visible, bool enabled, int x, int y, int z, int w, int h);
 void UILayer_Update(UILayer *l);
 UILayer *UILayer_Find_By_Name(UI *ui, const char *name);
+void UILayer_Set_Enabled(UILayer *layer, bool enabled);
+void UILayer_Set_Visible(UILayer *layer, bool visible);
 
 UISurface *UISurface_Create(UILayer *l, char *name, int id, bool visible, bool enabled, int x, int y, int z, int w, int h);
 UIOverlay *UISurface_Add_New_Overlay(UISurface *s, char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, UILayout layout, UIAnchor anchor, UIAlign align, int spacing);
@@ -270,6 +273,8 @@ void UISurface_Update(UISurface *s);
 void UISurface_Destroy(UISurface *s);
 UISurface *UISurface_Load_From_Playscii(const char *filename);
 UISurface *UISurface_Find_By_Name(UI *ui, const char *name);
+void UISurface_Set_Enabled(UISurface *surface, bool enabled);
+void UISurface_Set_Visible(UISurface *surface, bool visible);
 
 UIOverlay *UIOverlay_Create(char *name, int id, int x, int y, int z, int w, int h, int padding, bool visible, bool enabled, UILayout layout, UIAnchor anchor, UIAlign align, int spacing);
 void UIOverlay_Update(UIOverlay *o);
@@ -277,16 +282,21 @@ void UIOverlay_Destroy(UIOverlay *o);
 void UIOverlay_Add_New_Element(UIOverlay *o, UIElement *e);
 void UIOverlay_Print(UIOverlay *ov, Color_Bzzt fg, Color_Bzzt bg, bool wrap, const char *fmt, ...);
 UIOverlay *UIOverlay_Find_By_Name(UI *ui, const char *name);
+void UIOverlay_Set_Enabled(UIOverlay *overlay, bool enabled);
+void UIOverlay_Set_Visible(UIOverlay *overlay, bool visible);
 
 UIElement *UIElement_Create(UIOverlay *o, char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg, Color_Bzzt bg, bool visible, bool enabled, bool expand, UIAlign align, ElementType type);
 void UIElement_Update(UIElement *e);
 void UIElement_Destroy(UIElement *e);
 UIElement *UIElement_Find_By_Name(UI *ui, const char *e);
+void UIElement_Set_Enabled(UIElement *elem, bool enabled);
+void UIElement_Set_Visible(UIElement *elem, bool visible);
 
 UIElement_Text *UIText_Create(int x, int y, Color_Bzzt fg, Color_Bzzt bg, bool wrap, UIAlign align, const char *(*cb)(void *ud), void *ud, bool owns_ud);
 UIButton *UIButton_Create(UIOverlay *o, const char *name, int id, int x, int y, int z, int w, int h, int padding, Color_Bzzt fg, Color_Bzzt bg, bool visible, bool enabled, bool expand, UIAlign align, const char *caption, UIButtonAction cb, void *ud);
 TextBinding *UIBinding_Text_Create(const void *ptr, const char *fmt,
                                    BindType type);
+void UIText_Rebind_To_Data(UIElement_Text *text, const void *ptr, const char *fmt, BindType type);
 
 // Initialize UI action registry
 UIActionRegistry *UIAction_Registry_Create(void);

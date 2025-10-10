@@ -1,12 +1,12 @@
 /**
  * @file ui_layer.c
  * @author Vince Patterson (vinceip532@gmail.com)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2025-08-10
- * 
+ *
  * @copyright Copyright (c) 2025
- * 
+ *
  */
 
 #include "ui.h"
@@ -93,4 +93,17 @@ void UILayer_Update(UILayer *l)
         UISurface *s = l->surfaces[i];
         UISurface_Update(s);
     }
+}
+
+void UILayer_Set_Enabled(UILayer *layer, bool enabled)
+{
+    if (!layer)
+        return;
+    layer->enabled = enabled;
+}
+void UILayer_Set_Visible(UILayer *layer, bool visible)
+{
+    if (!layer)
+        return;
+    layer->visible = visible;
 }

@@ -23,7 +23,18 @@
 #include "bzzt.h"
 #include "raylib.h"
 
-#define ZZT_FILE "TOWN.ZZT" // temp file load
+#define ZZT_FILE "DEMO.ZZT" // temp file load
+#define PROMPT_QUIT_TO_MENU "Quit to main menu?"
+#define PROMPT_QUIT_TO_TITLE "End the game?"
+#define PROMPT_PAUSING "Pausing..."
+
+static void btn_press_pause(UIActionContext *ctx)
+{
+    if (!ctx)
+        return;
+
+    Bzzt_World_Set_Pause(ctx->engine->world, true);
+}
 
 // Pressing p at zzt title screen
 static void btn_title_press_play(UIActionContext *ctx)
@@ -31,11 +42,16 @@ static void btn_title_press_play(UIActionContext *ctx)
     if (!ctx || !ctx->engine || !ctx->engine->world)
         return;
 
-    UIContext *ui_ctx = &ctx->engine->ui_ctx;
+    UIContext *ui_ctx = ctx->engine->ui_ctx;
     if (!ui_ctx)
         return;
 
     Engine_Set_State(ctx->engine, ENGINE_STATE_PLAY);
+
+    ui_ctx->title_mode.overlay_title_screen_display->properties.enabled = false;
+    ui_ctx->title_mode.overlay_title_screen_display->properties.visible = false;
+    ui_ctx->play_mode.overlay_play_screen_display->properties.enabled = true;
+    ui_ctx->play_mode.overlay_play_screen_display->properties.visible = true;
 
     Bzzt_World *world = ctx->engine->world;
     Bzzt_Board *start_board = world->start_board;
@@ -50,40 +66,32 @@ static void btn_toggle_quit(UIActionContext *ctx)
     if (!ctx || !ctx->engine)
         return;
 
-    if (ctx->engine->world->on_title)
+    Engine *e = ctx->engine;
+    UIContext *ui_ctx = e->ui_ctx;
+    bool quit_btn_enabled = ui_ctx->title_mode.overlay_confirm_quit_buttons->properties.enabled;
+    bool title_txt_enabled = ui_ctx->title_mode.quit_to_menu_text->base.properties.enabled;
+    bool play_txt_enabled = ui_ctx->play_mode.quit_to_title_text->base.properties.enabled;
+    bool title_bar_enabled = ui_ctx->title_mode.overlay_title_screen_display->properties.enabled;
+    bool play_bar_enabled = ui_ctx->play_mode.overlay_play_screen_display->properties.enabled;
+
+    UIOverlay_Set_Enabled(ui_ctx->title_mode.overlay_confirm_quit_buttons, !quit_btn_enabled);
+    UIOverlay_Set_Visible(ui_ctx->title_mode.overlay_confirm_quit_buttons, !quit_btn_enabled);
+
+    if (e->state == ENGINE_STATE_TITLE)
     {
-        UIOverlay *overlay_title_screen_display = ctx->engine->ui_ctx->title_mode.overlay_title_screen_display;
-        UIOverlay *overlay_confirm_quit_buttons = ctx->engine->ui_ctx->title_mode.overlay_confirm_quit_buttons;
-        UIElement_Text *text_prompt = ctx->engine->ui_ctx->title_mode.text_prompt;
+        UIOverlay_Set_Enabled(ui_ctx->title_mode.overlay_title_screen_display, !title_bar_enabled);
+        UIOverlay_Set_Visible(ui_ctx->title_mode.overlay_title_screen_display, !title_bar_enabled);
 
-        if (!overlay_title_screen_display || !overlay_confirm_quit_buttons || !text_prompt)
-        {
-            Debug_Printf(LOG_UI, "err, returning");
-            return;
-        }
-
-        strcpy(text_prompt->ud, "Quit to title?");
-
-        overlay_title_screen_display->properties.enabled = !overlay_title_screen_display->properties.enabled;
-        overlay_title_screen_display->properties.visible = !overlay_title_screen_display->properties.visible;
-        overlay_confirm_quit_buttons->properties.enabled = !overlay_confirm_quit_buttons->properties.enabled;
-        overlay_confirm_quit_buttons->properties.visible = !overlay_confirm_quit_buttons->properties.visible;
+        UIElement_Set_Enabled(ui_ctx->title_mode.quit_to_menu_text, !title_txt_enabled);
+        UIElement_Set_Visible(ui_ctx->title_mode.quit_to_menu_text, !title_txt_enabled);
     }
-    else if (!ctx->engine->world->on_title)
+    else if (e->state == ENGINE_STATE_PLAY)
     {
-        UIOverlay *overlay_play_screen_display = ctx->engine->ui_ctx->play_mode.overlay_play_screen_display;
-        UIOverlay *overlay_confirm_quit_buttons = ctx->engine->ui_ctx->play_mode.overlay_confirm_quit_buttons;
-        UIElement_Text *text_prompt = ctx->engine->ui_ctx->play_mode.text_prompt;
+        UIOverlay_Set_Enabled(ui_ctx->play_mode.overlay_play_screen_display, !play_bar_enabled);
+        UIOverlay_Set_Visible(ui_ctx->play_mode.overlay_play_screen_display, !play_bar_enabled);
 
-        if (!overlay_play_screen_display || !overlay_confirm_quit_buttons || !text_prompt)
-            return;
-
-        strcpy(text_prompt->ud, "End the game?");
-
-        overlay_play_screen_display->properties.enabled = !overlay_play_screen_display->properties.enabled;
-        overlay_play_screen_display->properties.visible = !overlay_play_screen_display->properties.visible;
-        overlay_confirm_quit_buttons->properties.enabled = !overlay_confirm_quit_buttons->properties.enabled;
-        overlay_confirm_quit_buttons->properties.visible = !overlay_confirm_quit_buttons->properties.visible;
+        UIElement_Set_Enabled(ui_ctx->play_mode.quit_to_title_text, !play_txt_enabled);
+        UIElement_Set_Visible(ui_ctx->play_mode.quit_to_title_text, !play_txt_enabled);
     }
 }
 
@@ -93,11 +101,12 @@ static void btn_confirm_quit(UIActionContext *ctx)
         return;
 
     int board_idx = ctx->engine->world->boards_current;
-    if (board_idx == 0)
+    if (ctx->engine->state == ENGINE_STATE_TITLE)
         Engine_Set_State(ctx->engine, ENGINE_STATE_MENU);
-    else
+    else if (ctx->engine->state == ENGINE_STATE_PLAY)
     {
         // Change to title board
+        Engine_Set_State(ctx->engine, ENGINE_STATE_TITLE);
         Bzzt_Board *title_board = ctx->engine->world->boards[0];
         Bzzt_Stat *player = title_board->stats[0];
         Bzzt_World_Switch_Board_To(ctx->engine->world, 0, player->x, player->y);
@@ -135,26 +144,14 @@ static bool register_ui_components(Engine *e)
 
     UIContext *ctx = e->ui_ctx;
 
-    switch (e->state)
-    {
-    case ENGINE_STATE_MENU:
-        break;
+    ctx->title_mode.overlay_title_screen_display = UIOverlay_Find_By_Name(ui, "Title Screen Display");
+    ctx->title_mode.overlay_confirm_quit_buttons = UIOverlay_Find_By_Name(ui, "confirm quit buttons");
+    ctx->title_mode.quit_to_menu_text = UIElement_Find_By_Name(ui, "quit to menu text");
 
-    case ENGINE_STATE_TITLE:
-        ctx->title_mode.overlay_title_screen_display = UIOverlay_Find_By_Name(ui, "Title Screen Display");
-        ctx->title_mode.overlay_confirm_quit_buttons = UIOverlay_Find_By_Name(ui, "confirm quit buttons");
-        ctx->title_mode.text_prompt = UIElement_Find_By_Name(ui, "quit prompt text");
-        break;
-
-    case ENGINE_STATE_PLAY:
-        ctx->play_mode.overlay_play_screen_display = UIOverlay_Find_By_Name(ui, "play screen display");
-        ctx->play_mode.overlay_confirm_quit_buttons = UIOverlay_Find_By_Name(ui, "confirm quit buttons");
-        ctx->play_mode.text_prompt = UIElement_Find_By_Name(ui, "quit prompt text");
-        break;
-
-    case ENGINE_STATE_EDIT:
-        break;
-    }
+    ctx->play_mode.overlay_play_screen_display = UIOverlay_Find_By_Name(ui, "play screen display");
+    ctx->play_mode.overlay_confirm_quit_buttons = UIOverlay_Find_By_Name(ui, "confirm quit buttons");
+    ctx->play_mode.quit_to_title_text = UIElement_Find_By_Name(ui, "quit to title text");
+    ctx->play_mode.pausing_text = UIElement_Find_By_Name(ui, "pausing text");
 
     return true;
 }
@@ -170,6 +167,41 @@ static void register_ui_actions(Engine *e)
     UIAction_Register(e->action_registry, "btn_title_press_play", btn_title_press_play);
     UIAction_Register(e->action_registry, "splash_press_play", splash_press_play);
     UIAction_Register(e->action_registry, "splash_press_quit", splash_press_quit);
+
+    UIAction_Register(e->action_registry, "btn_press_pause", btn_press_pause);
+}
+
+static bool bind_world_stats_to_ui(Engine *e)
+{
+    if (!e || !e->world || !e->ui)
+        return false;
+
+    Bzzt_World *world = e->world;
+    UI *ui = e->ui;
+
+    UIElement_Text *health_text = (UIElement_Text *)UIElement_Find_By_Name(ui, "health");
+    if (health_text)
+        UIText_Rebind_To_Data(health_text, &world->health, "\\c002  \\f14Health:%d", BIND_INT16);
+
+    UIElement_Text *ammo_text = (UIElement_Text *)UIElement_Find_By_Name(ui, "ammo");
+    if (ammo_text)
+        UIText_Rebind_To_Data(ammo_text, &world->ammo, "\\f11\\c132    \\f14Ammo:%d", BIND_INT16);
+
+    UIElement_Text *torches_text = (UIElement_Text *)UIElement_Find_By_Name(ui, "torches");
+    if (torches_text)
+        UIText_Rebind_To_Data(torches_text, &world->torches, "\\f6\\c157 \\f14Torches:%d", BIND_INT16);
+
+    UIElement_Text *gems_text = (UIElement_Text *)UIElement_Find_By_Name(ui, "gems");
+    if (gems_text)
+        UIText_Rebind_To_Data(gems_text, &world->gems, "\\f11\\c004    \\f14Gems:%d", BIND_INT16);
+
+    UIElement_Text *score_text = (UIElement_Text *)UIElement_Find_By_Name(ui, "score");
+    if (score_text)
+    {
+        UIText_Rebind_To_Data(score_text, &world->score, "\\f14Score:%d", BIND_INT16);
+    }
+
+    return true;
 }
 
 static void load_splash_screen(UI *ui, UIActionRegistry *registry);
@@ -230,6 +262,8 @@ static void zzt_title_init(Engine *e)
         UI_Reset_Button_State();
         if (!register_ui_components(e))
             Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to find all sidebar UI components.");
+        if (!bind_world_stats_to_ui(e))
+            Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to bind world stats to UI.");
     }
 }
 
@@ -312,13 +346,35 @@ static void apply_state_change(Engine *e)
             e->editor = NULL;
         }
         zzt_title_init(e);
+        register_ui_components(e);
         break;
     }
-    register_ui_components(e);
 }
 
 static void sync_ui_to_world_state(Engine *e)
 {
+    if (!e || !e->world || !e->ui_ctx)
+        return;
+
+    Bzzt_World *world = e->world;
+    UIContext *ui_ctx = e->ui_ctx;
+
+    if (e->state == ENGINE_STATE_PLAY && world->paused)
+    {
+        if (!ui_ctx->play_mode.pausing_text->base.properties.enabled)
+        {
+            UIElement_Set_Enabled(ui_ctx->play_mode.pausing_text, true);
+            UIElement_Set_Visible(ui_ctx->play_mode.pausing_text, true);
+        }
+    }
+    else
+    {
+        if (ui_ctx->play_mode.pausing_text->base.properties.enabled)
+        {
+            UIElement_Set_Enabled(ui_ctx->play_mode.pausing_text, false);
+            UIElement_Set_Visible(ui_ctx->play_mode.pausing_text, false);
+        }
+    }
 }
 
 void Engine_Set_State(Engine *e, EngineState next)
@@ -390,6 +446,7 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
         if (e->world)
         {
             Bzzt_World_Update(e->world, i);
+            sync_ui_to_world_state(e);
         }
         break;
 
@@ -437,7 +494,7 @@ void Engine_Quit(Engine *e)
         {
             free(e->charsets[i]->pixels);
         }
-        free(e->charsets);
+        free(e->charsets[i]);
         e->charsets[i] = NULL;
     }
 }

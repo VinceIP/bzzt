@@ -66,7 +66,8 @@ typedef struct UIContext
     {
         UIOverlay *overlay_title_screen_display;
         UIOverlay *overlay_confirm_quit_buttons;
-        UIElement_Text *text_prompt; // 1-line text elem that holds quit/save/etc prompts
+
+        UIElement_Text *quit_to_menu_text;
 
         bool components_found;
     } title_mode;
@@ -75,7 +76,9 @@ typedef struct UIContext
     {
         UIOverlay *overlay_play_screen_display; // Overlay containing all gameplay buttons and info
         UIOverlay *overlay_confirm_quit_buttons;
-        UIElement_Text *text_prompt; // 1-line text elem that holds quit/save/etc prompts
+
+        UIElement_Text *quit_to_title_text;
+        UIElement_Text *pausing_text;
 
         bool components_found; // true if all components were found in the .bui
     } play_mode;

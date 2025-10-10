@@ -227,3 +227,16 @@ UIElement *UIElement_Find_By_Name(UI *ui, const char *name)
     Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to find a UIElement named '%s'", name);
     return NULL;
 }
+
+void UIElement_Set_Enabled(UIElement *elem, bool enabled)
+{
+    if (!elem)
+        return;
+    elem->properties.enabled = enabled;
+}
+void UIElement_Set_Visible(UIElement *elem, bool visible)
+{
+    if (!elem)
+        return;
+    elem->properties.visible = visible;
+}

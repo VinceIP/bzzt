@@ -167,3 +167,15 @@ UIOverlay *UIOverlay_Find_By_Name(UI *ui, const char *name)
     Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to find a UIOverlay named '%s'", name);
     return NULL;
 }
+void UIOverlay_Set_Enabled(UIOverlay *overlay, bool enabled)
+{
+    if (!overlay)
+        return;
+    overlay->properties.enabled = enabled;
+}
+void UIOverlay_Set_Visible(UIOverlay *overlay, bool visible)
+{
+    if (!overlay)
+        return;
+    overlay->properties.visible = visible;
+}

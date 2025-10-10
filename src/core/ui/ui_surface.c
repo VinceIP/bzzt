@@ -150,3 +150,16 @@ UISurface *UISurface_Find_By_Name(UI *ui, const char *name)
     }
     return NULL;
 }
+
+void UISurface_Set_Enabled(UISurface *surface, bool enabled)
+{
+    if (!surface)
+        return;
+    surface->properties.enabled = enabled;
+}
+void UISurface_Set_Visible(UISurface *surface, bool visible)
+{
+    if (!surface)
+        return;
+    surface->properties.visible = visible;
+}
