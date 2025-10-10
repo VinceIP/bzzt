@@ -28,6 +28,8 @@
 #define PROMPT_QUIT_TO_TITLE "End the game?"
 #define PROMPT_PAUSING "Pausing..."
 
+static char keys_display_buffer[64];
+
 static void btn_press_pause(UIActionContext *ctx)
 {
     if (!ctx)
@@ -171,6 +173,44 @@ static void register_ui_actions(Engine *e)
     UIAction_Register(e->action_registry, "btn_press_pause", btn_press_pause);
 }
 
+static const char *format_keys_display(void *ud)
+{
+    Bzzt_World *world = (Bzzt_World *)ud;
+    if (!world)
+        return "";
+
+    char *buf = keys_display_buffer;
+    int written = 0;
+
+    written += sprintf(buf + written, "\\f15\\c12    \\f14Keys:");
+
+    const struct
+    {
+        int bzzt_color;
+        const char *color_code;
+    } key_colors[] = {
+        {BZ_BLUE, "\\f9"},     // Blue key
+        {BZ_GREEN, "\\f10"},   // Green key
+        {BZ_CYAN, "\\f11"},    // Cyan key
+        {BZ_RED, "\\f12"},     // Red key
+        {BZ_MAGENTA, "\\f13"}, // Purple key
+        {BZ_YELLOW, "\\f14"},  // Yellow key
+        {BZ_WHITE, "\\f15"},   // White key
+    };
+
+    for (int i = 0; i < 7; i++)
+    {
+        if (world->keys[i])
+        {
+            // Show this key with its color
+            written += sprintf(buf + written, " %s\\c12",
+                               key_colors[i].color_code);
+        }
+    }
+
+    return keys_display_buffer;
+}
+
 static bool bind_world_stats_to_ui(Engine *e)
 {
     if (!e || !e->world || !e->ui)
@@ -199,6 +239,16 @@ static bool bind_world_stats_to_ui(Engine *e)
     if (score_text)
     {
         UIText_Rebind_To_Data(score_text, &world->score, "\\f14Score:%d", BIND_INT16);
+    }
+
+    UIElement_Text *keys_text = (UIElement_Text *)UIElement_Find_By_Name(ui, "keys");
+    if (keys_text)
+    {
+        if (keys_text->owns_ud && keys_text->ud)
+            free(keys_text->ud);
+        keys_text->textCallback = format_keys_display;
+        keys_text->ud = world;
+        keys_text->owns_ud = false;
     }
 
     return true;

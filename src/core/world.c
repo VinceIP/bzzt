@@ -243,32 +243,72 @@ static void update_stat_direction(Bzzt_Stat *stat, int dx, int dy)
         stat->step_y = (dy > 0) ? 1 : -1;
 }
 
+static int get_key_index_from_color(Color_Bzzt color)
+{
+    // Map bzzt color to key index
+    if (bzzt_color_equals(color, bzzt_get_color(BZ_BLUE)))
+        return ZZT_KEY_BLUE;
+    else if (bzzt_color_equals(color, bzzt_get_color(BZ_GREEN)))
+        return ZZT_KEY_GREEN;
+    else if (bzzt_color_equals(color, bzzt_get_color(BZ_CYAN)))
+        return ZZT_KEY_CYAN;
+    else if (bzzt_color_equals(color, bzzt_get_color(BZ_RED)))
+        return ZZT_KEY_RED;
+    else if (bzzt_color_equals(color, bzzt_get_color(BZ_MAGENTA)))
+        return ZZT_KEY_PURPLE;
+    else if (bzzt_color_equals(color, bzzt_get_color(BZ_YELLOW)))
+        return ZZT_KEY_YELLOW;
+    else if (bzzt_color_equals(color, bzzt_get_color(BZ_WHITE)))
+        return ZZT_KEY_WHITE;
+
+    return -1; // Invalid color
+}
+static const char *get_key_color_name(int key_index)
+{
+    const char *names[] = {"Blue", "Green", "Cyan", "Red", "Purple",
+                           "Yellow", "White"};
+    return (key_index >= 0 && key_index < 7) ? names[key_index] : "Unknown";
+}
+
 static bool handle_item_pickup(Bzzt_World *w, Bzzt_Board *b, int x, int y, Bzzt_Tile item)
 {
     Bzzt_Tile empty = {0};
     Bzzt_Stat *player = b->stats[0];
-    player->under = empty;
     switch (item.element)
     {
     case ZZT_AMMO:
         w->ammo += 5;
+        player->under = empty;
         return true;
     case ZZT_GEM:
         w->gems++;
         w->score += 10;
+        player->under = empty;
         return true;
     case ZZT_TORCH:
         w->torches++;
+        player->under = empty;
         return true;
     case ZZT_ENERGIZER:
     case ZZT_KEY:
+    {
+        Color_Bzzt key_color = item.fg;
+        int key_idx = get_key_index_from_color(key_color);
+        if (key_idx < 0 || key_idx >= 7)
+            return false;
+        if (w->keys[key_idx])
+            return false; // Already have key
+        w->keys[key_idx] = 1;
+        player->under = empty;
+        return true;
+    }
     case ZZT_SCROLL:
         return true;
     case ZZT_FOREST:
         Debug_Printf(LOG_WORLD, "Moved through the forest.");
         return true;
     default:
-        return false;
+        return true;
     }
 }
 
@@ -300,9 +340,9 @@ static bool do_player_move(Bzzt_World *w, int dx, int dy)
     // If won't collide with anything
     if (Bzzt_Tile_Is_Walkable(target))
     {
-        move_stat_to(current_board, player, new_x, new_y);
+        if (handle_item_pickup(w, current_board, new_x, new_y, target)) // Only move if the target is walkable and a valid item that can be picked up and removed from the board
+            move_stat_to(current_board, player, new_x, new_y);
         // If moved on to item pickup
-        handle_item_pickup(w, current_board, new_x, new_y, target);
     }
 
     // Unpause is player managed to move 1 tile
@@ -499,10 +539,12 @@ Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
     bw->gems = 0;
     bw->energizer_cycles = 0;
     bw->health = 100;
-    // keys
     bw->score = 0;
     bw->torch_cycles = 0;
     bw->torches = 0;
+
+    for (int i = 0; i < 7; ++i)
+        bw->keys[i] = 0;
 
     // verify player exists
     if (bw->start_board->stat_count > 0)
