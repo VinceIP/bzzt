@@ -70,6 +70,7 @@ bool Bzzt_Tile_Is_Walkable(Bzzt_Tile tile)
     case ZZT_TORCH:
     case ZZT_ENERGIZER:
     case ZZT_KEY:
+    case ZZT_DOOR:
         return true;
         break;
 

@@ -105,32 +105,38 @@ surfaces:
           - type: text
             name: "health"
             x: 2
-            value: '\c002  \f14Health:100'
+            width: 14
+            value: '\c002  \f14Health:32767'
           - type: text
             name: "ammo"
             x: 2
             y: 1
-            value: '\f11\c132    \f14Ammo:0'
+            width: 14
+            value: '\f11\c132    \f14Ammo:32767'
           - type: text
             name: "torches"
             x: 2
             y: 2
-            value: '\f6\c157 \f14Torches:0'
+            width: 14
+            value: '\f6\c157 \f14Torches:32767'
           - type: text
             name: "gems"
             x: 2
             y: 3
-            value: '\f11\c004    \f14Gems:0'
+            width: 14
+            value: '\f11\c004    \f14Gems:32767'
           - type: text
             name: "score"
             x: 6
             y: 4
+            width: 14
             value: ''
           - type: text
             name: "keys"
             x: 2
             y: 5
-            value: '\f15\c12    \f14Keys:'
+            width: 17
+            value: '\f15\c12    \f14Keys:        '
             # -keys go here later
 
           # play controls

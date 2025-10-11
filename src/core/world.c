@@ -246,15 +246,15 @@ static void update_stat_direction(Bzzt_Stat *stat, int dx, int dy)
 static int get_key_index_from_color(Color_Bzzt color)
 {
     // Map bzzt color to key index
-    if (bzzt_color_equals(color, bzzt_get_color(BZ_BLUE)))
+    if (bzzt_color_equals(color, bzzt_get_color(BZ_LIGHT_BLUE)))
         return ZZT_KEY_BLUE;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_GREEN)))
+    else if (bzzt_color_equals(color, bzzt_get_color(BZ_LIGHT_GREEN)))
         return ZZT_KEY_GREEN;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_CYAN)))
+    else if (bzzt_color_equals(color, bzzt_get_color(BZ_LIGHT_CYAN)))
         return ZZT_KEY_CYAN;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_RED)))
+    else if (bzzt_color_equals(color, bzzt_get_color(BZ_LIGHT_RED)))
         return ZZT_KEY_RED;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_MAGENTA)))
+    else if (bzzt_color_equals(color, bzzt_get_color(BZ_LIGHT_MAGENTA)))
         return ZZT_KEY_PURPLE;
     else if (bzzt_color_equals(color, bzzt_get_color(BZ_YELLOW)))
         return ZZT_KEY_YELLOW;
@@ -263,6 +263,28 @@ static int get_key_index_from_color(Color_Bzzt color)
 
     return -1; // Invalid color
 }
+
+static int get_key_index_from_door_color(Color_Bzzt door_color)
+{
+    if (bzzt_color_equals(door_color, bzzt_get_color(BZ_BLUE)))
+        return ZZT_KEY_BLUE;
+    else if (bzzt_color_equals(door_color, bzzt_get_color(BZ_GREEN)))
+        return ZZT_KEY_GREEN;
+    else if (bzzt_color_equals(door_color, bzzt_get_color(BZ_CYAN)))
+        return ZZT_KEY_CYAN;
+    else if (bzzt_color_equals(door_color, bzzt_get_color(BZ_RED)))
+        return ZZT_KEY_RED;
+    else if (bzzt_color_equals(door_color, bzzt_get_color(BZ_MAGENTA)))
+        return ZZT_KEY_PURPLE;
+    else if (bzzt_color_equals(door_color, bzzt_get_color(BZ_BROWN)))
+        return ZZT_KEY_YELLOW; // Brown door -> Yellow key
+    else if (bzzt_color_equals(door_color,
+                               bzzt_get_color(BZ_LIGHT_GRAY)))
+        return ZZT_KEY_WHITE; // Light gray door -> White key
+
+    return -1; // Invalid door color
+}
+
 static const char *get_key_color_name(int key_index)
 {
     const char *names[] = {"Blue", "Green", "Cyan", "Red", "Purple",
@@ -274,37 +296,53 @@ static bool handle_item_pickup(Bzzt_World *w, Bzzt_Board *b, int x, int y, Bzzt_
 {
     Bzzt_Tile empty = {0};
     Bzzt_Stat *player = b->stats[0];
+
     switch (item.element)
     {
     case ZZT_AMMO:
         w->ammo += 5;
-        player->under = empty;
+        Bzzt_Board_Set_Tile(b, x, y, empty);
         return true;
     case ZZT_GEM:
         w->gems++;
         w->score += 10;
-        player->under = empty;
+        Bzzt_Board_Set_Tile(b, x, y, empty);
         return true;
     case ZZT_TORCH:
         w->torches++;
-        player->under = empty;
+        Bzzt_Board_Set_Tile(b, x, y, empty);
         return true;
     case ZZT_ENERGIZER:
+        // do energize
+        Bzzt_Board_Set_Tile(b, x, y, empty);
+        return true;
     case ZZT_KEY:
     {
         Color_Bzzt key_color = item.fg;
         int key_idx = get_key_index_from_color(key_color);
+        Debug_Log(LOG_LEVEL_DEBUG, LOG_ENGINE, "key idx: %d", key_idx);
         if (key_idx < 0 || key_idx >= 7)
             return false;
-        if (w->keys[key_idx])
+        if (w->keys[key_idx] != 0)
             return false; // Already have key
         w->keys[key_idx] = 1;
-        player->under = empty;
+        Bzzt_Board_Set_Tile(b, x, y, empty);
         return true;
     }
+    case ZZT_DOOR:
+        Color_Bzzt door_color = item.bg;
+        int key_idx = get_key_index_from_door_color(door_color);
+        if (key_idx < 0 || key_idx >= 7)
+            return false;
+        if (w->keys[key_idx] == 0) // If player doesn't have this key
+            return false;
+        w->keys[key_idx] = 0; // success, consume key
+        Bzzt_Board_Set_Tile(b, x, y, empty);
+        return true;
     case ZZT_SCROLL:
         return true;
     case ZZT_FOREST:
+        Bzzt_Board_Set_Tile(b, x, y, empty);
         Debug_Printf(LOG_WORLD, "Moved through the forest.");
         return true;
     default:
@@ -342,7 +380,6 @@ static bool do_player_move(Bzzt_World *w, int dx, int dy)
     {
         if (handle_item_pickup(w, current_board, new_x, new_y, target)) // Only move if the target is walkable and a valid item that can be picked up and removed from the board
             move_stat_to(current_board, player, new_x, new_y);
-        // If moved on to item pickup
     }
 
     // Unpause is player managed to move 1 tile

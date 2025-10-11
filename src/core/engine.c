@@ -28,7 +28,7 @@
 #define PROMPT_QUIT_TO_TITLE "End the game?"
 #define PROMPT_PAUSING "Pausing..."
 
-static char keys_display_buffer[64];
+static char keys_display_buffer[128];
 
 static void btn_press_pause(UIActionContext *ctx)
 {
@@ -203,7 +203,7 @@ static const char *format_keys_display(void *ud)
         if (world->keys[i])
         {
             // Show this key with its color
-            written += sprintf(buf + written, " %s\\c12",
+            written += sprintf(buf + written, "%s\\c12",
                                key_colors[i].color_code);
         }
     }
@@ -295,6 +295,16 @@ static void init_camera(Engine *e)
 
 static void zzt_title_init(Engine *e)
 {
+    if (e->ui)
+    {
+        UI_Destroy(e->ui);
+        e->ui = NULL;
+    }
+    if (e->world)
+    {
+        Bzzt_World_Destroy(e->world);
+        e->world = NULL;
+    }
     char *file = ZZT_FILE;
     e->world = Bzzt_World_From_ZZT_World(file);
 
@@ -303,18 +313,15 @@ static void zzt_title_init(Engine *e)
         Debug_Printf(LOG_ENGINE, "Error loading ZZT world %s", file);
         return;
     }
-    if (e->ui)
-    {
-        UI_Destroy(e->ui);
-        e->ui = UI_Create(true, true);
-        UI_Load_From_BUI(e->ui, "assets/ui/sidebar_play.bui");
-        UI_Resolve_Button_Actions(e->ui, e->action_registry);
-        UI_Reset_Button_State();
-        if (!register_ui_components(e))
-            Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to find all sidebar UI components.");
-        if (!bind_world_stats_to_ui(e))
-            Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to bind world stats to UI.");
-    }
+
+    e->ui = UI_Create(true, true);
+    UI_Load_From_BUI(e->ui, "assets/ui/sidebar_play.bui");
+    UI_Resolve_Button_Actions(e->ui, e->action_registry);
+    UI_Reset_Button_State();
+    if (!register_ui_components(e))
+        Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to find all sidebar UI components.");
+    if (!bind_world_stats_to_ui(e))
+        Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to bind world stats to UI.");
 }
 
 static void load_splash_screen(UI *ui, UIActionRegistry *registry)
@@ -515,8 +522,6 @@ void Engine_Quit(Engine *e)
 {
     if (!e)
         return;
-    if (e->world)
-        Bzzt_World_Destroy(e->world);
 
     if (e->camera)
         free(e->camera);
@@ -531,6 +536,9 @@ void Engine_Quit(Engine *e)
 
     if (e->ui)
         UI_Destroy(e->ui);
+
+    if (e->world)
+        Bzzt_World_Destroy(e->world);
 
     if (e->action_registry)
         UIAction_Registry_Destroy(e->action_registry);

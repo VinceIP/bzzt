@@ -52,7 +52,7 @@ static void measure_text(const char *str, int *w, int *h)
                 i += 2;
                 continue;
             }
-            else if (next == 'f' || next == 'b')
+            else if (next == 'f' || next == 'b' || next == 'c')
             {
                 i += 2;
                 while (str[i] && isdigit((unsigned char)str[i]))
@@ -519,7 +519,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                                       is_overlay_visible, is_overlay_enabled,
                                       layout, anchor, align, yo->spacing);
             UIOverlay *ov = surface->overlays[surface->overlays_count - 1];
-            //int y_cursor = 0;
+            // int y_cursor = 0;
 
             // Elements
             for (unsigned ei = 0; ei < yo->elements_count && ok; ++ei)
@@ -623,7 +623,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
 
                     UIOverlay_Add_New_Element(ov, (UIElement *)btn);
                     int step = (btn->base.properties.h > 0 ? btn->base.properties.h : 1) + yo->spacing;
-                    //y_cursor += step;
+                    // y_cursor += step;
                 }
 
                 else if (strcasecmp(ye->type, "text") == 0)
@@ -646,7 +646,7 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                     txt->base.properties.h = ye->h > 0 ? ye->h : mh;
                     UIOverlay_Add_New_Element(ov, (UIElement *)txt);
                     int step = (txt->base.properties.h > 0 ? txt->base.properties.h : 1) + yo->spacing;
-                    //y_cursor += step;
+                    // y_cursor += step;
                 }
             }
         }
