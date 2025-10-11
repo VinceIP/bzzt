@@ -3,6 +3,7 @@
 #include <string.h>
 #include "bzzt.h"
 #include "debugger.h"
+#include "zzt_element_defaults.h"
 
 #define START_CAP 16
 
@@ -178,6 +179,63 @@ void Bzzt_Board_Update_Stats(Bzzt_World *w, Bzzt_Board *b)
     }
 }
 
+int Bzzt_Board_Get_Bullet_Count(Bzzt_Board *b)
+{
+    if (!b)
+        return 0;
+    int count = 0;
+    for (int i = 0; i < b->stat_count; ++i)
+    {
+        Bzzt_Stat *s = b->stats[i];
+        if (!s)
+            continue;
+        Bzzt_Tile t = Bzzt_Board_Get_Tile(b, s->x, s->y);
+        if (t.element == ZZT_BULLET)
+            count++;
+    }
+    return count;
+}
+
+static int get_default_glyph_for_element(uint8_t type)
+{
+    const ZZT_Element_Defaults *defaults = zzt_get_element_defaults(type);
+    if (defaults)
+        return defaults->default_glyph;
+    return 0;
+}
+
+Bzzt_Stat *Bzzt_Board_Spawn_Stat(Bzzt_Board *b, uint8_t type, int x, int y, Color_Bzzt fg, Color_Bzzt bg)
+{
+    if (!b)
+        return NULL;
+
+    Bzzt_Stat *s = Bzzt_Stat_Create(b, x, y);
+    if (!s)
+        return NULL;
+
+    Bzzt_Tile tile = {0};
+    tile.element = type;
+    tile.glyph = get_default_glyph_for_element(type);
+    tile.fg = fg;
+    tile.bg = bg;
+    tile.visible = true;
+    const ZZT_Element_Defaults *defaults = zzt_get_element_defaults(type);
+
+    s->cycle = defaults->default_cycle;
+    s->data[0] = defaults->default_data[0];
+    s->data[1] = defaults->default_data[1];
+    s->data[2] = defaults->default_data[2];
+
+    Bzzt_Board_Set_Tile(b, x, y, tile);
+    if (!Bzzt_Board_Add_Stat(b, s)) // Attempt to add stat to board, if it fails, clean up and return NULL
+    {
+        Bzzt_Board_Set_Tile(b, x, y, s->under);
+        Bzzt_Stat_Destroy(s);
+        return NULL;
+    }
+    return s;
+}
+
 Bzzt_Tile Bzzt_Board_Get_Tile(Bzzt_Board *b, int x, int y)
 {
     if (!b || x < 0 || x >= b->width || y < 0 || y >= b->height)
@@ -209,6 +267,9 @@ void Bzzt_Board_Move_Stat_To(Bzzt_Board *board, Bzzt_Stat *stat, int new_x, int 
     Bzzt_Tile new_under = Bzzt_Board_Get_Tile(board, new_x, new_y);
 
     Bzzt_Board_Set_Tile(board, stat->x, stat->y, stat->under);
+
+    if (stat_tile.element != ZZT_PLAYER)
+        stat_tile.bg = new_under.bg; // Preserve background color except for player
 
     stat->under = new_under;
 

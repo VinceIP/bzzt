@@ -33,6 +33,8 @@ void Input_Poll(InputState *s)
     s->Q_pressed = IsKeyPressed(KEY_Q);
     s->P_pressed = IsKeyPressed(KEY_P);
     s->ESC_pressed = IsKeyPressed(KEY_ESCAPE);
+    s->SPACE_pressed = IsKeyPressed(KEY_SPACE);
+    s->SHIFT_held = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
     if (s->dx != 0 || s->dy != 0) // If key is down
     {
         s->anyDirPressed = true;

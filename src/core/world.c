@@ -12,6 +12,7 @@
 
 #define BLINK_RATE_DEFAULT 269   // in ms
 #define TICK_DURATION_DEFAULT 80 // in ms
+#define STICKY_INPUT_DEFAULT true
 
 static bool grow_boards_array(Bzzt_World *w)
 {
@@ -29,76 +30,6 @@ static bool grow_boards_array(Bzzt_World *w)
         w->boards[i] = NULL;
     }
     w->boards_cap = new_cap;
-    return true;
-}
-
-static bool handle_board_edge_move(Bzzt_World *w, int new_x, int new_y)
-{
-    if (!w)
-        return false;
-
-    Bzzt_Board *old_board = w->boards[w->boards_current];
-    Bzzt_Stat *old_player = old_board->stats[0];
-
-    uint8_t next_board_idx = 0;
-
-    if (new_x < 0)
-        next_board_idx = old_board->board_w;
-    else if (new_x >= old_board->width)
-        next_board_idx = old_board->board_e;
-    else if (new_y < 0)
-        next_board_idx = old_board->board_n;
-    else if (new_y >= old_board->height)
-        next_board_idx = old_board->board_s;
-
-    if (next_board_idx == 0 || next_board_idx > w->boards_count)
-    {
-        Debug_Log(LOG_WARNING, LOG_WORLD, "Tried to transition to invalid board index.");
-        return false;
-    }
-
-    Bzzt_Board *new_board = w->boards[next_board_idx];
-
-    int entry_x, entry_y;
-
-    if (new_x < 0)
-    {
-        entry_x = new_board->width - 1;
-        entry_y = old_player->y;
-    }
-    else if (new_x >= old_board->width)
-    {
-        entry_x = 0;
-        entry_y = old_player->y;
-    }
-    else if (new_y < 0)
-    {
-        entry_x = old_player->x;
-        entry_y = new_board->height - 1;
-    }
-    else if (new_y >= old_board->height)
-    {
-        entry_x = old_player->x;
-        entry_y = 0;
-    }
-
-    Bzzt_Board_Set_Tile(old_board, old_player->x, old_player->y, old_player->under);
-    w->boards_current = next_board_idx;
-    Bzzt_Stat *new_player = new_board->stats[0];
-    Bzzt_Tile entry_under = Bzzt_Board_Get_Tile(new_board, entry_x, entry_y);
-    Bzzt_Board_Set_Tile(new_board, new_player->x, new_player->y, new_player->under);
-    new_player->x = entry_x;
-    new_player->y = entry_y;
-    new_player->under = entry_under;
-
-    Bzzt_Tile player_tile = {0};
-    player_tile.element = ZZT_PLAYER;
-    player_tile.glyph = 2;
-    player_tile.fg = COLOR_WHITE;
-    player_tile.bg = COLOR_BLUE;
-    player_tile.visible = true;
-
-    Bzzt_Board_Set_Tile(new_board, entry_x, entry_y, player_tile);
     return true;
 }
 
@@ -149,250 +80,12 @@ static bool switch_board_to(Bzzt_World *w, int idx, int x, int y)
     return true;
 }
 
-static bool handle_passage_touch(Bzzt_World *w, int x, int y)
-{
-    if (!w)
-        return false;
-
-    Bzzt_Board *current_board = w->boards[w->boards_current];
-    Bzzt_Stat *passage = Bzzt_Board_Get_Stat_At(current_board, x, y);
-    if (!passage)
-        return false;
-
-    int target_board_idx = passage->data[2];
-
-    if (target_board_idx <= 0 || target_board_idx >= w->boards_count)
-        return false;
-
-    Bzzt_Board *target_board = w->boards[target_board_idx];
-
-    Bzzt_Tile passage_tile = Bzzt_Board_Get_Tile(current_board, passage->x, passage->y);
-    Color_Bzzt passage_fg = passage_tile.fg;
-    Color_Bzzt passage_bg = passage_tile.bg;
-
-    Bzzt_Stat *matching_passage = NULL;
-
-    int dest_x = target_board->width / 2;  // If no matching passage is found on target board,
-    int dest_y = target_board->height / 2; // coords default to center of board
-
-    // Search for linking passage
-    for (int i = 0; i < target_board->stat_count; ++i)
-    {
-        Bzzt_Stat *s = target_board->stats[i];
-        Bzzt_Tile t = Bzzt_Board_Get_Tile(target_board, s->x, s->y);
-        if (t.element == ZZT_PASSAGE &&
-            bzzt_color_equals(t.fg, passage_fg) &&
-            bzzt_color_equals(t.bg, passage_bg))
-            matching_passage = s;
-    }
-
-    if (matching_passage != NULL)
-    {
-        dest_x = matching_passage->x;
-        dest_y = matching_passage->y;
-    }
-
-    switch_board_to(w, target_board_idx, dest_x, dest_y);
-    Bzzt_World_Set_Pause(w, true);
-    return true;
-}
-
-static bool handle_player_touch(Bzzt_World *w, Bzzt_Tile tile, int x, int y)
-{
-    if (!w)
-        return false;
-
-    Bzzt_Board *board = w->boards[w->boards_current];
-    Bzzt_Stat *player = board->stats[0];
-    Bzzt_Tile player_tile = Bzzt_Board_Get_Tile(board, player->x, player->y);
-
-    Interaction_Type type = Bzzt_Tile_Get_Interaction_Type(tile);
-    const char *type_name = Bzzt_Tile_Get_Type_Name(tile);
-    Debug_Printf(LOG_LEVEL_DEBUG, "Player touched %s at (%d, %d).", type_name, x, y);
-
-    // Handle solid, interactable tiles here
-    switch (tile.element)
-    {
-    case ZZT_PASSAGE:
-        return handle_passage_touch(w, x, y);
-    default:
-        break;
-    }
-
-    return true;
-}
-
 static void update_stat_direction(Bzzt_Stat *stat, int dx, int dy)
 {
     if (dx != 0)
         stat->step_x = (dx > 0) ? 1 : -1;
     if (dy != 0)
         stat->step_y = (dy > 0) ? 1 : -1;
-}
-
-static int get_key_index_from_color(Color_Bzzt color)
-{
-    // Map bzzt color to key index
-    if (bzzt_color_equals(color, bzzt_get_color(BZ_LIGHT_BLUE)))
-        return ZZT_KEY_BLUE;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_LIGHT_GREEN)))
-        return ZZT_KEY_GREEN;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_LIGHT_CYAN)))
-        return ZZT_KEY_CYAN;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_LIGHT_RED)))
-        return ZZT_KEY_RED;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_LIGHT_MAGENTA)))
-        return ZZT_KEY_PURPLE;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_YELLOW)))
-        return ZZT_KEY_YELLOW;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_WHITE)))
-        return ZZT_KEY_WHITE;
-
-    return -1; // Invalid color
-}
-
-static int get_key_index_from_door_color(Color_Bzzt door_color)
-{
-    if (bzzt_color_equals(door_color, bzzt_get_color(BZ_BLUE)))
-        return ZZT_KEY_BLUE;
-    else if (bzzt_color_equals(door_color, bzzt_get_color(BZ_GREEN)))
-        return ZZT_KEY_GREEN;
-    else if (bzzt_color_equals(door_color, bzzt_get_color(BZ_CYAN)))
-        return ZZT_KEY_CYAN;
-    else if (bzzt_color_equals(door_color, bzzt_get_color(BZ_RED)))
-        return ZZT_KEY_RED;
-    else if (bzzt_color_equals(door_color, bzzt_get_color(BZ_MAGENTA)))
-        return ZZT_KEY_PURPLE;
-    else if (bzzt_color_equals(door_color, bzzt_get_color(BZ_BROWN)))
-        return ZZT_KEY_YELLOW; // Brown door -> Yellow key
-    else if (bzzt_color_equals(door_color,
-                               bzzt_get_color(BZ_LIGHT_GRAY)))
-        return ZZT_KEY_WHITE; // Light gray door -> White key
-
-    return -1; // Invalid door color
-}
-
-static const char *get_key_color_name(int key_index)
-{
-    const char *names[] = {"Blue", "Green", "Cyan", "Red", "Purple",
-                           "Yellow", "White"};
-    return (key_index >= 0 && key_index < 7) ? names[key_index] : "Unknown";
-}
-
-static bool handle_item_pickup(Bzzt_World *w, Bzzt_Board *b, int x, int y, Bzzt_Tile item)
-{
-    Bzzt_Tile empty = {0};
-    Bzzt_Stat *player = b->stats[0];
-
-    switch (item.element)
-    {
-    case ZZT_AMMO:
-        w->ammo += 5;
-        Bzzt_Board_Set_Tile(b, x, y, empty);
-        return true;
-    case ZZT_GEM:
-        w->gems++;
-        w->score += 10;
-        Bzzt_Board_Set_Tile(b, x, y, empty);
-        return true;
-    case ZZT_TORCH:
-        w->torches++;
-        Bzzt_Board_Set_Tile(b, x, y, empty);
-        return true;
-    case ZZT_ENERGIZER:
-        // do energize
-        Bzzt_Board_Set_Tile(b, x, y, empty);
-        return true;
-    case ZZT_KEY:
-    {
-        Color_Bzzt key_color = item.fg;
-        int key_idx = get_key_index_from_color(key_color);
-        Debug_Log(LOG_LEVEL_DEBUG, LOG_ENGINE, "key idx: %d", key_idx);
-        if (key_idx < 0 || key_idx >= 7)
-            return false;
-        if (w->keys[key_idx] != 0)
-            return false; // Already have key
-        w->keys[key_idx] = 1;
-        Bzzt_Board_Set_Tile(b, x, y, empty);
-        return true;
-    }
-    case ZZT_DOOR:
-        Color_Bzzt door_color = item.bg;
-        int key_idx = get_key_index_from_door_color(door_color);
-        if (key_idx < 0 || key_idx >= 7)
-            return false;
-        if (w->keys[key_idx] == 0) // If player doesn't have this key
-            return false;
-        w->keys[key_idx] = 0; // success, consume key
-        Bzzt_Board_Set_Tile(b, x, y, empty);
-        return true;
-    case ZZT_SCROLL:
-        return true;
-    case ZZT_FOREST:
-        Bzzt_Board_Set_Tile(b, x, y, empty);
-        Debug_Printf(LOG_WORLD, "Moved through the forest.");
-        return true;
-    default:
-        return true;
-    }
-}
-
-static bool do_player_move(Bzzt_World *w, int dx, int dy)
-{
-    if (dx == 0 && dy == 0)
-        return false;
-
-    Bzzt_Board *current_board = w->boards[w->boards_current];
-    if (!current_board || current_board->stat_count == 0)
-        return false;
-
-    Bzzt_Stat *player = current_board->stats[0];
-    if (!player)
-        return false;
-
-    int new_x = player->x + dx;
-    int new_y = player->y + dy;
-
-    // If trying to move past board bounds, try moving to adjacent board
-    if (new_x < 0 || new_x >= current_board->width || new_y < 0 || new_y >= current_board->height)
-    {
-        // Quirk - if paused, ZZT stays paused during board edge transition
-        return handle_board_edge_move(w, new_x, new_y);
-    }
-
-    Bzzt_Tile target = Bzzt_Board_Get_Tile(current_board, new_x, new_y);
-
-    // If won't collide with anything
-    if (Bzzt_Tile_Is_Walkable(target))
-    {
-        if (handle_item_pickup(w, current_board, new_x, new_y, target)) // Only move if the target is walkable and a valid item that can be picked up and removed from the board
-            Bzzt_Board_Move_Stat_To(current_board, player, new_x, new_y);
-    }
-
-    // Unpause is player managed to move 1 tile
-    if (w->paused)
-        Bzzt_World_Set_Pause(w, false);
-
-    return handle_player_touch(w, target, new_x, new_y);
-}
-
-static void update_player(Bzzt_World *w, InputState *in)
-{
-    if (!in->anyDirPressed || in->delayLock)
-        return;
-
-    Bzzt_Board *current_board = w->boards[w->boards_current];
-
-    if (!current_board || current_board->stat_count == 0)
-        return;
-
-    Bzzt_Stat *player = current_board->stats[0];
-
-    if (!player)
-        return;
-
-    if (do_player_move(w, in->dx, in->dy))
-        update_stat_direction(player, in->dx, in->dy);
 }
 
 Bzzt_World *Bzzt_World_Create(char *title)
@@ -439,6 +132,12 @@ Bzzt_World *Bzzt_World_Create(char *title)
     w->timer->paused = false;
     w->timer->tick_duration_ms = TICK_DURATION_DEFAULT;
 
+    w->enable_sticky_input = STICKY_INPUT_DEFAULT;
+    w->current_input = NULL;
+    w->has_queued_input = false;
+    w->queued_dx = 0;
+    w->queued_dy = 0;
+
     return w;
 }
 
@@ -484,6 +183,16 @@ void Bzzt_World_Update(Bzzt_World *w, InputState *in)
             w->blink_timer = 0.0;
         }
     }
+
+    // Queue inputs
+    if (in->anyDirPressed && w->enable_sticky_input)
+    {
+        w->queued_dx = in->dx;
+        w->queued_dy = in->dy;
+        w->has_queued_input = true;
+    }
+
+    w->current_input = in;
 
     double frame_ms = GetFrameTime() * 1000.0;
     Bzzt_Timer_Run_Frame(w, frame_ms);

@@ -22,12 +22,15 @@ typedef void (*Key_Handler)(Engine *e);
 typedef struct InputState
 {
     int dx, dy; // Target input direction
+
     bool anyDirPressed;
     bool E_pressed;
     bool L_pressed;
     bool Q_pressed;
     bool P_pressed;
     bool ESC_pressed;
+    bool SPACE_pressed;
+    bool SHIFT_held;
     bool quit;
     int heldFrames;
     double elapsedTime;

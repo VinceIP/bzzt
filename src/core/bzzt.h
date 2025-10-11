@@ -130,9 +130,13 @@ typedef struct Bzzt_World
     uint16_t start_board_idx;
 
     Bzzt_Timer *timer;
+    InputState *current_input;
 
-    bool allow_blink,
-        blink_state;
+    int queued_dx, queued_dy;
+    bool has_queued_input;
+    bool enable_sticky_input;
+
+    bool allow_blink, blink_state;
     int blink_delay_rate; // In ms
     double blink_timer;   // Ms since last blink
 
@@ -216,11 +220,16 @@ Bzzt_Stat *Bzzt_Board_Get_Stat_At(Bzzt_Board *b, int x, int y);
 // Return a stat's index on the target board
 int Bzzt_Board_Get_Stat_Index(Bzzt_Board *b, Bzzt_Stat *stat);
 
+// Create a new empty stat at given x/y position
+Bzzt_Stat *Bzzt_Stat_Create(Bzzt_Board *b, int x, int y);
+
 // Free a stat from memory and restore the tile it was on
 void Bzzt_Board_Stat_Die(Bzzt_Board *b, Bzzt_Stat *stat);
 
 // Update a given stat
 void Bzzt_Stat_Update(Bzzt_World *w, Bzzt_Stat *stat, int stat_idx);
+
+void Bzzt_Stat_Destroy(Bzzt_Stat *s);
 
 // Return a Bzzt object by its unique object id.
 Bzzt_Object *Bzzt_Board_Get_Object(Bzzt_Board *b, int id);
@@ -236,6 +245,12 @@ bool Bzzt_Board_Is_In_Bounds(Bzzt_Board *b, int x, int y);
 
 // Move a stat and its tile to the given x/y position. Absolute - no checks
 void Bzzt_Board_Move_Stat_To(Bzzt_Board *b, Bzzt_Stat *stat, int x, int y);
+
+// Return the number of bullets currently on the board
+int Bzzt_Board_Get_Bullet_Count(Bzzt_Board *b);
+
+// Spawn a new stat of given type at x/y position with default values
+Bzzt_Stat *Bzzt_Board_Spawn_Stat(Bzzt_Board *b, uint8_t type, int x, int y, Color_Bzzt fg, Color_Bzzt bg);
 
 // Convert the currently selected board in a ZZT world to a Bzzt board
 Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw);
