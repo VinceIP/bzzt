@@ -8,8 +8,10 @@
 #include "color.h"
 #include "debugger.h"
 #include "zzt.h"
+#include "timing.h"
 
-#define BLINK_RATE_DEFAULT 269 // in ms
+#define BLINK_RATE_DEFAULT 269   // in ms
+#define TICK_DURATION_DEFAULT 80 // in ms
 
 static bool grow_boards_array(Bzzt_World *w)
 {
@@ -430,7 +432,12 @@ Bzzt_World *Bzzt_World_Create(char *title)
     w->allow_blink = true; // blink on by default
     w->blink_state = false;
 
-    w->tick_counter = 1;
+    w->timer = malloc(sizeof(Bzzt_Timer));
+    w->timer->accumulator_ms = 0;
+    w->timer->current_stat_index = 0;
+    w->timer->current_tick = 1;
+    w->timer->paused = false;
+    w->timer->tick_duration_ms = TICK_DURATION_DEFAULT;
 
     return w;
 }
@@ -452,17 +459,9 @@ void Bzzt_World_Destroy(Bzzt_World *w)
     w->doUnload = false;
     w->loaded = false;
     free(w->boards);
+    if (w->timer)
+        free(w->timer);
     free(w);
-}
-
-static void increment_tick_counter(Bzzt_World *w)
-{
-    if (!w)
-        return;
-    if (w->tick_counter + 1 > 420 || w->tick_counter == 0)
-        w->tick_counter = 1;
-    else
-        w.tick_counter++;
 }
 
 void Bzzt_World_Update(Bzzt_World *w, InputState *in)
@@ -475,8 +474,6 @@ void Bzzt_World_Update(Bzzt_World *w, InputState *in)
         return;
     }
 
-    increment_tick_counter(w);
-
     if (w->allow_blink)
     {
         double delta_time = GetFrameTime() * 1000.0;
@@ -487,8 +484,9 @@ void Bzzt_World_Update(Bzzt_World *w, InputState *in)
             w->blink_timer = 0.0;
         }
     }
-    if (w->boards_current != 0)
-        update_player(w, in);
+
+    double frame_ms = GetFrameTime() * 1000.0;
+    Bzzt_Timer_Run_Frame(w, frame_ms);
 }
 
 void Bzzt_World_Add_Board(Bzzt_World *w, Bzzt_Board *b)

@@ -156,12 +156,26 @@ void Bzzt_Board_Stat_Die(Bzzt_Board *b, Bzzt_Stat *stat)
     if (!b || !stat)
         return;
 
-    Bzzt_ int idx = Bzzt_Board_Get_Stat_Index(b, stat);
+    int idx = Bzzt_Board_Get_Stat_Index(b, stat);
     if (idx < 0 || idx >= b->stat_count)
         return;
 
     Bzzt_Board_Set_Tile(b, stat->x, stat->y, stat->under);
     Bzzt_Board_Remove_Stat(b, idx);
+}
+
+void Bzzt_Board_Update_Stats(Bzzt_World *w, Bzzt_Board *b)
+{
+    if (!b)
+        return;
+
+    for (int i = 0; i < b->stat_count; ++i)
+    {
+        Bzzt_Stat *stat = b->stats[i];
+        if (!stat)
+            return;
+        Bzzt_Stat_Update(w, stat, i);
+    }
 }
 
 Bzzt_Tile Bzzt_Board_Get_Tile(Bzzt_Board *b, int x, int y)

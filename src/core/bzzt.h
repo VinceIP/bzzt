@@ -22,6 +22,7 @@
 #define BZZT_MAX_PATH_LENGTH 32
 
 typedef struct InputState InputState;
+typedef struct Bzzt_Timer Bzzt_Timer;
 
 // The direction an object is facing
 typedef enum
@@ -128,7 +129,10 @@ typedef struct Bzzt_World
     Bzzt_Board *start_board;
     uint16_t start_board_idx;
 
-    bool allow_blink, blink_state;
+    Bzzt_Timer *timer;
+
+    bool allow_blink,
+        blink_state;
     int blink_delay_rate; // In ms
     double blink_timer;   // Ms since last blink
 
@@ -140,8 +144,6 @@ typedef struct Bzzt_World
     int16_t torch_cycles, energizer_cycles;
     char flags[10][21];
     int16_t time_passed;
-
-    uint16_t tick_counter;
 
     bool zzt_compatible; // If this world can be saved as a valid .zzt
 
@@ -206,7 +208,7 @@ Bzzt_Stat *Bzzt_Board_Add_Stat(Bzzt_Board *b, Bzzt_Stat *s);
 void Bzzt_Board_Remove_Stat(Bzzt_Board *b, int id);
 
 // Update and do logic for all stats on target board
-void Bzzt_Board_Update_Stats(Bzzt_Board *b);
+void Bzzt_Board_Update_Stats(Bzzt_World *w, Bzzt_Board *b);
 
 // Return a stat from an x/y position
 Bzzt_Stat *Bzzt_Board_Get_Stat_At(Bzzt_Board *b, int x, int y);
@@ -216,6 +218,9 @@ int Bzzt_Board_Get_Stat_Index(Bzzt_Board *b, Bzzt_Stat *stat);
 
 // Free a stat from memory and restore the tile it was on
 void Bzzt_Board_Stat_Die(Bzzt_Board *b, Bzzt_Stat *stat);
+
+// Update a given stat
+void Bzzt_Stat_Update(Bzzt_World *w, Bzzt_Stat *stat, int stat_idx);
 
 // Return a Bzzt object by its unique object id.
 Bzzt_Object *Bzzt_Board_Get_Object(Bzzt_Board *b, int id);
