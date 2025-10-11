@@ -30,21 +30,6 @@ static bool grow_boards_array(Bzzt_World *w)
     return true;
 }
 
-static void move_stat_to(Bzzt_Board *board, Bzzt_Stat *stat, int new_x, int new_y)
-{
-    Bzzt_Tile stat_tile = Bzzt_Board_Get_Tile(board, stat->x, stat->y);
-    Bzzt_Tile new_under = Bzzt_Board_Get_Tile(board, new_x, new_y);
-
-    Bzzt_Board_Set_Tile(board, stat->x, stat->y, stat->under);
-
-    stat->under = new_under;
-
-    stat->x = new_x;
-    stat->y = new_y;
-
-    Bzzt_Board_Set_Tile(board, new_x, new_y, stat_tile);
-}
-
 static bool handle_board_edge_move(Bzzt_World *w, int new_x, int new_y)
 {
     if (!w)
@@ -379,7 +364,7 @@ static bool do_player_move(Bzzt_World *w, int dx, int dy)
     if (Bzzt_Tile_Is_Walkable(target))
     {
         if (handle_item_pickup(w, current_board, new_x, new_y, target)) // Only move if the target is walkable and a valid item that can be picked up and removed from the board
-            move_stat_to(current_board, player, new_x, new_y);
+            Bzzt_Board_Move_Stat_To(current_board, player, new_x, new_y);
     }
 
     // Unpause is player managed to move 1 tile
@@ -445,6 +430,8 @@ Bzzt_World *Bzzt_World_Create(char *title)
     w->allow_blink = true; // blink on by default
     w->blink_state = false;
 
+    w->tick_counter = 1;
+
     return w;
 }
 
@@ -468,13 +455,27 @@ void Bzzt_World_Destroy(Bzzt_World *w)
     free(w);
 }
 
+static void increment_tick_counter(Bzzt_World *w)
+{
+    if (!w)
+        return;
+    if (w->tick_counter + 1 > 420 || w->tick_counter == 0)
+        w->tick_counter = 1;
+    else
+        w.tick_counter++;
+}
+
 void Bzzt_World_Update(Bzzt_World *w, InputState *in)
 {
+    if (!w || !in)
+        return;
     if (w->doUnload)
     {
         Bzzt_World_Destroy(w);
         return;
     }
+
+    increment_tick_counter(w);
 
     if (w->allow_blink)
     {

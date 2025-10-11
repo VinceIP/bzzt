@@ -33,6 +33,73 @@ static void bzzt_param_destroy(Bzzt_Stat *param)
     free(param);
 }
 
+static bool stat_can_act(Bzzt_World *w, Bzzt_Stat *stat, int stat_idx)
+{
+    if (!w || !stat)
+        return false;
+
+    int current_tick = w->tick_counter;
+    return (current_tick % stat->cycle) == (stat_idx % stat->cycle);
+}
+
+static void stat_act(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
+{
+    if (!w || !b || !stat)
+        return;
+
+    Bzzt_Tile *tile = Bzzt_Board_Get_Tile(b, stat->x, stat->y);
+    if (!tile)
+        return;
+
+    switch (tile->element)
+    {
+    case ZZT_BULLET:
+        int shooter = stat->data[0]; // 0 is player, otherwise int is stat index of shooter
+        int next_x = stat->x + stat->step_x;
+        int next_y = stat->y + stat->step_y;
+        if (Bzzt_Board_Is_In_Bounds(b, next_x, next_y))
+        {
+            Bzzt_Tile *next_tile = Bzzt_Board_Get_Tile(b, next_x, next_y);
+            if (next_tile->element == ZZT_EMPTY || next_tile->element == ZZT_FAKE || next_tile->element == ZZT_WATER)
+            {
+                Bzzt_Board_Move_Stat_To(b, next_x, next_y);
+            }
+            else if (next_tile->element == ZZT_BREAKABLE)
+            {
+                Bzzt_Board_Set_Tile(b, next_x, next_y, (Bzzt_Tile){0});
+                Bzzt_Board_Move_Stat_To(b, next_x, next_y);
+            }
+            else if (next_tile->element == ZZT_RICOCHET)
+            {
+                // tbd
+            }
+            else if (next_tile->element == ZZT_OBJECT)
+            {
+                // tbd - send shot message
+            }
+            else
+            {
+                int idx = Bzzt_Board_Get_Stat_Index(b, stat);
+                Bzzt_Board_Remove_Stat(b, idx);
+            }
+        }
+        break;
+    }
+}
+
+void Bzzt_Stats_Update(Bzzt_World *w, Bzzt_Board *b)
+{
+    if (!b)
+        return;
+
+    for (int i = 0; i < b->stat_count; ++i)
+    {
+        Bzzt_Stat *stat = b->stats[i];
+        if (stat_can_act(w, stat, i))
+            stat_act(w, stat);
+    }
+}
+
 Bzzt_Object *Bzzt_Object_Create(uint8_t glyph, Color_Bzzt fg, Color_Bzzt bg, int x, int y)
 {
     Bzzt_Object *o = malloc(sizeof(Bzzt_Object));

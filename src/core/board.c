@@ -166,6 +166,26 @@ bool Bzzt_Board_Set_Tile(Bzzt_Board *b, int x, int y, Bzzt_Tile tile)
     return true;
 }
 
+bool Bzzt_Board_Is_In_Bounds(Bzzt_Board *b, int x, int y)
+{
+    return (x >= 0 && y >= 0 && x < b->width && y < b->height);
+}
+
+void Bzzt_Board_Move_Stat_To(Bzzt_Board *board, Bzzt_Stat *stat, int new_x, int new_y)
+{
+    Bzzt_Tile stat_tile = Bzzt_Board_Get_Tile(board, stat->x, stat->y);
+    Bzzt_Tile new_under = Bzzt_Board_Get_Tile(board, new_x, new_y);
+
+    Bzzt_Board_Set_Tile(board, stat->x, stat->y, stat->under);
+
+    stat->under = new_under;
+
+    stat->x = new_x;
+    stat->y = new_y;
+
+    Bzzt_Board_Set_Tile(board, new_x, new_y, stat_tile);
+}
+
 Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw)
 {
     if (!zw)

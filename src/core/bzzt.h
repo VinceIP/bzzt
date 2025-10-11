@@ -135,13 +135,13 @@ typedef struct Bzzt_World
     bool paused;
     bool on_title;
 
-    /*for zzt support*/
     int16_t ammo, gems, health, torches, score;
     uint8_t keys[7];
     int16_t torch_cycles, energizer_cycles;
     char flags[10][21];
     int16_t time_passed;
-    /*-*/
+
+    uint16_t tick_counter;
 
     bool zzt_compatible; // If this world can be saved as a valid .zzt
 
@@ -182,6 +182,8 @@ Bzzt_Stat *Bzzt_Stat_From_ZZT_Param(ZZTparam *param, ZZTtile tile, int x, int y)
 
 Bzzt_Tile Bzzt_Tile_From_ZZT_Tile(ZZTblock *block, int x, int y);
 
+void Bzzt_Stats_Update(Bzzt_Board *b);
+
 /* -- --*/
 
 /* -- Boards --*/
@@ -211,6 +213,10 @@ Bzzt_Object *Bzzt_Board_Get_Object(Bzzt_Board *b, int id);
 Bzzt_Tile Bzzt_Board_Get_Tile(Bzzt_Board *b, int x, int y);
 
 bool Bzzt_Board_Set_Tile(Bzzt_Board *b, int x, int y, Bzzt_Tile tile);
+
+bool Bzzt_Board_Is_In_Bounds(Bzzt_Board *b, int x, int y);
+
+void Bzzt_Board_Move_Stat_To(Bzzt_Board *b, int x, int y);
 
 // Convert the currently selected board in a ZZT world to a Bzzt board
 Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw);
