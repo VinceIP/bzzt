@@ -165,7 +165,8 @@ typedef struct Bzzt_Camera
 } Bzzt_Camera;
 
 /* -- Objects --*/
-// Create a new Bzzt_Object
+// defunct until bzzt expansion
+//  Create a new Bzzt_Object
 Bzzt_Object *Bzzt_Object_Create(uint8_t glyph, Color_Bzzt fg, Color_Bzzt bg, int x, int y);
 // Destroy a Bzzt_Object
 void Bzzt_Object_Destroy(Bzzt_Object *o);
@@ -176,13 +177,14 @@ bool Bzzt_Tile_Is_Walkable(Bzzt_Tile tile);
 // Return interaction type of an object.
 Interaction_Type Bzzt_Tile_Get_Interaction_Type(Bzzt_Tile tile);
 
+// Return element type of tile as a string
 const char *Bzzt_Tile_Get_Type_Name(Bzzt_Tile tile);
 
+// zztParam to Bzzt_Stat
 Bzzt_Stat *Bzzt_Stat_From_ZZT_Param(ZZTparam *param, ZZTtile tile, int x, int y);
 
+// zztTile to Bzzt_Tile
 Bzzt_Tile Bzzt_Tile_From_ZZT_Tile(ZZTblock *block, int x, int y);
-
-void Bzzt_Stats_Update(Bzzt_Board *b);
 
 /* -- --*/
 
@@ -203,20 +205,32 @@ Bzzt_Stat *Bzzt_Board_Add_Stat(Bzzt_Board *b, Bzzt_Stat *s);
 // Remove an object from a board by its unique object id.
 void Bzzt_Board_Remove_Stat(Bzzt_Board *b, int id);
 
+// Update and do logic for all stats on target board
+void Bzzt_Board_Update_Stats(Bzzt_Board *b);
+
+// Return a stat from an x/y position
 Bzzt_Stat *Bzzt_Board_Get_Stat_At(Bzzt_Board *b, int x, int y);
 
+// Return a stat's index on the target board
 int Bzzt_Board_Get_Stat_Index(Bzzt_Board *b, Bzzt_Stat *stat);
+
+// Free a stat from memory and restore the tile it was on
+void Bzzt_Board_Stat_Die(Bzzt_Board *b, Bzzt_Stat *stat);
 
 // Return a Bzzt object by its unique object id.
 Bzzt_Object *Bzzt_Board_Get_Object(Bzzt_Board *b, int id);
 
+// Return a tile from target board at x/y position
 Bzzt_Tile Bzzt_Board_Get_Tile(Bzzt_Board *b, int x, int y);
 
+// Set a tile to the target board at x/y position
 bool Bzzt_Board_Set_Tile(Bzzt_Board *b, int x, int y, Bzzt_Tile tile);
 
+// Return true if given x/y position is within board bounds
 bool Bzzt_Board_Is_In_Bounds(Bzzt_Board *b, int x, int y);
 
-void Bzzt_Board_Move_Stat_To(Bzzt_Board *b, int x, int y);
+// Move a stat and its tile to the given x/y position. Absolute - no checks
+void Bzzt_Board_Move_Stat_To(Bzzt_Board *b, Bzzt_Stat *stat, int x, int y);
 
 // Convert the currently selected board in a ZZT world to a Bzzt board
 Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw);
@@ -225,13 +239,21 @@ Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw);
 
 /* -- World --*/
 
+// Initialize a new Bzzt_World with a given title
 Bzzt_World *Bzzt_World_Create(char *title);
+// Add given board to a Bzzt_World
 void Bzzt_World_Add_Board(Bzzt_World *world, Bzzt_Board *board);
+// Load a Bzzt_World from a file
 int Bzzt_World_Load(Bzzt_World *w, const char *path);
+// Save a Bzzt_World to a file
 int Bzzt_World_Save(Bzzt_World *w, const char *path);
+// Destroy a Bzzt_World
 void Bzzt_World_Destroy(Bzzt_World *w);
+// Do updates and logic handlers for a Bzzt_World
 void Bzzt_World_Update(Bzzt_World *w, InputState *in);
+// Switch the current board to a new one based on a target board index. Set player at given x/y position.
 bool Bzzt_World_Switch_Board_To(Bzzt_World *w, int board_idx, int x, int y);
+// Pause or unpause the game
 void Bzzt_World_Set_Pause(Bzzt_World *w, bool pause);
 
 // Convert a ZZT world to a Bzzt world
@@ -240,6 +262,7 @@ Bzzt_World *Bzzt_World_From_ZZT_World(char *file);
 /* -- --*/
 
 /* -- Camera -- */
+// Instantiate a new camera
 Bzzt_Camera *BzztCamera_Create();
 
 /* -- --*/

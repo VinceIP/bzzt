@@ -6,6 +6,8 @@
 
 #define START_CAP 16
 
+static Bzzt_Tile empty = {0};
+
 Bzzt_Board *Bzzt_Board_Create(const char *name, int w, int h)
 {
     Bzzt_Board *b = malloc(sizeof(Bzzt_Board));
@@ -96,7 +98,10 @@ void Bzzt_Board_Remove_Stat(Bzzt_Board *b, int idx)
         return;
 
     Bzzt_Stat *stat = b->stats[idx];
-    if (stat && stat->program)
+    if (!stat)
+        return;
+
+    if (stat->program)
         free(stat->program);
 
     for (int i = 0; i < b->stat_count; ++i)
@@ -144,6 +149,19 @@ int Bzzt_Board_Get_Stat_Index(Bzzt_Board *b, Bzzt_Stat *stat)
             return i;
     }
     return -1;
+}
+
+void Bzzt_Board_Stat_Die(Bzzt_Board *b, Bzzt_Stat *stat)
+{
+    if (!b || !stat)
+        return;
+
+    Bzzt_ int idx = Bzzt_Board_Get_Stat_Index(b, stat);
+    if (idx < 0 || idx >= b->stat_count)
+        return;
+
+    Bzzt_Board_Set_Tile(b, stat->x, stat->y, stat->under);
+    Bzzt_Board_Remove_Stat(b, idx);
 }
 
 Bzzt_Tile Bzzt_Board_Get_Tile(Bzzt_Board *b, int x, int y)
