@@ -236,6 +236,13 @@ void Bzzt_World_Set_Pause(Bzzt_World *w, bool pause)
     w->paused = pause;
 }
 
+void Bzzt_World_Inc_Score(Bzzt_World *w, int amount)
+{
+    if (!w)
+        return;
+    w->score += amount;
+}
+
 Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
 {
     if (!file)

@@ -23,7 +23,7 @@
 #include "bzzt.h"
 #include "raylib.h"
 
-#define ZZT_FILE "DEMO.ZZT" // temp file load
+#define ZZT_FILE "TOWN.ZZT" // temp file load
 #define PROMPT_QUIT_TO_MENU "Quit to main menu?"
 #define PROMPT_QUIT_TO_TITLE "End the game?"
 #define PROMPT_PAUSING "Pausing..."

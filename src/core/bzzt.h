@@ -189,6 +189,12 @@ const char *Bzzt_Tile_Get_Type_Name(Bzzt_Tile tile);
 // zztParam to Bzzt_Stat
 Bzzt_Stat *Bzzt_Stat_From_ZZT_Param(ZZTparam *param, ZZTtile tile, int x, int y);
 
+// Return true if stat is blocked in given direction
+bool *Bzzt_Stat_Is_Blocked(Bzzt_Board *b, Bzzt_Stat *s, int dx, int dy);
+
+// Return the distance from a stat to a target x/y position
+uint8_t Bzzt_Stat_Get_Distance_From_Target(Bzzt_Stat *s, int tx, int ty);
+
 // zztTile to Bzzt_Tile
 Bzzt_Tile Bzzt_Tile_From_ZZT_Tile(ZZTblock *block, int x, int y);
 
@@ -275,6 +281,7 @@ void Bzzt_World_Update(Bzzt_World *w, InputState *in);
 bool Bzzt_World_Switch_Board_To(Bzzt_World *w, int board_idx, int x, int y);
 // Pause or unpause the game
 void Bzzt_World_Set_Pause(Bzzt_World *w, bool pause);
+void Bzzt_World_Inc_Score(Bzzt_World *w, int amount);
 
 // Convert a ZZT world to a Bzzt world
 Bzzt_World *Bzzt_World_From_ZZT_World(char *file);

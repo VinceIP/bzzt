@@ -98,23 +98,27 @@ static bool stat_can_act(Bzzt_World *w, Bzzt_Stat *stat, int stat_idx)
     return (current_tick % stat->cycle) == (stat_idx % stat->cycle);
 }
 
-static void handle_bullet_collision(Bzzt_Board *b, Bzzt_Stat *bullet, int next_x, int next_y)
+static void handle_bullet_collision(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *bullet, int collision_x, int collision_y)
 {
     if (!b || !bullet)
         return;
 
-    Bzzt_Tile next_tile = Bzzt_Board_Get_Tile(b, next_x, next_y);
-    int idx = Bzzt_Board_Get_Stat_Index(b, bullet);
+    Bzzt_Tile collision_tile = Bzzt_Board_Get_Tile(b, collision_x, collision_y);
+    int bullet_idx = Bzzt_Board_Get_Stat_Index(b, bullet);
 
-    switch (next_tile.element)
+    const Bzzt_Tile empty = {0};
+
+    bool is_player_bullet = (bullet->data[0] == 0); // Player bullets have data[0] == 0
+
+    switch (collision_tile.element)
     {
     case ZZT_EMPTY:
     case ZZT_FAKE:
     case ZZT_WATER: // Bullet will pass over water, empty, fake
-        Bzzt_Board_Move_Stat_To(b, bullet, next_x, next_y);
+        Bzzt_Board_Move_Stat_To(b, bullet, collision_x, collision_y);
         break;
     case ZZT_BREAKABLE:
-        Bzzt_Board_Set_Tile(b, next_x, next_y, (Bzzt_Tile){0}); // Kill breakable and bullet
+        Bzzt_Board_Set_Tile(b, collision_x, collision_y, empty); // Kill breakable and bullet
         Bzzt_Board_Stat_Die(b, bullet);
         break; // pun
     case ZZT_RICOCHET:
@@ -127,13 +131,46 @@ static void handle_bullet_collision(Bzzt_Board *b, Bzzt_Stat *bullet, int next_x
         // tbd
         break;
     case ZZT_BEAR:
+        Bzzt_Stat *bear = Bzzt_Board_Get_Stat_At(b, collision_x, collision_y);
+        if (bear && is_player_bullet)
+        {
+            Bzzt_Board_Stat_Die(b, bear);
+            Bzzt_Board_Stat_Die(b, bullet);
+            Bzzt_World_Inc_Score(w, 1);
+        }
+        break;
     case ZZT_CENTHEAD:
+        break;
     case ZZT_CENTBODY:
+        break;
     case ZZT_LION:
+        Bzzt_Stat *lion = Bzzt_Board_Get_Stat_At(b, collision_x, collision_y);
+        if (lion && is_player_bullet)
+        {
+            Bzzt_Board_Stat_Die(b, lion);
+            Bzzt_Board_Stat_Die(b, bullet);
+            Bzzt_World_Inc_Score(w, 1);
+        }
+        break;
     case ZZT_RUFFIAN:
+        Bzzt_Stat *ruffian = Bzzt_Board_Get_Stat_At(b, collision_x, collision_y);
+        if (ruffian && is_player_bullet)
+        {
+            Bzzt_Board_Stat_Die(b, ruffian);
+            Bzzt_Board_Stat_Die(b, bullet);
+            Bzzt_World_Inc_Score(w, 2);
+        }
+        break;
     case ZZT_SHARK:
+        break;
     case ZZT_TIGER:
-        // tbd enemy collision
+        Bzzt_Stat *tiger = Bzzt_Board_Get_Stat_At(b, collision_x, collision_y);
+        if (tiger && is_player_bullet)
+        {
+            Bzzt_Board_Stat_Die(b, tiger);
+            Bzzt_Board_Stat_Die(b, bullet);
+            Bzzt_World_Inc_Score(w, 2);
+        }
         break;
     case ZZT_PLAYER:
         // tbd player collision
@@ -251,24 +288,10 @@ static bool handle_item_pickup(Bzzt_World *w, Bzzt_Board *b, int x, int y, Bzzt_
         Bzzt_Board_Set_Tile(b, x, y, empty);
         return true;
     }
-    case ZZT_DOOR:
-        Color_Bzzt door_color = item.bg;
-        int key_idx = get_key_index_from_door_color(door_color);
-        if (key_idx < 0 || key_idx >= 7)
-            return false;
-        if (w->keys[key_idx] == 0) // If player doesn't have this key
-            return false;
-        w->keys[key_idx] = 0; // success, consume key
-        Bzzt_Board_Set_Tile(b, x, y, empty);
-        return true;
     case ZZT_SCROLL:
         return true;
-    case ZZT_FOREST:
-        Bzzt_Board_Set_Tile(b, x, y, empty);
-        Debug_Printf(LOG_WORLD, "Moved through the forest.");
-        return true;
     default:
-        return true;
+        return false;
     }
 }
 
@@ -338,6 +361,29 @@ static bool handle_player_touch(Bzzt_World *w, Bzzt_Tile tile, int x, int y)
     {
     case ZZT_PASSAGE:
         return handle_passage_touch(w, x, y);
+    case ZZT_INVISIBLE:
+        if (!tile.visible)
+        {
+            tile.visible = true;
+            Bzzt_Board_Set_Tile(board, x, y, tile);
+        }
+        return false;
+    case ZZT_FOREST:
+        Bzzt_Board_Set_Tile(b, x, y, empty);
+        Debug_Printf(LOG_WORLD, "Moved through the forest.");
+        return true;
+
+    case ZZT_DOOR:
+        Color_Bzzt door_color = item.bg;
+        int key_idx = get_key_index_from_door_color(door_color);
+        if (key_idx < 0 || key_idx >= 7)
+            return false;
+        if (w->keys[key_idx] == 0) // If player doesn't have this key
+            return false;
+        w->keys[key_idx] = 0; // success, consume key
+        Bzzt_Board_Set_Tile(b, x, y, empty);
+        return true;
+
     default:
         break;
     }
@@ -396,16 +442,19 @@ static void handle_player_move(Bzzt_World *w)
         handle_board_edge_move(w, new_x, new_y);
         return;
     }
+
     bool moved_through_passage = false;
 
     Bzzt_Tile target = Bzzt_Board_Get_Tile(current_board, new_x, new_y);
     if (Bzzt_Tile_Is_Walkable(target))
     {
-        if (handle_item_pickup(w, current_board, new_x, new_y, target)) // Only move if the target is walkable and a valid item that can be picked up and removed from the board
-            Bzzt_Board_Move_Stat_To(current_board, stat, new_x, new_y);
+        Bzzt_Board_Move_Stat_To(current_board, stat, new_x, new_y);
+    }
+    else if (handle_item_pickup(w, current_board, new_x, new_y, target)) // Check if moving onto item pickup
+    {
     }
     else
-        moved_through_passage = handle_player_touch(w, target, new_x, new_y); // Handle solid tile interaction
+        handle_player_touch(w, target, new_x, new_y); // otherwise, handle solid tile interaction
 
     if (dx != 0)
         stat->step_x = (dx > 0) ? 1 : -1;
@@ -496,8 +545,9 @@ static void stat_act(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
         return;
 
     Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, stat->x, stat->y);
+    uint8_t stat_type = tile.element;
 
-    switch (tile.element)
+    switch (stat_type)
     {
     case ZZT_PLAYER:
         handle_player_shoot(w, stat);
@@ -510,9 +560,37 @@ static void stat_act(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
         int next_x = stat->x + stat->step_x;
         int next_y = stat->y + stat->step_y;
         if (Bzzt_Board_Is_In_Bounds(b, next_x, next_y))
-            handle_bullet_collision(b, stat, next_x, next_y);
+            handle_bullet_collision(w, b, stat, next_x, next_y);
         else
             Bzzt_Board_Stat_Die(b, stat); // Die if moving off board edge
+        break;
+
+    case ZZT_SPINNINGGUN:
+        // 24,26,25,27
+        const uint8_t gun_dirs[] = {24, 26, 25, 27};
+        switch (tile.glyph) // Spin the gun
+        {
+        case 24:
+            tile.glyph = 26;
+            break;
+        case 26:
+            tile.glyph = 25;
+            break;
+        case 25:
+            tile.glyph = 27;
+            break;
+        case 27:
+            tile.glyph = 24;
+            break;
+        }
+        Bzzt_Board_Set_Tile(b, stat->x, stat->y, tile);
+
+        double chance_of_fire = (stat->data[1] - 1) / 9;
+        double chance_of_smart_fire = (stat->data[0] - 1) / 9;
+        double roll = ((double)rand()) / RAND_MAX;
+        if (roll < chance_of_fire)
+        {
+        }
         break;
     }
 }
@@ -794,7 +872,10 @@ Bzzt_Tile Bzzt_Tile_From_ZZT_Tile(ZZTblock *block, int x, int y)
     ZZTtile zzt_tile = zztTileAt(block, x, y);
     tile.element = zzt_tile.type;
 
-    tile.visible = true;
+    if (tile.element == ZZT_INVISIBLE)
+        tile.visible = false;
+    else
+        tile.visible = true;
 
     return tile;
 }

@@ -91,7 +91,8 @@ void Renderer_Draw_Board(Renderer *r, Bzzt_World *w, const Bzzt_Board *b)
             // Otherwise, draw tile normally
             else
             {
-                Renderer_Draw_Cell(r, x, y, tile.glyph, tile.fg, tile.bg);
+                if (tile.visible)
+                    Renderer_Draw_Cell(r, x, y, tile.glyph, tile.fg, tile.bg);
             }
         }
     }
