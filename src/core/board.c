@@ -279,7 +279,7 @@ void Bzzt_Board_Move_Stat_To(Bzzt_Board *board, Bzzt_Stat *stat, int new_x, int 
     Bzzt_Board_Set_Tile(board, new_x, new_y, stat_tile);
 }
 
-bool *Bzzt_Stat_Is_Blocked(Bzzt_Board *b, Bzzt_Stat *s, Direction dir)
+bool Bzzt_Stat_Is_Blocked(Bzzt_Board *b, Bzzt_Stat *s, Direction dir)
 {
     if (!b || !s)
         return false;
@@ -293,6 +293,66 @@ bool *Bzzt_Stat_Is_Blocked(Bzzt_Board *b, Bzzt_Stat *s, Direction dir)
             return Bzzt_Tile_Is_Walkable(t);
         }
     }
+}
+
+Bzzt_Stat *Bzzt_Stat_Shoot(Bzzt_Board *b, Bzzt_Stat *shooter, Direction dir)
+{
+    if (!b || !shooter || dir == DIR_NONE)
+        return NULL;
+
+    const ZZT_Element_Defaults *bullet_defaults = zzt_get_element_defaults(ZZT_BULLET);
+    if (!bullet_defaults)
+        return;
+
+    int bullet_x = 0;
+    int bullet_y = 0;
+    int step_x = 0;
+    int step_y = 0;
+
+    switch (dir)
+    {
+    case DIR_UP:
+        bullet_x = shooter->x;
+        bullet_y = shooter->y - 1;
+        step_x = 0;
+        step_y = -1;
+        break;
+    case DIR_DOWN:
+        bullet_x = shooter->x;
+        bullet_y = shooter->y + 1;
+        step_x = 0;
+        step_y = 1;
+        break;
+    case DIR_LEFT:
+        bullet_x = shooter->x - 1;
+        bullet_y = shooter->y;
+        step_x = -1;
+        step_y = 0;
+        break;
+    case DIR_RIGHT:
+        bullet_x = shooter->x + 1;
+        bullet_y = shooter->y;
+        step_x = 1;
+        step_y = 0;
+        break;
+    default:
+        return NULL;
+    }
+
+    if (!Bzzt_Board_Is_In_Bounds(b, bullet_x, bullet_y))
+        return NULL; // Out of bounds
+
+    Bzzt_Tile target_tile = Bzzt_Board_Get_Tile(b, bullet_x, bullet_y);
+    if (target_tile.element != ZZT_EMPTY && target_tile.element != ZZT_WATER && target_tile.element != ZZT_FAKE && target_tile.element != ZZT_BREAKABLE)
+        return; // Can't shoot into solid object
+
+    Bzzt_Stat *bullet = Bzzt_Board_Spawn_Stat(b, ZZT_BULLET, bullet_x, bullet_y,
+                                              bzzt_get_color(bullet_defaults->default_fg_idx),
+                                              bzzt_get_color(bullet_defaults->default_bg_idx));
+    bullet->step_x = step_x;
+    bullet->step_y = step_y;
+    bullet->data[0] = Bzzt_Board_Get_Stat_Index(b, shooter); // set shooter index
+    return bullet;
 }
 
 Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw)

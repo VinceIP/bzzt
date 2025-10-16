@@ -351,6 +351,7 @@ static bool handle_player_touch(Bzzt_World *w, Bzzt_Tile tile, int x, int y)
     Bzzt_Board *board = w->boards[w->boards_current];
     Bzzt_Stat *player = board->stats[0];
     Bzzt_Tile player_tile = Bzzt_Board_Get_Tile(board, player->x, player->y);
+    const Bzzt_Tile empty_tile = {0};
 
     Interaction_Type type = Bzzt_Tile_Get_Interaction_Type(tile);
     const char *type_name = Bzzt_Tile_Get_Type_Name(tile);
@@ -369,19 +370,19 @@ static bool handle_player_touch(Bzzt_World *w, Bzzt_Tile tile, int x, int y)
         }
         return false;
     case ZZT_FOREST:
-        Bzzt_Board_Set_Tile(b, x, y, empty);
+        Bzzt_Board_Set_Tile(board, x, y, empty_tile);
         Debug_Printf(LOG_WORLD, "Moved through the forest.");
         return true;
 
     case ZZT_DOOR:
-        Color_Bzzt door_color = item.bg;
+        Color_Bzzt door_color = tile.bg;
         int key_idx = get_key_index_from_door_color(door_color);
         if (key_idx < 0 || key_idx >= 7)
             return false;
         if (w->keys[key_idx] == 0) // If player doesn't have this key
             return false;
         w->keys[key_idx] = 0; // success, consume key
-        Bzzt_Board_Set_Tile(b, x, y, empty);
+        Bzzt_Board_Set_Tile(board, x, y, empty_tile);
         return true;
 
     default:
@@ -451,8 +452,7 @@ static void handle_player_move(Bzzt_World *w)
         Bzzt_Board_Move_Stat_To(current_board, stat, new_x, new_y);
     }
     else if (handle_item_pickup(w, current_board, new_x, new_y, target)) // Check if moving onto item pickup
-    {
-    }
+        Bzzt_Board_Move_Stat_To(current_board, stat, new_x, new_y);
     else
         handle_player_touch(w, target, new_x, new_y); // otherwise, handle solid tile interaction
 
@@ -512,29 +512,11 @@ static void handle_player_shoot(Bzzt_World *w, Bzzt_Stat *player_stat)
             return; // At max shots
     }
 
-    int bullet_x = player_stat->x + shoot_dx;
-    int bullet_y = player_stat->y + shoot_dy;
-
-    if (!Bzzt_Board_Is_In_Bounds(current_board, bullet_x, bullet_y))
-        return; // Can't shoot off board
-
-    Bzzt_Tile target_tile = Bzzt_Board_Get_Tile(current_board, bullet_x, bullet_y);
-    if (target_tile.element != ZZT_EMPTY && target_tile.element != ZZT_WATER && target_tile.element != ZZT_FAKE)
-        return; // Can't shoot into solid object
-
-    const ZZT_Element_Defaults *bullet_defaults = zzt_get_element_defaults(ZZT_BULLET);
-    if (!bullet_defaults)
-        return;
-
-    Bzzt_Stat *bullet = Bzzt_Board_Spawn_Stat(current_board, ZZT_BULLET, bullet_x, bullet_y,
-                                              bzzt_get_color(bullet_defaults->default_fg_idx),
-                                              bzzt_get_color(bullet_defaults->default_bg_idx));
-
-    if (!bullet)
-        return;
-    bullet->step_x = shoot_dx;
-    bullet->step_y = shoot_dy;
-    bullet->data[0] = 0; // 0 means player shot it
+    Bzzt_Stat_Shoot(current_board, player_stat,
+                    (shoot_dx > 0) ? DIR_RIGHT : (shoot_dx < 0) ? DIR_LEFT
+                                             : (shoot_dy > 0)   ? DIR_DOWN
+                                             : (shoot_dy < 0)   ? DIR_UP
+                                                                : DIR_NONE);
 
     w->ammo--;
 }
@@ -566,31 +548,96 @@ static void stat_act(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
         break;
 
     case ZZT_SPINNINGGUN:
-        // 24,26,25,27
-        const uint8_t gun_dirs[] = {24, 26, 25, 27};
-        switch (tile.glyph) // Spin the gun
+        // Animate the spinning gun (24→26→25→27 cycle)
+        switch (tile.glyph)
         {
-        case 24:
-            tile.glyph = 26;
+        case 24:             // ↑
+            tile.glyph = 26; // →
             break;
-        case 26:
-            tile.glyph = 25;
+        case 26:             // →
+            tile.glyph = 25; // ↓
             break;
-        case 25:
-            tile.glyph = 27;
+        case 25:             // ↓
+            tile.glyph = 27; // ←
             break;
-        case 27:
-            tile.glyph = 24;
+        case 27:             // ←
+            tile.glyph = 24; // ↑
+            break;
+        default:
+            tile.glyph = 24; // Reset to up if invalid
             break;
         }
         Bzzt_Board_Set_Tile(b, stat->x, stat->y, tile);
 
-        double chance_of_fire = (stat->data[1] - 1) / 9;
-        double chance_of_smart_fire = (stat->data[0] - 1) / 9;
+        // Calculate firing probabilities
+        double chance_of_fire = (double)(stat->data[1] - 1) / 9.0;
+        double chance_of_smart_fire = (double)(stat->data[0] - 1) / 9.0;
         double roll = ((double)rand()) / RAND_MAX;
-        if (roll < chance_of_fire)
+
+        // Determine if we should fire
+        bool should_fire = roll < chance_of_fire;
+        bool fire_intelligently = roll < chance_of_smart_fire && should_fire;
+
+        if (should_fire)
         {
+            Direction fire_dir = DIR_NONE;
+            Bzzt_Stat *player = b->stats[0];
+
+            if (fire_intelligently && player)
+            {
+                // Intelligent targeting logic
+                int dx = player->x - stat->x;
+                int dy = player->y - stat->y;
+                int abs_dx = (dx < 0) ? -dx : dx;
+                int abs_dy = (dy < 0) ? -dy : dy;
+
+                // Try vertical shot if player is within 2 tiles horizontally
+                if (abs_dx <= 2)
+                {
+                    fire_dir = (dy > 0) ? DIR_DOWN : DIR_UP;
+                    // Check if vertical path is clear
+                    if (Bzzt_Stat_Is_Blocked(b, stat, fire_dir))
+                    {
+                        fire_dir = DIR_NONE;
+                    }
+                }
+
+                // Try horizontal shot if player is within 2 tiles vertically
+                if (fire_dir == DIR_NONE && abs_dy <= 2)
+                {
+                    fire_dir = (dx > 0) ? DIR_RIGHT : DIR_LEFT;
+                    // Check if horizontal path is clear
+                    if (Bzzt_Stat_Is_Blocked(b, stat, fire_dir))
+                    {
+                        fire_dir = DIR_NONE; // Path blocked, will use random
+                    }
+                }
+
+                if (fire_dir == DIR_NONE)
+                {
+                    int random_dir = rand() % 4;
+                    fire_dir = (random_dir == 0) ? DIR_UP : (random_dir == 1) ? DIR_RIGHT
+                                                        : (random_dir == 2)   ? DIR_DOWN
+                                                                              : DIR_LEFT;
+                }
+            }
+            else if (should_fire)
+            {
+                // Non-intelligent: random cardinal direction
+                int random_dir = rand() % 4;
+                fire_dir = (random_dir == 0) ? DIR_UP : (random_dir == 1) ? DIR_RIGHT
+                                                    : (random_dir == 2)   ? DIR_DOWN
+                                                                          : DIR_LEFT;
+            }
+
+            // Fire the shot
+            if (fire_dir != DIR_NONE)
+            {
+                Bzzt_Stat_Shoot(b, stat, fire_dir);
+            }
         }
+        break;
+    default:
         break;
     }
 }
@@ -672,16 +719,7 @@ bool Bzzt_Tile_Is_Walkable(Bzzt_Tile tile)
     {
     case ZZT_EMPTY:
     case ZZT_FAKE:
-    case ZZT_FOREST:
-    case ZZT_GEM:
-    case ZZT_AMMO:
-    case ZZT_TORCH:
-    case ZZT_ENERGIZER:
-    case ZZT_KEY:
-    case ZZT_DOOR:
         return true;
-        break;
-
     default:
         return false;
         break;

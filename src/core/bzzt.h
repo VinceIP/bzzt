@@ -190,7 +190,10 @@ const char *Bzzt_Tile_Get_Type_Name(Bzzt_Tile tile);
 Bzzt_Stat *Bzzt_Stat_From_ZZT_Param(ZZTparam *param, ZZTtile tile, int x, int y);
 
 // Return true if stat is blocked in given direction
-bool *Bzzt_Stat_Is_Blocked(Bzzt_Board *b, Bzzt_Stat *s, int dx, int dy);
+bool Bzzt_Stat_Is_Blocked(Bzzt_Board *b, Bzzt_Stat *s, Direction dir);
+
+// Make the stat shoot in given direction. Returns the bullet stat if successful, NULL if not.
+Bzzt_Stat *Bzzt_Stat_Shoot(Bzzt_Board *b, Bzzt_Stat *shooter, Direction dir);
 
 // Return the distance from a stat to a target x/y position
 uint8_t Bzzt_Stat_Get_Distance_From_Target(Bzzt_Stat *s, int tx, int ty);
