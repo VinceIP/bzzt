@@ -23,5 +23,8 @@ bool Renderer_Init(Renderer *, Engine *e, const char *fontPath);
 void Renderer_Update(Renderer *r, Engine *e);
 void Renderer_Draw_Cell(Renderer *r, int x, int y, unsigned char glyph,
                         Color_Bzzt fg, Color_Bzzt bg);
+void Renderer_Draw_Cell_Float(Renderer *r, float x, float y, unsigned char glyph,
+                              Color_Bzzt fg, Color_Bzzt bg);
+
 void Renderer_Draw_UI(Renderer *r, const UI *ui);
 void Renderer_Quit(Renderer *);

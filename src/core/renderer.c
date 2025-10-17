@@ -249,6 +249,29 @@ void Renderer_Draw_Cell(Renderer *r, int cellX, int cellY, unsigned char glyph, 
     DrawTexturePro(r->font, src, dst, (Vector2){0, 0}, 0.0f, rf);
 }
 
+void Renderer_Draw_Cell_Float(Renderer *r, float x, float y, unsigned char glyph,
+                              Color_Bzzt fg, Color_Bzzt bg)
+{
+    // Convert to raylib Color
+    Color rf = (Color){fg.r, fg.g, fg.b, 255};
+    Color rb = (Color){bg.r, bg.g, bg.b, 255};
+
+    Rectangle src = glyph_rec(r, glyph);
+
+    Rectangle dst = {
+        x * (float)r->glyph_w,
+        y * (float)r->glyph_h,
+        (float)r->glyph_w,
+        (float)r->glyph_h};
+
+    if (!(bg.r == COLOR_TRANSPARENT.r && bg.g == COLOR_TRANSPARENT.g &&
+          bg.b == COLOR_TRANSPARENT.b))
+    {
+        DrawRectangleRec(dst, rb);
+    }
+    DrawTexturePro(r->font, src, dst, (Vector2){0, 0}, 0.0f, rf);
+}
+
 static void draw_cursor(Renderer *r, Engine *e)
 {
     if (!r || !e || !e->cursor)

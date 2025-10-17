@@ -115,6 +115,15 @@ void Input_Poll(InputState *in)
     bool left_pressed = IsKeyPressed(KEY_LEFT);
     bool right_pressed = IsKeyPressed(KEY_RIGHT);
 
+    if (up_pressed && in->input_buffer_count < 8)
+        in->input_buffer[in->input_buffer_count++] = ARROW_UP;
+    if (down_pressed && in->input_buffer_count < 8)
+        in->input_buffer[in->input_buffer_count++] = ARROW_DOWN;
+    if (left_pressed && in->input_buffer_count < 8)
+        in->input_buffer[in->input_buffer_count++] = ARROW_LEFT;
+    if (right_pressed && in->input_buffer_count < 8)
+        in->input_buffer[in->input_buffer_count++] = ARROW_RIGHT;
+
     if (up_pressed)
         push_key_to_front(in, ARROW_UP);
     if (down_pressed)
@@ -140,6 +149,7 @@ void Input_Poll(InputState *in)
     }
 
     in->E_pressed = IsKeyPressed(KEY_E);
+    in->I_pressed = IsKeyPressed(KEY_I);
     in->L_pressed = IsKeyPressed(KEY_L);
     in->Q_pressed = IsKeyPressed(KEY_Q);
     in->P_pressed = IsKeyPressed(KEY_P);
@@ -149,6 +159,20 @@ void Input_Poll(InputState *in)
     in->SHIFT_held = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
 
     in->quit = WindowShouldClose();
+}
+
+ArrowKey Input_Pop_Buffered_Direction(InputState *in)
+{
+    if (in->input_buffer_count == 0)
+        return ARROW_NONE;
+
+    ArrowKey key = in->input_buffer[0];
+
+    for (int i = 1; i < in->input_buffer_count; ++i)
+        in->input_buffer[i - 1] = in->input_buffer[i];
+
+    in->input_buffer_count--;
+    return key;
 }
 
 static bool is_vector2_equal(Vector2 *a, Vector2 *b)
@@ -176,7 +200,6 @@ void Mouse_Poll(MouseState *s)
 
 static Vector2 handle_key_move(Vector2 pos, Rectangle bounds, InputState *in)
 {
-
 }
 
 static Vector2 handle_mouse_move(MouseState *m, Bzzt_Camera *c, Rectangle bounds, Vector2 currentPos)

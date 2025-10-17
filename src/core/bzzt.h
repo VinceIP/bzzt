@@ -21,6 +21,8 @@
 #define BZZT_VIEWPORT_DEFAULT_H 25
 #define BZZT_MAX_PATH_LENGTH 32
 
+#define BZZT_ENABLE_INTERPOLATION 1
+
 typedef struct InputState InputState;
 typedef struct Bzzt_Timer Bzzt_Timer;
 
@@ -58,6 +60,7 @@ typedef struct Bzzt_Tile
 typedef struct Bzzt_Stat
 {
     int x, y;
+    int prev_x, prev_y;
     int16_t step_x, step_y;
     int16_t cycle;
 
@@ -132,16 +135,16 @@ typedef struct Bzzt_World
     Bzzt_Timer *timer;
     InputState *current_input;
 
-    int move_dx, move_dy;
-    bool has_queued_move;
-    double move_repeat_cooldown_ms;
-
     bool allow_blink, blink_state;
     int blink_delay_rate; // In ms
     double blink_timer;   // Ms since last blink
 
+    double last_frame_time_ms;
+
     bool paused;
     bool on_title;
+
+    bool interpolation_enabled;
 
     int16_t ammo, gems, health, torches, score;
     uint8_t keys[7];
@@ -239,6 +242,10 @@ void Bzzt_Board_Stat_Die(Bzzt_Board *b, Bzzt_Stat *stat);
 void Bzzt_Stat_Update(Bzzt_World *w, Bzzt_Stat *stat, int stat_idx);
 
 void Bzzt_Stat_Destroy(Bzzt_Stat *s);
+
+void Bzzt_Get_Interpolated_Position(Bzzt_World *w, Bzzt_Stat *stat, float *out_x, float *out_y);
+
+void Bzzt_World_Toggle_Interpolation(Bzzt_World *w);
 
 // Return a Bzzt object by its unique object id.
 Bzzt_Object *Bzzt_Board_Get_Object(Bzzt_Board *b, int id);

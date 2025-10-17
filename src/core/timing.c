@@ -39,7 +39,26 @@ double Bzzt_Timer_Run_Tick(Bzzt_World *w)
     {
         Bzzt_Stat *stat = current_board->stats[i];
         if (stat)
+        {
+            stat->prev_x = stat->x;
+            stat->prev_y = stat->y;
+        }
+    }
+
+    int initial_count = current_board->stat_count;
+    for (int i = 0; i < current_board->stat_count; ++i)
+    {
+        Bzzt_Stat *stat = current_board->stats[i];
+        if (stat)
+        {
+            int count_before = current_board->stat_count;
             Bzzt_Stat_Update(w, stat, i);
+
+            if (current_board->stat_count < count_before)
+            {
+                i--;
+            }
+        }
     }
 
     Bzzt_Timer_Tick(w->timer);

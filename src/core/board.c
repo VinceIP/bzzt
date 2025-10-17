@@ -263,6 +263,12 @@ bool Bzzt_Board_Is_In_Bounds(Bzzt_Board *b, int x, int y)
 
 void Bzzt_Board_Move_Stat_To(Bzzt_Board *board, Bzzt_Stat *stat, int new_x, int new_y)
 {
+    if (!board || !stat)
+        return;
+
+    stat->prev_x = stat->x;
+    stat->prev_y = stat->y;
+
     Bzzt_Tile stat_tile = Bzzt_Board_Get_Tile(board, stat->x, stat->y);
     Bzzt_Tile new_under = Bzzt_Board_Get_Tile(board, new_x, new_y);
 

@@ -112,11 +112,6 @@ static void handle_bullet_collision(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *bul
 
     switch (collision_tile.element)
     {
-    case ZZT_EMPTY:
-    case ZZT_FAKE:
-    case ZZT_WATER: // Bullet will pass over water, empty, fake
-        Bzzt_Board_Move_Stat_To(b, bullet, collision_x, collision_y);
-        break;
     case ZZT_BREAKABLE:
         Bzzt_Board_Set_Tile(b, collision_x, collision_y, empty); // Kill breakable and bullet
         Bzzt_Board_Stat_Die(b, bullet);
@@ -397,14 +392,18 @@ static uint8_t handle_player_touch(Bzzt_World *w, Bzzt_Tile tile, int x, int y)
 
 static void handle_player_move(Bzzt_World *w)
 {
-    if (!w || !w->has_queued_move)
+    if (!w || !w->current_input)
         return;
 
-    int dx = w->move_dx;
-    int dy = w->move_dy;
-    w->has_queued_move = false;
-    w->move_dx = 0;
-    w->move_dy = 0;
+    InputState *in = w->current_input;
+
+    ArrowKey buffered_key = Input_Pop_Buffered_Direction(in);
+    ArrowKey priority_key = buffered_key != ARROW_NONE ? buffered_key : Input_Get_Priority_Direction(in);
+    if (priority_key == ARROW_NONE || in->SHIFT_held)
+        return; // No movement if no key or shift held
+
+    int dx, dy;
+    Input_Get_Direction(priority_key, &dx, &dy);
 
     if (dx == 0 && dy == 0)
         return;
@@ -428,25 +427,26 @@ static void handle_player_move(Bzzt_World *w)
 
     uint8_t element_type_touched = 0;
 
-    Bzzt_Tile target_tile = Bzzt_Board_Get_Tile(current_board, new_x, new_y);
+    Bzzt_Tile target_tile = Bzzt_Board_Get_Tile(current_board, new_x,
+                                                new_y);
     if (Bzzt_Tile_Is_Walkable(target_tile))
     {
         Bzzt_Board_Move_Stat_To(current_board, stat, new_x, new_y);
     }
-    else if (handle_item_pickup(w, current_board, new_x, new_y, target_tile)) // Check if moving onto item pickup
+    else if (handle_item_pickup(w, current_board, new_x, new_y,
+                                target_tile))
         Bzzt_Board_Move_Stat_To(current_board, stat, new_x, new_y);
     else
-        element_type_touched = handle_player_touch(w, target_tile, new_x, new_y); // otherwise, handle solid tile interaction
+        element_type_touched = handle_player_touch(w, target_tile, new_x,
+                                                   new_y);
 
     if (dx != 0)
         stat->step_x = (dx > 0) ? 1 : -1;
     if (dy != 0)
         stat->step_y = (dy > 0) ? 1 : -1;
 
-    Debug_Log(LOG_LEVEL_DEBUG, LOG_ENGINE, "step_x: %d, step_y: %d", stat->step_x, stat->step_y);
-
     if (w->paused && element_type_touched != ZZT_PASSAGE)
-        Bzzt_World_Set_Pause(w, false); // Unpause if player moved and didn't go through passage
+        Bzzt_World_Set_Pause(w, false);
 }
 
 static void handle_player_shoot(Bzzt_World *w, Bzzt_Stat *player_stat)
@@ -477,8 +477,8 @@ static void handle_player_shoot(Bzzt_World *w, Bzzt_Stat *player_stat)
     else if (in->SHIFT_held && in->arrow_stack_count > 0)
     {
         wants_to_shoot = true;
-        shoot_dx = w->move_dx;
-        shoot_dy = w->move_dy;
+        ArrowKey shoot_key = Input_Get_Priority_Direction(in);
+        Input_Get_Direction(shoot_key, &shoot_dx, &shoot_dy);
     }
 
     if (!wants_to_shoot)
@@ -520,15 +520,21 @@ static void stat_act(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
         break;
 
     case ZZT_BULLET:
-        int shooter = stat->data[0]; // 0 is player, otherwise int is stat index of shooter
         int next_x = stat->x + stat->step_x;
         int next_y = stat->y + stat->step_y;
-        if (Bzzt_Board_Is_In_Bounds(b, next_x, next_y))
+
+        if (!Bzzt_Board_Is_In_Bounds(b, next_x, next_y))
+        {
+            Bzzt_Board_Stat_Die(b, stat);
+            break;
+        }
+
+        Bzzt_Tile next_tile = Bzzt_Board_Get_Tile(b, next_x, next_y);
+        if (next_tile.element != ZZT_EMPTY && next_tile.element != ZZT_FAKE && next_tile.element != ZZT_WATER)
             handle_bullet_collision(w, b, stat, next_x, next_y);
         else
-            Bzzt_Board_Stat_Die(b, stat); // Die if moving off board edge
+            Bzzt_Board_Move_Stat_To(b, stat, next_x, next_y);
         break;
-
     case ZZT_SPINNINGGUN:
         // tbd - add star firing
         //  Gun changes char every 2 ticks
@@ -615,6 +621,8 @@ Bzzt_Stat *Bzzt_Stat_Create(Bzzt_Board *b, int x, int y)
     s->y = y;
     s->step_x = 0;
     s->step_y = 0;
+    s->prev_x = 0;
+    s->prev_y = 0;
     s->cycle = 0;
     s->data[0] = 0;
     s->data[1] = 0;
@@ -895,6 +903,8 @@ Bzzt_Stat *Bzzt_Stat_From_ZZT_Param(ZZTparam *param, ZZTtile tile, int x, int y)
 
     stat->x = x;
     stat->y = y;
+    stat->prev_x = x;
+    stat->prev_y = y;
 
     stat->step_x = param->xstep;
     stat->step_y = param->ystep;
@@ -946,4 +956,36 @@ Bzzt_Stat *Bzzt_Stat_From_ZZT_Param(ZZTparam *param, ZZTtile tile, int x, int y)
     }
 
     return stat;
+}
+
+void Bzzt_Get_Interpolated_Position(Bzzt_World *w, Bzzt_Stat *stat, float *out_x, float *out_y)
+{
+    if (!w || !stat || !out_x || !out_y)
+        return;
+
+#if BZZT_ENABLE_INTERPOLATION
+    if (w->interpolation_enabled && w->timer)
+    {
+        // Calculate interpolation factor (0.0 to 1.0)
+        double t = w->timer->accumulator_ms / w->timer->tick_duration_ms;
+
+        // Clamp to valid range
+        if (t < 0.0)
+            t = 0.0;
+        if (t > 1.0)
+            t = 1.0;
+
+        // Linear interpolation between prev and current position
+        *out_x = (float)stat->prev_x + (float)(stat->x - stat->prev_x) *
+                                           (float)t;
+        *out_y = (float)stat->prev_y + (float)(stat->y - stat->prev_y) *
+                                           (float)t;
+    }
+    else
+#endif
+    {
+        // No interpolation - use exact position
+        *out_x = (float)stat->x;
+        *out_y = (float)stat->y;
+    }
 }

@@ -34,6 +34,9 @@ typedef enum ArrowKey
 typedef struct InputState
 {
 
+    ArrowKey input_buffer[8];
+    int input_buffer_count;
+
     ArrowKey arrow_stack[4];
     int arrow_stack_count;
 
@@ -41,6 +44,7 @@ typedef struct InputState
     bool initial_move_done;
 
     bool E_pressed;
+    bool I_pressed;
     bool L_pressed;
     bool Q_pressed;
     bool P_pressed;
@@ -69,4 +73,5 @@ void Input_Poll(InputState *out);
 void Mouse_Poll(MouseState *out);
 ArrowKey Input_Get_Priority_Direction(InputState *in);
 void Input_Get_Direction(ArrowKey key, int *out_dx, int *out_dy);
+ArrowKey Input_Pop_Buffered_Direction(InputState *in);
 Vector2 Handle_Cursor_Move(Vector2 currentPos, InputState *in, MouseState *m, Bzzt_Camera *c, Rectangle bounds);

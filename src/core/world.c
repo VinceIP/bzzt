@@ -10,8 +10,8 @@
 #include "zzt.h"
 #include "timing.h"
 
-#define BLINK_RATE_DEFAULT 269    // in ms
-#define TICK_DURATION_DEFAULT 100 // in ms
+#define BLINK_RATE_DEFAULT 269   // in ms
+#define TICK_DURATION_DEFAULT 95 // in ms
 #define STICKY_INPUT_DEFAULT true
 
 static bool grow_boards_array(Bzzt_World *w)
@@ -132,10 +132,14 @@ Bzzt_World *Bzzt_World_Create(char *title)
     w->timer->paused = false;
     w->timer->tick_duration_ms = TICK_DURATION_DEFAULT;
 
-    w->move_dx = 0;
-    w->move_dy = 0;
-    w->has_queued_move = false;
-    w->move_repeat_cooldown_ms = 0.0;
+    w->last_frame_time_ms = GetTime() * 1000.0;
+
+#if BZZT_ENABLE_INTERPOLATION
+    w->interpolation_enabled = true;
+#else
+    w->interpolation_enabled = false;
+#endif
+
 
     return w;
 }
@@ -173,7 +177,13 @@ void Bzzt_World_Update(Bzzt_World *w, InputState *in)
         return;
     }
 
-    double delta_time = GetFrameTime() * 1000.0;
+    double current_time_ms = GetTime() * 1000.0;
+    double delta_time = current_time_ms - w->last_frame_time_ms;
+    w->last_frame_time_ms = current_time_ms;
+    if (delta_time > 250.0)
+        delta_time = 250.0;
+    if (delta_time < 0.0)
+        delta_time = 0.0;
 
     if (w->allow_blink)
     {
@@ -184,38 +194,6 @@ void Bzzt_World_Update(Bzzt_World *w, InputState *in)
             w->blink_timer = 0.0;
         }
     }
-
-    ArrowKey priority_key = Input_Get_Priority_Direction(in);
-    if (priority_key != ARROW_NONE)
-    {
-        in->key_repeat_timer_ms += delta_time;
-
-        bool should_move = false;
-        if (!in->initial_move_done)
-        {
-            should_move = true;
-            in->initial_move_done = true;
-            in->key_repeat_timer_ms = 0.0;
-        }
-        else if (in->key_repeat_timer_ms >= INITIAL_MOVE_DELAY_MS)
-        {
-            if (w->move_repeat_cooldown_ms <= 0.0)
-            {
-                should_move = true;
-                w->move_repeat_cooldown_ms = KEY_REPEAT_INTERVAL_MS;
-            }
-            else
-                w->move_repeat_cooldown_ms -= delta_time;
-        }
-
-        if (should_move)
-        {
-            Input_Get_Direction(priority_key, &w->move_dx, &w->move_dy);
-            w->has_queued_move = true;
-        }
-    }
-    else
-        w->move_repeat_cooldown_ms = 0.0;
 
     w->current_input = in;
 
@@ -342,4 +320,18 @@ Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
     zztWorldFree(zw);
 
     return bw;
+}
+
+void Bzzt_World_Toggle_Interpolation(Bzzt_World *w)
+{
+    if (!w)
+        return;
+
+#if BZZT_ENABLE_INTERPOLATION
+    w->interpolation_enabled = !w->interpolation_enabled;
+    Debug_Printf(LOG_ENGINE, "Interpolation %s",
+                 w->interpolation_enabled ? "ENABLED" : "DISABLED");
+#else
+    Debug_Printf(LOG_ENGINE, "Interpolation disabled at compile time");
+#endif
 }

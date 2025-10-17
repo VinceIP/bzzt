@@ -502,6 +502,11 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
     case ENGINE_STATE_PLAY:
         if (e->world)
         {
+            if (i->I_pressed)
+            {
+                Bzzt_World_Toggle_Interpolation(e->world);
+            }
+            
             Bzzt_World_Update(e->world, i);
             sync_ui_to_world_state(e);
         }
