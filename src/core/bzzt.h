@@ -132,9 +132,9 @@ typedef struct Bzzt_World
     Bzzt_Timer *timer;
     InputState *current_input;
 
-    int queued_dx, queued_dy;
-    bool has_queued_input;
-    bool enable_sticky_input;
+    int move_dx, move_dy;
+    bool has_queued_move;
+    double move_repeat_cooldown_ms;
 
     bool allow_blink, blink_state;
     int blink_delay_rate; // In ms

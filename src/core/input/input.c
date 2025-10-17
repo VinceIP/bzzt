@@ -17,6 +17,84 @@
 #include "coords.h"
 #include "bzzt.h"
 
+static bool is_key_in_stack(InputState *in, ArrowKey key)
+{
+    for (int i = 0; i < in->arrow_stack_count; ++i)
+    {
+        if (in->arrow_stack[i] == key)
+            return true;
+    }
+    return false;
+}
+
+static void remove_key_from_stack(InputState *in, ArrowKey key)
+{
+    int found_idx = -1;
+    for (int i = 0; i < in->arrow_stack_count; ++i)
+    {
+        if (in->arrow_stack[i] == key)
+        {
+            found_idx = i;
+            break;
+        }
+    }
+    if (found_idx >= 0)
+    {
+        for (int i = found_idx + 1; i < in->arrow_stack_count; ++i)
+        {
+            in->arrow_stack[i - 1] = in->arrow_stack[i];
+        }
+        in->arrow_stack_count--;
+    }
+}
+
+static void push_key_to_front(InputState *in, ArrowKey key)
+{
+    // Remove if already in stack
+    remove_key_from_stack(in, key);
+
+    // Shift all existing keys back
+    for (int i = in->arrow_stack_count; i > 0; i--)
+    {
+        in->arrow_stack[i] = in->arrow_stack[i - 1];
+    }
+
+    // Add new key at front
+    in->arrow_stack[0] = key;
+    if (in->arrow_stack_count < 4)
+        in->arrow_stack_count++;
+}
+
+ArrowKey Input_Get_Priority_Direction(InputState *in)
+{
+    if (in->arrow_stack_count > 0)
+        return in->arrow_stack[0];
+    return ARROW_NONE;
+}
+
+void Input_Get_Direction(ArrowKey key, int *out_dx, int *out_dy)
+{
+    *out_dx = 0;
+    *out_dy = 0;
+    switch (key)
+    {
+    case ARROW_UP:
+        *out_dy = -1;
+        break;
+    case ARROW_DOWN:
+        *out_dy = 1;
+        break;
+    case ARROW_LEFT:
+        *out_dx = -1;
+        break;
+    case ARROW_RIGHT:
+        *out_dx = 1;
+        break;
+    case ARROW_NONE:
+        break;
+    }
+}
+
 void Input_Set_Handler(InputState *in, Key_Handler h)
 {
     if (!in || !h)
@@ -24,43 +102,53 @@ void Input_Set_Handler(InputState *in, Key_Handler h)
     in->key_handler = h;
 }
 
-void Input_Poll(InputState *s)
+void Input_Poll(InputState *in)
 {
-    s->dx = (IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT));
-    s->dy = (IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP));
-    s->E_pressed = IsKeyPressed(KEY_E);
-    s->L_pressed = IsKeyPressed(KEY_L);
-    s->Q_pressed = IsKeyPressed(KEY_Q);
-    s->P_pressed = IsKeyPressed(KEY_P);
-    s->ESC_pressed = IsKeyPressed(KEY_ESCAPE);
-    s->SPACE_pressed = IsKeyPressed(KEY_SPACE);
-    s->SHIFT_held = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
-    if (s->dx != 0 || s->dy != 0) // If key is down
+
+    bool up_held = IsKeyDown(KEY_UP);
+    bool down_held = IsKeyDown(KEY_DOWN);
+    bool left_held = IsKeyDown(KEY_LEFT);
+    bool right_held = IsKeyDown(KEY_RIGHT);
+
+    bool up_pressed = IsKeyPressed(KEY_UP);
+    bool down_pressed = IsKeyPressed(KEY_DOWN);
+    bool left_pressed = IsKeyPressed(KEY_LEFT);
+    bool right_pressed = IsKeyPressed(KEY_RIGHT);
+
+    if (up_pressed)
+        push_key_to_front(in, ARROW_UP);
+    if (down_pressed)
+        push_key_to_front(in, ARROW_DOWN);
+    if (left_pressed)
+        push_key_to_front(in, ARROW_LEFT);
+    if (right_pressed)
+        push_key_to_front(in, ARROW_RIGHT);
+
+    if (!up_held && is_key_in_stack(in, ARROW_UP))
+        remove_key_from_stack(in, ARROW_UP);
+    if (!down_held && is_key_in_stack(in, ARROW_DOWN))
+        remove_key_from_stack(in, ARROW_DOWN);
+    if (!left_held && is_key_in_stack(in, ARROW_LEFT))
+        remove_key_from_stack(in, ARROW_LEFT);
+    if (!right_held && is_key_in_stack(in, ARROW_RIGHT))
+        remove_key_from_stack(in, ARROW_RIGHT);
+
+    if (in->arrow_stack_count == 0)
     {
-        s->anyDirPressed = true;
-        if (s->heldFrames == 0)
-        {
-            s->delayLock = false;
-        }
-        else if (s->heldFrames >= 4)
-        {
-            s->delayLock = false;
-            s->heldFrames = 0;
-        }
-        else
-        {
-            s->delayLock = true;
-        }
-        s->heldFrames++;
-    }
-    else
-    {
-        s->anyDirPressed = false;
-        s->heldFrames = 0;
-        s->delayLock = false;
+        in->key_repeat_timer_ms = 0.0;
+        in->initial_move_done = false;
     }
 
-    s->quit = WindowShouldClose();
+    in->E_pressed = IsKeyPressed(KEY_E);
+    in->L_pressed = IsKeyPressed(KEY_L);
+    in->Q_pressed = IsKeyPressed(KEY_Q);
+    in->P_pressed = IsKeyPressed(KEY_P);
+    in->ESC_pressed = IsKeyPressed(KEY_ESCAPE);
+    in->SPACE_pressed = IsKeyPressed(KEY_SPACE);
+
+    in->SHIFT_held = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+
+    in->quit = WindowShouldClose();
 }
 
 static bool is_vector2_equal(Vector2 *a, Vector2 *b)
@@ -88,17 +176,7 @@ void Mouse_Poll(MouseState *s)
 
 static Vector2 handle_key_move(Vector2 pos, Rectangle bounds, InputState *in)
 {
-    if (!in->delayLock)
-    {
-        int newX = pos.x + in->dx;
-        int newY = pos.y + in->dy;
 
-        if (newX >= bounds.x && newX < bounds.x + bounds.width)
-            pos.x = newX;
-        if (newY >= bounds.y && newY < bounds.y + bounds.height)
-            pos.y = newY;
-    }
-    return pos;
 }
 
 static Vector2 handle_mouse_move(MouseState *m, Bzzt_Camera *c, Rectangle bounds, Vector2 currentPos)
@@ -122,13 +200,4 @@ static Vector2 handle_mouse_move(MouseState *m, Bzzt_Camera *c, Rectangle bounds
 
 Vector2 Handle_Cursor_Move(Vector2 currentPos, InputState *in, MouseState *m, Bzzt_Camera *c, Rectangle bounds)
 {
-    if (in->anyDirPressed) // if arrow keys are pressed
-    {
-        return handle_key_move(currentPos, bounds, in);
-    }
-    if (m->moved) // If the mouse has moved
-    {
-        return handle_mouse_move(m, c, bounds, currentPos);
-    }
-    return currentPos;
 }

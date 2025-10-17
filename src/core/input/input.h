@@ -14,16 +14,32 @@
 #include <stdint.h>
 #include "raylib.h"
 
+#define INITIAL_MOVE_DELAY_MS 200.0
+#define KEY_REPEAT_INTERVAL_MS 80.0
+
 typedef struct Bzzt_Camera Bzzt_Camera;
 typedef struct Engine Engine;
 
 typedef void (*Key_Handler)(Engine *e);
 
+typedef enum ArrowKey
+{
+    ARROW_NONE = 0,
+    ARROW_UP,
+    ARROW_DOWN,
+    ARROW_LEFT,
+    ARROW_RIGHT
+} ArrowKey;
+
 typedef struct InputState
 {
-    int dx, dy; // Target input direction
 
-    bool anyDirPressed;
+    ArrowKey arrow_stack[4];
+    int arrow_stack_count;
+
+    double key_repeat_timer_ms;
+    bool initial_move_done;
+
     bool E_pressed;
     bool L_pressed;
     bool Q_pressed;
@@ -51,4 +67,6 @@ typedef struct MouseState
 void Input_Set_Handler(InputState *in, Key_Handler h);
 void Input_Poll(InputState *out);
 void Mouse_Poll(MouseState *out);
+ArrowKey Input_Get_Priority_Direction(InputState *in);
+void Input_Get_Direction(ArrowKey key, int *out_dx, int *out_dy);
 Vector2 Handle_Cursor_Move(Vector2 currentPos, InputState *in, MouseState *m, Bzzt_Camera *c, Rectangle bounds);

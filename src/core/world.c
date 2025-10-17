@@ -10,7 +10,7 @@
 #include "zzt.h"
 #include "timing.h"
 
-#define BLINK_RATE_DEFAULT 269   // in ms
+#define BLINK_RATE_DEFAULT 269    // in ms
 #define TICK_DURATION_DEFAULT 100 // in ms
 #define STICKY_INPUT_DEFAULT true
 
@@ -132,11 +132,10 @@ Bzzt_World *Bzzt_World_Create(char *title)
     w->timer->paused = false;
     w->timer->tick_duration_ms = TICK_DURATION_DEFAULT;
 
-    w->enable_sticky_input = STICKY_INPUT_DEFAULT;
-    w->current_input = NULL;
-    w->has_queued_input = false;
-    w->queued_dx = 0;
-    w->queued_dy = 0;
+    w->move_dx = 0;
+    w->move_dy = 0;
+    w->has_queued_move = false;
+    w->move_repeat_cooldown_ms = 0.0;
 
     return w;
 }
@@ -167,15 +166,17 @@ void Bzzt_World_Update(Bzzt_World *w, InputState *in)
 {
     if (!w || !in)
         return;
+
     if (w->doUnload)
     {
         Bzzt_World_Destroy(w);
         return;
     }
 
+    double delta_time = GetFrameTime() * 1000.0;
+
     if (w->allow_blink)
     {
-        double delta_time = GetFrameTime() * 1000.0;
         w->blink_timer += delta_time;
         if (w->blink_timer >= w->blink_delay_rate)
         {
@@ -184,18 +185,41 @@ void Bzzt_World_Update(Bzzt_World *w, InputState *in)
         }
     }
 
-    // Queue inputs
-    if (in->anyDirPressed && w->enable_sticky_input)
+    ArrowKey priority_key = Input_Get_Priority_Direction(in);
+    if (priority_key != ARROW_NONE)
     {
-        w->queued_dx = in->dx;
-        w->queued_dy = in->dy;
-        w->has_queued_input = true;
+        in->key_repeat_timer_ms += delta_time;
+
+        bool should_move = false;
+        if (!in->initial_move_done)
+        {
+            should_move = true;
+            in->initial_move_done = true;
+            in->key_repeat_timer_ms = 0.0;
+        }
+        else if (in->key_repeat_timer_ms >= INITIAL_MOVE_DELAY_MS)
+        {
+            if (w->move_repeat_cooldown_ms <= 0.0)
+            {
+                should_move = true;
+                w->move_repeat_cooldown_ms = KEY_REPEAT_INTERVAL_MS;
+            }
+            else
+                w->move_repeat_cooldown_ms -= delta_time;
+        }
+
+        if (should_move)
+        {
+            Input_Get_Direction(priority_key, &w->move_dx, &w->move_dy);
+            w->has_queued_move = true;
+        }
     }
+    else
+        w->move_repeat_cooldown_ms = 0.0;
 
     w->current_input = in;
 
-    double frame_ms = GetFrameTime() * 1000.0;
-    Bzzt_Timer_Run_Frame(w, frame_ms);
+    Bzzt_Timer_Run_Frame(w, delta_time);
 }
 
 void Bzzt_World_Add_Board(Bzzt_World *w, Bzzt_Board *b)

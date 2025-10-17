@@ -397,37 +397,16 @@ static uint8_t handle_player_touch(Bzzt_World *w, Bzzt_Tile tile, int x, int y)
 
 static void handle_player_move(Bzzt_World *w)
 {
-    if (!w || !w->current_input)
+    if (!w || !w->has_queued_move)
         return;
 
-    int dx = 0, dy = 0;
-    bool has_input = false;
+    int dx = w->move_dx;
+    int dy = w->move_dy;
+    w->has_queued_move = false;
+    w->move_dx = 0;
+    w->move_dy = 0;
 
-    // Sticky input - check for input queued from prior frames where player stat wasn't updated
-    if (w->enable_sticky_input && w->has_queued_input)
-    {
-        if (!w->current_input->anyDirPressed) // experiment - cancel move queues
-        {
-            w->has_queued_input = false;
-            w->queued_dx = 0;
-            w->queued_dy = 0;
-            return;
-        }
-        dx = w->queued_dx;
-        dy = w->queued_dy;
-        has_input = true;
-        w->has_queued_input = false; // Clear queued input after using it
-        w->queued_dx = 0;
-        w->queued_dy = 0;
-    }
-    else if (w->current_input->anyDirPressed) // Check input for this frame instead, if no queued input
-    {
-        dx = w->current_input->dx;
-        dy = w->current_input->dy;
-        has_input = true;
-    }
-
-    if (!has_input)
+    if (dx == 0 && dy == 0)
         return;
 
     Bzzt_Board *current_board = w->boards[w->boards_current];
@@ -495,11 +474,11 @@ static void handle_player_shoot(Bzzt_World *w, Bzzt_Stat *player_stat)
         shoot_dx = player_stat->step_x;
         shoot_dy = player_stat->step_y;
     }
-    else if (in->SHIFT_held && in->anyDirPressed)
+    else if (in->SHIFT_held && in->arrow_stack_count > 0)
     {
         wants_to_shoot = true;
-        shoot_dx = in->dx;
-        shoot_dy = in->dy;
+        shoot_dx = w->move_dx;
+        shoot_dy = w->move_dy;
     }
 
     if (!wants_to_shoot)
