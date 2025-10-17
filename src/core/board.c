@@ -290,8 +290,32 @@ bool Bzzt_Stat_Is_Blocked(Bzzt_Board *b, Bzzt_Stat *s, Direction dir)
         if (Bzzt_Board_Is_In_Bounds(b, s->x, s->y - 1))
         {
             Bzzt_Tile t = Bzzt_Board_Get_Tile(b, s->x, s->y - 1);
-            return Bzzt_Tile_Is_Walkable(t);
+            return !Bzzt_Tile_Is_Walkable(t);
         }
+        return true;
+    case DIR_DOWN:
+        if (Bzzt_Board_Is_In_Bounds(b, s->x, s->y + 1))
+        {
+            Bzzt_Tile t = Bzzt_Board_Get_Tile(b, s->x, s->y + 1);
+            return !Bzzt_Tile_Is_Walkable(t);
+        }
+        return true;
+    case DIR_LEFT:
+        if (Bzzt_Board_Is_In_Bounds(b, s->x - 1, s->y))
+        {
+            Bzzt_Tile t = Bzzt_Board_Get_Tile(b, s->x - 1, s->y);
+            return !Bzzt_Tile_Is_Walkable(t);
+        }
+        return true;
+    case DIR_RIGHT:
+        if (Bzzt_Board_Is_In_Bounds(b, s->x + 1, s->y))
+        {
+            Bzzt_Tile t = Bzzt_Board_Get_Tile(b, s->x + 1, s->y);
+            return !Bzzt_Tile_Is_Walkable(t);
+        }
+        return true;
+    default:
+        return true;
     }
 }
 

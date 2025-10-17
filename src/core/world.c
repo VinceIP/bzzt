@@ -11,7 +11,7 @@
 #include "timing.h"
 
 #define BLINK_RATE_DEFAULT 269   // in ms
-#define TICK_DURATION_DEFAULT 95 // in ms
+#define TICK_DURATION_DEFAULT 100 // in ms
 #define STICKY_INPUT_DEFAULT true
 
 static bool grow_boards_array(Bzzt_World *w)
