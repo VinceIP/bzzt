@@ -506,8 +506,8 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
             {
                 Bzzt_World_Toggle_Interpolation(e->world);
             }
-            
-            Bzzt_World_Update(e->world, i);
+
+            Bzzt_World_Update(e, e->world, i);
             sync_ui_to_world_state(e);
         }
         break;

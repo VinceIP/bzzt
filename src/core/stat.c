@@ -18,6 +18,7 @@
 #include "input.h"
 #include "color.h"
 #include "zzt_element_defaults.h"
+#include "ui.h"
 
 static int get_key_index_from_color(Color_Bzzt color)
 {
@@ -98,7 +99,7 @@ static bool stat_can_act(Bzzt_World *w, Bzzt_Stat *stat, int stat_idx)
     return (current_tick % stat->cycle) == (stat_idx % stat->cycle);
 }
 
-static void handle_bullet_collision(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *bullet, int collision_x, int collision_y)
+static void handle_bullet_collision(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *bullet, int collision_x, int collision_y)
 {
     if (!b || !bullet)
         return;
@@ -168,6 +169,8 @@ static void handle_bullet_collision(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *bul
         }
         break;
     case ZZT_PLAYER:
+        Bzzt_Board_Stat_Die(b, bullet);
+        UI_Flash_Message(ui, ZZT_MSG_OUCH);
         // tbd player collision
         break;
     default: // Hitting any other element kills the bullet
@@ -246,7 +249,7 @@ static bool handle_board_edge_move(Bzzt_World *w, int new_x, int new_y)
     return true;
 }
 
-static bool handle_item_pickup(Bzzt_World *w, Bzzt_Board *b, int x, int y, Bzzt_Tile item)
+static bool handle_item_pickup(UI *ui, Bzzt_World *w, Bzzt_Board *b, int x, int y, Bzzt_Tile item)
 {
     Bzzt_Tile empty = {0};
     Bzzt_Stat *player = b->stats[0];
@@ -256,19 +259,23 @@ static bool handle_item_pickup(Bzzt_World *w, Bzzt_Board *b, int x, int y, Bzzt_
     case ZZT_AMMO:
         w->ammo += 5;
         Bzzt_Board_Set_Tile(b, x, y, empty);
+        UI_Flash_Message(ui, ZZT_MSG_AMMO_GET);
         return true;
     case ZZT_GEM:
         w->gems++;
         w->score += 10;
         Bzzt_Board_Set_Tile(b, x, y, empty);
+        UI_Flash_Message(ui, ZZT_MSG_GEM_GET);
         return true;
     case ZZT_TORCH:
         w->torches++;
         Bzzt_Board_Set_Tile(b, x, y, empty);
+        UI_Flash_Message(ui, ZZT_MSG_TORCH_GET);
         return true;
     case ZZT_ENERGIZER:
         // do energize
         Bzzt_Board_Set_Tile(b, x, y, empty);
+        UI_Flash_Message(ui, ZZT_MSG_ENERGIZER_ACTIVATED);
         return true;
     case ZZT_KEY:
     {
@@ -281,6 +288,7 @@ static bool handle_item_pickup(Bzzt_World *w, Bzzt_Board *b, int x, int y, Bzzt_
             return false; // Already have key
         w->keys[key_idx] = 1;
         Bzzt_Board_Set_Tile(b, x, y, empty);
+        UI_Flash_Message(ui, ZZT_MSG_KEY_GET, bzzt_color_name_from_color(key_color));
         return true;
     }
     case ZZT_SCROLL:
@@ -342,7 +350,7 @@ static bool handle_passage_touch(Bzzt_World *w, int x, int y)
 }
 
 // returns the type of thing the player touched
-static uint8_t handle_player_touch(Bzzt_World *w, Bzzt_Tile tile, int x, int y)
+static uint8_t handle_player_touch(UI *ui, Bzzt_World *w, Bzzt_Tile tile, int x, int y)
 {
     if (!w)
         return false;
@@ -367,21 +375,30 @@ static uint8_t handle_player_touch(Bzzt_World *w, Bzzt_Tile tile, int x, int y)
         {
             tile.visible = true;
             Bzzt_Board_Set_Tile(board, x, y, tile);
+            UI_Flash_Message(ui, ZZT_MSG_TOUCH_INVISIBLE_WALL);
         }
         break;
     case ZZT_FOREST:
         Bzzt_Board_Set_Tile(board, x, y, empty_tile);
-        Debug_Printf(LOG_WORLD, "Moved through the forest.");
+        UI_Flash_Message(ui, ZZT_MSG_TOUCH_FOREST);
+        break;
+    case ZZT_WATER:
+        UI_Flash_Message(ui, ZZT_MSG_TOUCH_WATER);
         break;
     case ZZT_DOOR:
         Color_Bzzt door_color = tile.bg;
         int key_idx = get_key_index_from_door_color(door_color);
         if (key_idx < 0 || key_idx >= 7)
             return false;
-        if (w->keys[key_idx] == 0) // If player doesn't have this key
+        if (w->keys[key_idx] == 0)
+        { // If player doesn't have this key
+            UI_Flash_Message(ui, ZZT_MSG_DOOR_LOCKED, bzzt_color_name_from_color(tile.bg));
             return false;
+        }
         w->keys[key_idx] = 0; // success, consume key
         Bzzt_Board_Set_Tile(board, x, y, empty_tile);
+        UI_Flash_Message(ui, ZZT_MSG_DOOR_OPEN, bzzt_color_name_from_color(tile.bg));
+
         break;
     default:
         break;
@@ -390,7 +407,7 @@ static uint8_t handle_player_touch(Bzzt_World *w, Bzzt_Tile tile, int x, int y)
     return tile.element;
 }
 
-static void handle_player_move(Bzzt_World *w)
+static void handle_player_move(UI *ui, Bzzt_World *w)
 {
     if (!w || !w->current_input)
         return;
@@ -399,6 +416,7 @@ static void handle_player_move(Bzzt_World *w)
 
     ArrowKey buffered_key = Input_Pop_Buffered_Direction(in);
     ArrowKey priority_key = buffered_key != ARROW_NONE ? buffered_key : Input_Get_Priority_Direction(in);
+
     if (priority_key == ARROW_NONE || in->SHIFT_held)
         return; // No movement if no key or shift held
 
@@ -433,11 +451,11 @@ static void handle_player_move(Bzzt_World *w)
     {
         Bzzt_Board_Move_Stat_To(current_board, stat, new_x, new_y);
     }
-    else if (handle_item_pickup(w, current_board, new_x, new_y,
+    else if (handle_item_pickup(ui, w, current_board, new_x, new_y,
                                 target_tile))
         Bzzt_Board_Move_Stat_To(current_board, stat, new_x, new_y);
     else
-        element_type_touched = handle_player_touch(w, target_tile, new_x,
+        element_type_touched = handle_player_touch(ui, w, target_tile, new_x,
                                                    new_y);
 
     if (dx != 0)
@@ -449,16 +467,13 @@ static void handle_player_move(Bzzt_World *w)
         Bzzt_World_Set_Pause(w, false);
 }
 
-static void handle_player_shoot(Bzzt_World *w, Bzzt_Stat *player_stat)
+static void handle_player_shoot(UI *ui, Bzzt_World *w, Bzzt_Stat *player_stat)
 {
     if (!w || !player_stat)
         return;
 
     InputState *in = w->current_input;
     if (!in)
-        return;
-
-    if (w->ammo <= 0)
         return;
 
     Bzzt_Board *current_board = w->boards[w->boards_current];
@@ -487,6 +502,18 @@ static void handle_player_shoot(Bzzt_World *w, Bzzt_Stat *player_stat)
     if (shoot_dx == 0 && shoot_dy == 0)
         return; // Can't shoot with no direction
 
+    if (current_board->max_shots == 0)
+    {
+        UI_Flash_Message(ui, ZZT_MSG_SHOT_FORBIDDEN);
+        return;
+    }
+
+    if (w->ammo <= 0)
+    {
+        UI_Flash_Message(ui, ZZT_MSG_SHOT_EMPTY);
+        return;
+    }
+
     if (current_board->max_shots > 0)
     {
         int bullet_count = Bzzt_Board_Get_Bullet_Count(current_board);
@@ -503,7 +530,7 @@ static void handle_player_shoot(Bzzt_World *w, Bzzt_Stat *player_stat)
     w->ammo--;
 }
 
-static void stat_act(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
+static void stat_act(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
 {
     if (!w || !b || !stat)
         return;
@@ -514,9 +541,9 @@ static void stat_act(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
     switch (stat_type)
     {
     case ZZT_PLAYER:
-        handle_player_shoot(w, stat);
+        handle_player_shoot(ui, w, stat);
         if (!w->current_input->SHIFT_held)
-            handle_player_move(w);
+            handle_player_move(ui, w);
         break;
 
     case ZZT_BULLET:
@@ -531,7 +558,7 @@ static void stat_act(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
 
         Bzzt_Tile next_tile = Bzzt_Board_Get_Tile(b, next_x, next_y);
         if (next_tile.element != ZZT_EMPTY && next_tile.element != ZZT_FAKE && next_tile.element != ZZT_WATER)
-            handle_bullet_collision(w, b, stat, next_x, next_y);
+            handle_bullet_collision(ui, w, b, stat, next_x, next_y);
         else
             Bzzt_Board_Move_Stat_To(b, stat, next_x, next_y);
         break;
@@ -648,7 +675,7 @@ void Bzzt_Stat_Destroy(Bzzt_Stat *s)
     free(s);
 }
 
-void Bzzt_Stat_Update(Bzzt_World *w, Bzzt_Stat *stat, int stat_idx)
+void Bzzt_Stat_Update(UI *ui, Bzzt_World *w, Bzzt_Stat *stat, int stat_idx)
 {
     if (!w || !stat)
         return;
@@ -656,7 +683,7 @@ void Bzzt_Stat_Update(Bzzt_World *w, Bzzt_Stat *stat, int stat_idx)
     Bzzt_Board *current_board = w->boards[w->boards_current];
 
     if (stat_can_act(w, stat, stat_idx))
-        stat_act(w, current_board, stat);
+        stat_act(ui, w, current_board, stat);
 }
 
 Bzzt_Object *Bzzt_Object_Create(uint8_t glyph, Color_Bzzt fg, Color_Bzzt bg, int x, int y)

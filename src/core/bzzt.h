@@ -21,10 +21,12 @@
 #define BZZT_VIEWPORT_DEFAULT_H 25
 #define BZZT_MAX_PATH_LENGTH 32
 
-#define BZZT_ENABLE_INTERPOLATION 1
+#define BZZT_ENABLE_INTERPOLATION 0
 
 typedef struct InputState InputState;
 typedef struct Bzzt_Timer Bzzt_Timer;
+typedef struct UI UI;
+typedef struct Engine Engine;
 
 // The direction an object is facing
 typedef enum
@@ -239,7 +241,7 @@ Bzzt_Stat *Bzzt_Stat_Create(Bzzt_Board *b, int x, int y);
 void Bzzt_Board_Stat_Die(Bzzt_Board *b, Bzzt_Stat *stat);
 
 // Update a given stat
-void Bzzt_Stat_Update(Bzzt_World *w, Bzzt_Stat *stat, int stat_idx);
+void Bzzt_Stat_Update(UI *ui, Bzzt_World *w, Bzzt_Stat *stat, int stat_idx);
 
 void Bzzt_Stat_Destroy(Bzzt_Stat *s);
 
@@ -286,7 +288,7 @@ int Bzzt_World_Save(Bzzt_World *w, const char *path);
 // Destroy a Bzzt_World
 void Bzzt_World_Destroy(Bzzt_World *w);
 // Do updates and logic handlers for a Bzzt_World
-void Bzzt_World_Update(Bzzt_World *w, InputState *in);
+void Bzzt_World_Update(Engine *e, Bzzt_World *w, InputState *in);
 // Switch the current board to a new one based on a target board index. Set player at given x/y position.
 bool Bzzt_World_Switch_Board_To(Bzzt_World *w, int board_idx, int x, int y);
 // Pause or unpause the game

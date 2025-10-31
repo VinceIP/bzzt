@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 typedef struct Bzzt_World Bzzt_World;
+typedef struct Engine Engine;
 
 typedef struct Bzzt_Timer
 {
@@ -17,6 +18,6 @@ typedef struct Bzzt_Timer
 
 void Bzzt_Timer_Tick(Bzzt_Timer *t);
 
-void Bzzt_Timer_Run_Frame(Bzzt_World *w, double frame_ms);
+void Bzzt_Timer_Run_Frame(Engine *e, Bzzt_World *w, double frame_ms);
 
-double Bzzt_Timer_Run_Tick(Bzzt_World *w);
+double Bzzt_Timer_Run_Tick(Engine *e, Bzzt_World *w);

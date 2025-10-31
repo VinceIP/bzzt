@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include "raylib.h"
 #include "color.h"
+#include "ui_messages.h"
 
 struct Color;
 typedef struct Renderer Renderer;
@@ -246,11 +247,23 @@ typedef struct UI
     bool visible, enabled;
     UILayer **layers;
     int layer_count, layer_cap;
+
+    UISurface *flashing_text_surface;
+    zzt_message_shown_flags_t shown_messages;
+
+    char *message_text;
+    int16_t message_ticks_remaining;
+    bool message_active;
 } UI;
 
 UI *UI_Create(bool visible, bool enabled);
 void UI_Update(UI *ui);
 void UI_Destroy(UI *ui);
+
+void UI_Flash_Message(UI *ui, zzt_message_t zzt_msg, ...);
+void UI_Flash_Message_String(UI *ui, const char *message);
+void UI_Clear_Message(UI *ui);
+void UI_Update_Message_Timer(UI *ui);
 
 UILayer *UI_Add_New_Layer(UI *ui, bool visible, bool enabled);
 void UI_Add_Surface(UI *ui, int targetIndex, UISurface *s);

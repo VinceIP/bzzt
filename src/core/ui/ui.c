@@ -80,6 +80,13 @@ UI *UI_Create(bool visible, bool enabled)
     ui->layer_count = 0;
     ui->layer_cap = 4;
 
+    ui->flashing_text_surface = NULL;
+    ui->shown_messages = 0;
+
+    ui->message_text = NULL;
+    ui->message_ticks_remaining = 0;
+    ui->message_active = false;
+
     ui->layers = malloc(sizeof(UILayer *) * ui->layer_cap);
     if (!ui->layers)
     {
@@ -98,6 +105,13 @@ void UI_Destroy(UI *ui)
 {
     if (!ui)
         return;
+
+    if (ui->message_text)
+    {
+        free(ui->message_text);
+        ui->message_text = NULL;
+    }
+    
     int layer_count = ui->layer_count;
     for (int i = 0; i < layer_count; ++i)
     {

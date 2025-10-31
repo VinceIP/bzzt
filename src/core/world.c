@@ -166,7 +166,7 @@ void Bzzt_World_Destroy(Bzzt_World *w)
     free(w);
 }
 
-void Bzzt_World_Update(Bzzt_World *w, InputState *in)
+void Bzzt_World_Update(Engine *e, Bzzt_World *w, InputState *in)
 {
     if (!w || !in)
         return;
@@ -197,7 +197,7 @@ void Bzzt_World_Update(Bzzt_World *w, InputState *in)
 
     w->current_input = in;
 
-    Bzzt_Timer_Run_Frame(w, delta_time);
+    Bzzt_Timer_Run_Frame(e, w, delta_time);
 }
 
 void Bzzt_World_Add_Board(Bzzt_World *w, Bzzt_Board *b)

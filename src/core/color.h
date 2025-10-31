@@ -75,6 +75,9 @@ static const Color_Bzzt BZZT_PALETTE[17] = {
     COLOR_TRANSPARENT    // 16
 };
 
+static const char *BZZT_COLOR_NAMES[] = {
+    "black", "dark blue", "dark green", "dark cyan", "dark red", "dark purple", "brown", "gray", "dark gray", "blue", "green", "cyan", "red", "purple", "yellow", "white", "transparent"};
+
 static inline Color_Bzzt bzzt_get_color(uint8_t idx)
 {
     return BZZT_PALETTE[idx & 0x0F];
@@ -83,4 +86,38 @@ static inline Color_Bzzt bzzt_get_color(uint8_t idx)
 static inline bool bzzt_color_equals(Color_Bzzt a, Color_Bzzt b)
 {
     return a.r == b.r && a.g == b.g && a.b == b.b;
+}
+
+// Get the name of a color as a string from color index
+static inline const char *bzzt_color_name(uint8_t idx)
+{
+    if (idx >= 17)
+        return "unknown";
+    return BZZT_COLOR_NAMES[idx];
+}
+
+// Get the name of a color from BzztColor enum value
+static inline const char *bzzt_color_name_from_enum(int color_enum)
+{
+    return bzzt_color_name((uint8_t)color_enum);
+}
+
+static inline int bzzt_color_to_index(Color_Bzzt color)
+{
+    // Search through the palette to find matching color
+    for (int i = 0; i < 17; i++)
+    {
+        if (bzzt_color_equals(color, BZZT_PALETTE[i]))
+            return i;
+    }
+    return -1; // Not found
+}
+
+// Get the name of a color directly from a Color_Bzzt value
+static inline const char *bzzt_color_name_from_color(Color_Bzzt color)
+{
+    int idx = bzzt_color_to_index(color);
+    if (idx < 0)
+        return "unknown";
+    return bzzt_color_name((uint8_t)idx);
 }
