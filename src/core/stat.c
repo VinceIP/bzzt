@@ -20,6 +20,8 @@
 #include "zzt_element_defaults.h"
 #include "ui.h"
 
+static void clear_forest(UI *ui, Bzzt_Board *b, int x, int y);
+
 static int get_key_index_from_color(Color_Bzzt color)
 {
     // Map bzzt color to key index
@@ -124,7 +126,10 @@ static void handle_bullet_collision(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_S
         // tbd
         break;
     case ZZT_BULLET: // bullets destroy each other
-        // tbd
+        Bzzt_Stat *other_bullet = Bzzt_Board_Get_Stat_At(b, collision_x, collision_y);
+        if (other_bullet)
+            Bzzt_Board_Stat_Die(b, other_bullet);
+        Bzzt_Board_Stat_Die(b, bullet);
         break;
     case ZZT_BEAR:
         Bzzt_Stat *bear = Bzzt_Board_Get_Stat_At(b, collision_x, collision_y);
@@ -179,7 +184,7 @@ static void handle_bullet_collision(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_S
     }
 }
 
-static bool handle_board_edge_move(Bzzt_World *w, int new_x, int new_y)
+static bool handle_board_edge_move(Bzzt_World *w, UI *ui, int new_x, int new_y)
 {
     if (!w)
         return false;
@@ -245,36 +250,66 @@ static bool handle_board_edge_move(Bzzt_World *w, int new_x, int new_y)
     player_tile.bg = COLOR_BLUE;
     player_tile.visible = true;
 
+    if (entry_under.element == ZZT_FOREST)
+    {
+        clear_forest(ui, w->boards[w->boards_current], new_player->x, new_player->y);
+        new_player->under = (Bzzt_Tile){0};
+    }
+
     Bzzt_Board_Set_Tile(new_board, entry_x, entry_y, player_tile);
+
     return true;
+}
+
+static void clear_forest(UI *ui, Bzzt_Board *b, int x, int y)
+{
+    Bzzt_Board_Set_Tile(b, x, y, (Bzzt_Tile){0});
+    UI_Flash_Message(ui, ZZT_MSG_TOUCH_FOREST);
 }
 
 static bool handle_item_pickup(UI *ui, Bzzt_World *w, Bzzt_Board *b, int x, int y, Bzzt_Tile item)
 {
-    Bzzt_Tile empty = {0};
+    Bzzt_Tile empty_tile = {0};
     Bzzt_Stat *player = b->stats[0];
 
     switch (item.element)
     {
+    case ZZT_FOREST: // i mean, we're kind of picking up the forest, right?
+        clear_forest(ui, b, x, y);
+        return true;
+
+    case ZZT_BEAR:
+    case ZZT_LION:
+    case ZZT_TIGER:
+    case ZZT_RUFFIAN:
+        Bzzt_Stat *enemy = Bzzt_Board_Get_Stat_At(b, x, y);
+        if (enemy)
+        {
+            Bzzt_Board_Stat_Die(b, enemy);
+            UI_Flash_Message(ui, ZZT_MSG_OUCH);
+            w->health -= 10;
+        }
+        return true;
+
     case ZZT_AMMO:
         w->ammo += 5;
-        Bzzt_Board_Set_Tile(b, x, y, empty);
+        Bzzt_Board_Set_Tile(b, x, y, empty_tile);
         UI_Flash_Message(ui, ZZT_MSG_AMMO_GET);
         return true;
     case ZZT_GEM:
         w->gems++;
         w->score += 10;
-        Bzzt_Board_Set_Tile(b, x, y, empty);
+        Bzzt_Board_Set_Tile(b, x, y, empty_tile);
         UI_Flash_Message(ui, ZZT_MSG_GEM_GET);
         return true;
     case ZZT_TORCH:
         w->torches++;
-        Bzzt_Board_Set_Tile(b, x, y, empty);
+        Bzzt_Board_Set_Tile(b, x, y, empty_tile);
         UI_Flash_Message(ui, ZZT_MSG_TORCH_GET);
         return true;
     case ZZT_ENERGIZER:
         // do energize
-        Bzzt_Board_Set_Tile(b, x, y, empty);
+        Bzzt_Board_Set_Tile(b, x, y, empty_tile);
         UI_Flash_Message(ui, ZZT_MSG_ENERGIZER_ACTIVATED);
         return true;
     case ZZT_KEY:
@@ -287,7 +322,7 @@ static bool handle_item_pickup(UI *ui, Bzzt_World *w, Bzzt_Board *b, int x, int 
         if (w->keys[key_idx] != 0)
             return false; // Already have key
         w->keys[key_idx] = 1;
-        Bzzt_Board_Set_Tile(b, x, y, empty);
+        Bzzt_Board_Set_Tile(b, x, y, empty_tile);
         UI_Flash_Message(ui, ZZT_MSG_KEY_GET, bzzt_color_name_from_color(key_color));
         return true;
     }
@@ -378,10 +413,6 @@ static uint8_t handle_player_touch(UI *ui, Bzzt_World *w, Bzzt_Tile tile, int x,
             UI_Flash_Message(ui, ZZT_MSG_TOUCH_INVISIBLE_WALL);
         }
         break;
-    case ZZT_FOREST:
-        Bzzt_Board_Set_Tile(board, x, y, empty_tile);
-        UI_Flash_Message(ui, ZZT_MSG_TOUCH_FOREST);
-        break;
     case ZZT_WATER:
         UI_Flash_Message(ui, ZZT_MSG_TOUCH_WATER);
         break;
@@ -405,6 +436,21 @@ static uint8_t handle_player_touch(UI *ui, Bzzt_World *w, Bzzt_Tile tile, int x,
     }
 
     return tile.element;
+}
+
+static bool handle_enemy_collision(Bzzt_World *w, Bzzt_Board *current_board, Bzzt_Tile target_tile)
+{
+    if (!w || !current_board)
+        return false;
+
+    switch (target_tile.element)
+    {
+    case ZZT_BEAR:
+    case ZZT_LION:
+    case ZZT_TIGER:
+    case ZZT_RUFFIAN:
+        break;
+    }
 }
 
 static void handle_player_move(UI *ui, Bzzt_World *w)
@@ -439,7 +485,7 @@ static void handle_player_move(UI *ui, Bzzt_World *w)
 
     if (!Bzzt_Board_Is_In_Bounds(current_board, new_x, new_y))
     {
-        handle_board_edge_move(w, new_x, new_y);
+        handle_board_edge_move(w, ui, new_x, new_y);
         return;
     }
 
@@ -454,6 +500,9 @@ static void handle_player_move(UI *ui, Bzzt_World *w)
     else if (handle_item_pickup(ui, w, current_board, new_x, new_y,
                                 target_tile))
         Bzzt_Board_Move_Stat_To(current_board, stat, new_x, new_y);
+    else if (handle_enemy_collision(w, current_board, target_tile))
+    {
+    }
     else
         element_type_touched = handle_player_touch(ui, w, target_tile, new_x,
                                                    new_y);
