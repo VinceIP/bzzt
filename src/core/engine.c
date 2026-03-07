@@ -123,6 +123,13 @@ static void splash_press_play(UIActionContext *ctx)
     Engine_Set_State(ctx->engine, ENGINE_STATE_TITLE);
 }
 
+static void splash_press_editor(UIActionContext *ctx)
+{
+    if (!ctx || !ctx->engine)
+        return;
+    Engine_Set_State(ctx->engine, ENGINE_STATE_EDIT);
+}
+
 static void splash_press_quit(UIActionContext *ctx)
 {
     if (!ctx || !ctx->engine)
@@ -168,6 +175,7 @@ static void register_ui_actions(Engine *e)
     UIAction_Register(e->action_registry, "btn_toggle_quit", btn_toggle_quit);
     UIAction_Register(e->action_registry, "btn_title_press_play", btn_title_press_play);
     UIAction_Register(e->action_registry, "splash_press_play", splash_press_play);
+    UIAction_Register(e->action_registry, "splash_press_editor", splash_press_editor);
     UIAction_Register(e->action_registry, "splash_press_quit", splash_press_quit);
 
     UIAction_Register(e->action_registry, "btn_press_pause", btn_press_pause);

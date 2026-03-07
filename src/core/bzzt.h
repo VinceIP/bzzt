@@ -183,7 +183,7 @@ Bzzt_Object *Bzzt_Object_Create(uint8_t glyph, Color_Bzzt fg, Color_Bzzt bg, int
 void Bzzt_Object_Destroy(Bzzt_Object *o);
 
 // Return true if object can be walked on top of.
-bool Bzzt_Tile_Is_Walkable(Bzzt_Tile tile);
+bool Bzzt_Tile_Is_Walkable(Bzzt_World *w, Bzzt_Tile tile);
 
 // Return interaction type of an object.
 Interaction_Type Bzzt_Tile_Get_Interaction_Type(Bzzt_Tile tile);
@@ -195,7 +195,7 @@ const char *Bzzt_Tile_Get_Type_Name(Bzzt_Tile tile);
 Bzzt_Stat *Bzzt_Stat_From_ZZT_Param(ZZTparam *param, ZZTtile tile, int x, int y);
 
 // Return true if stat is blocked in given direction
-bool Bzzt_Stat_Is_Blocked(Bzzt_Board *b, Bzzt_Stat *s, Direction dir);
+bool Bzzt_Stat_Is_Blocked(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *s, Direction dir);
 
 // Make the stat shoot in given direction. Returns the bullet stat if successful, NULL if not.
 Bzzt_Stat *Bzzt_Stat_Shoot(Bzzt_Board *b, Bzzt_Stat *shooter, Direction dir);

@@ -50,6 +50,11 @@ surfaces:
             name: "btnEditor"
             y: 2
             text: '\f10E\f15ditor'
+            input_bindings:
+              - type: keyboard
+                key: KEY_E
+            events:
+              on_down: "splash_press_editor"
 
           - type: Button
             name: "btnQuit"

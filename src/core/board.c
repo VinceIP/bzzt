@@ -271,7 +271,7 @@ void Bzzt_Board_Move_Stat_To(Bzzt_Board *board, Bzzt_Stat *stat, int new_x, int 
     Bzzt_Board_Set_Tile(board, new_x, new_y, stat_tile);
 }
 
-bool Bzzt_Stat_Is_Blocked(Bzzt_Board *b, Bzzt_Stat *s, Direction dir)
+bool Bzzt_Stat_Is_Blocked(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *s, Direction dir)
 {
     if (!b || !s)
         return false;
@@ -282,28 +282,28 @@ bool Bzzt_Stat_Is_Blocked(Bzzt_Board *b, Bzzt_Stat *s, Direction dir)
         if (Bzzt_Board_Is_In_Bounds(b, s->x, s->y - 1))
         {
             Bzzt_Tile t = Bzzt_Board_Get_Tile(b, s->x, s->y - 1);
-            return !Bzzt_Tile_Is_Walkable(t);
+            return !Bzzt_Tile_Is_Walkable(w, t);
         }
         return true;
     case DIR_DOWN:
         if (Bzzt_Board_Is_In_Bounds(b, s->x, s->y + 1))
         {
             Bzzt_Tile t = Bzzt_Board_Get_Tile(b, s->x, s->y + 1);
-            return !Bzzt_Tile_Is_Walkable(t);
+            return !Bzzt_Tile_Is_Walkable(w, t);
         }
         return true;
     case DIR_LEFT:
         if (Bzzt_Board_Is_In_Bounds(b, s->x - 1, s->y))
         {
             Bzzt_Tile t = Bzzt_Board_Get_Tile(b, s->x - 1, s->y);
-            return !Bzzt_Tile_Is_Walkable(t);
+            return !Bzzt_Tile_Is_Walkable(w, t);
         }
         return true;
     case DIR_RIGHT:
         if (Bzzt_Board_Is_In_Bounds(b, s->x + 1, s->y))
         {
             Bzzt_Tile t = Bzzt_Board_Get_Tile(b, s->x + 1, s->y);
-            return !Bzzt_Tile_Is_Walkable(t);
+            return !Bzzt_Tile_Is_Walkable(w, t);
         }
         return true;
     default:
