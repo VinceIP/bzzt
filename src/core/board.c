@@ -7,7 +7,7 @@
 
 #define START_CAP 16
 
-static Bzzt_Tile empty = {0};
+static Bzzt_Tile empty_tile = {0};
 
 Bzzt_Board *Bzzt_Board_Create(const char *name, int w, int h)
 {
@@ -239,12 +239,31 @@ bool Bzzt_Board_Set_Tile(Bzzt_Board *b, int x, int y, Bzzt_Tile tile)
         return false;
 
     b->tiles[y * b->width + x] = tile;
+    tile.x = x;
+    tile.y = y;
     return true;
 }
 
 bool Bzzt_Board_Is_In_Bounds(Bzzt_Board *b, int x, int y)
 {
     return (x >= 0 && y >= 0 && x < b->width && y < b->height);
+}
+
+void update_tile_neighbors(Bzzt_Tile tile)
+{
+}
+
+void Bzzt_Board_Move_Tile_To(Bzzt_Board *b, Bzzt_Tile tile, int x, int y)
+{
+    if (!b || x < 0 || x >= b->width || y < 0 || y >= b->height)
+        return;
+    int prev_x = tile.x;
+    int prev_y = tile.y;
+    Debug_Log(LOG_LEVEL_DEBUG, LOG_BOARD, "prev x: %d\nprev y:%d\n\n", prev_x, prev_y);
+    tile.x = x;
+    tile.y = y;
+    Bzzt_Board_Set_Tile(b, prev_x, prev_y, empty_tile);
+    Bzzt_Board_Set_Tile(b, x, y, tile);
 }
 
 void Bzzt_Board_Move_Stat_To(Bzzt_Board *board, Bzzt_Stat *stat, int new_x, int new_y)
@@ -258,17 +277,20 @@ void Bzzt_Board_Move_Stat_To(Bzzt_Board *board, Bzzt_Stat *stat, int new_x, int 
     Bzzt_Tile stat_tile = Bzzt_Board_Get_Tile(board, stat->x, stat->y);
     Bzzt_Tile new_under = Bzzt_Board_Get_Tile(board, new_x, new_y);
 
-    Bzzt_Board_Set_Tile(board, stat->x, stat->y, stat->under);
+    stat_tile.x = stat->x;
+    stat_tile.y = stat->y; // make sure tile pos is up to date
 
     if (stat_tile.element != ZZT_PLAYER)
         stat_tile.bg = new_under.bg; // Preserve background color except for player
+
+    Bzzt_Board_Move_Tile_To(board, stat_tile, new_x, new_y);
+
+    Bzzt_Board_Set_Tile(board, stat->prev_x, stat->prev_y, stat->under);
 
     stat->under = new_under;
 
     stat->x = new_x;
     stat->y = new_y;
-
-    Bzzt_Board_Set_Tile(board, new_x, new_y, stat_tile);
 }
 
 bool Bzzt_Stat_Is_Blocked(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *s, Direction dir)

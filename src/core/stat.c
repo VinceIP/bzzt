@@ -557,10 +557,18 @@ static void stat_tick(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
     }
 }
 
-void zzt_boulder_push(Direction direction, Bzzt_Tile tile)
+void push_tile(Direction direction, Bzzt_Tile tile)
 {
     if (!Bzzt_Tile_Is_Pushable(tile))
         return;
+
+    switch (direction)
+    {
+    case DIR_NONE:
+        return;
+    case DIR_UP:
+        break;
+    }
 }
 
 void zzt_bullet_tick(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
@@ -772,6 +780,10 @@ bool Bzzt_Tile_Is_Pushable(Bzzt_Tile tile)
     }
 }
 
+bool Bzzt_Tile_Is_Blocked(Bzzt_Tile tile, Direction direction)
+{
+}
+
 Interaction_Type Bzzt_Tile_Get_Interaction_Type(Bzzt_Tile tile)
 {
     switch (tile.element)
@@ -955,6 +967,9 @@ Bzzt_Tile Bzzt_Tile_From_ZZT_Tile(ZZTblock *block, int x, int y)
 
     ZZTtile zzt_tile = zztTileAt(block, x, y);
     tile.element = zzt_tile.type;
+
+    tile.x = x;
+    tile.y = y;
 
     if (tile.element == ZZT_INVISIBLE)
         tile.visible = false;

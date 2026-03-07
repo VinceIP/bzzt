@@ -54,9 +54,12 @@ typedef enum
 typedef struct Bzzt_Tile
 {
     bool visible, blink;
+    int x, y;
     uint8_t element;
     uint8_t glyph;
     Color_Bzzt fg, bg;
+
+    uint8_t neighbors[4];
 } Bzzt_Tile;
 
 typedef struct Bzzt_Stat
@@ -185,8 +188,10 @@ void Bzzt_Object_Destroy(Bzzt_Object *o);
 // Return true if object can be walked on top of.
 bool Bzzt_Tile_Is_Walkable(Bzzt_World *w, Bzzt_Tile tile);
 
-// Return interaction type of an object.
-Interaction_Type Bzzt_Tile_Get_Interaction_Type(Bzzt_Tile tile);
+// Return true if tile can be pushed
+bool Bzzt_Tile_Is_Pushable(Bzzt_Tile tile);
+
+bool Bzzt_Tile_Is_Blocked(Bzzt_Tile tile, Direction direction);
 
 // Return element type of tile as a string
 const char *Bzzt_Tile_Get_Type_Name(Bzzt_Tile tile);
@@ -261,7 +266,10 @@ bool Bzzt_Board_Set_Tile(Bzzt_Board *b, int x, int y, Bzzt_Tile tile);
 // Return true if given x/y position is within board bounds
 bool Bzzt_Board_Is_In_Bounds(Bzzt_Board *b, int x, int y);
 
-// Move a stat and its tile to the given x/y position. Absolute - no checks
+// Move a tile to the given x/y position
+void Bzzt_Board_Move_Tile_To(Bzzt_Board *b, Bzzt_Tile tile, int x, int y);
+
+// Move a stat and its tile to the given x/y position.
 void Bzzt_Board_Move_Stat_To(Bzzt_Board *b, Bzzt_Stat *stat, int x, int y);
 
 // Return the number of bullets currently on the board
