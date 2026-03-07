@@ -1,5 +1,5 @@
 # bzzt
-A for-fun, overly-ambitious project meant to create a spiritual successor to Tim Sweeney's ZZT from 1991.
+bzzt (pronounced like it sounds) is an early stage, in-development original game engine that also happens to run ZZT worlds.
 
 ## Background
 bzzt is a project meant to satisfy my urge to build something really cool in C and satisfy my passion for weird, old software things.
@@ -14,7 +14,7 @@ I wanted to do something cool too, so I've started writing bzzt (pronounced like
 
 ## What is it?
 
-bzzt will aim to be a complete game development engine and player using ZZT as a base of inspiration and expanding on its capabilities for the modern age, while
+bzzt will aim to be a game development engine using ZZT as a baseline of inspiration/functionality, while
 keeping (mostly) in line with the vibe and limitations of ZZT.
 
 ## Goals and plans
@@ -31,9 +31,19 @@ Will I even finish this? Who knows.
 
 ## Current progress
 
-Not much. Right now, I want to establish a baseline of rendering boards in a unique bzzt format. Soon, I plan to start parsing .ZZT worlds and converting ZZT boards into
-bzzt boards that the engine can handle.
+bzzt is currently able to load ZZT worlds, render boards, and has player movement with shooting and board transitions. Work is underway implementing ZZT's basic stat types.
 
-The feature that has the most work done as of now is bzzt's UI engine. I thought it would be a good idea to implement a full capable UI engine and use that to build up
-the bzzt editor and player sidebar system. Currently working is a prototype system that's very similar to a modern game engine like Unity. You can read the complete
-documentation for the UI engine and how building a custom UI will work in bzzt [here](https://github.com/VinceIP/bzzt/blob/main/docs/bzzt%20ui.txt).
+In this early stage, bzzt already has a cool feature that expands upon what the original ZZT could do. Anyone can design a custom GUI using a simple YAML file (called a .bui) and create unique layouts with
+custom colors, show variables during runtime, etc. It's somewhat inspired by modern game engines and UX design, supporting toggleable layers and anchoring properties.
+
+## Building & Requirements
+
+Note: file selection of zzt worlds not yet implemented :)
+
+To build on Linux or Windows, ensure you have the latest releases of the following:
+- gcc
+- raylib
+- libcyaml
+
+Then run:
+`make clean && make`
