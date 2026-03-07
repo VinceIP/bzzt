@@ -40,13 +40,10 @@ static bool switch_board_to(Bzzt_World *w, int idx, int x, int y)
         Debug_Log(LOG_WARNING, LOG_WORLD, "Tried to transition to invalid board index.");
         return false;
     }
-    Bzzt_Board *new_board = w->boards[idx];
 
-    if (x >= new_board->width || x < 0 || y >= new_board->height || y < 0)
-    {
-        Debug_Log(LOG_WARNING, LOG_WORLD, "Tried to transition to invalid board coordinates.");
-        return false;
-    }
+    Debug_Log(LOG_LEVEL_DEBUG, LOG_WORLD, "Switching to board %d at %d, %d.", idx, x, y);
+
+    Bzzt_Board *new_board = w->boards[idx];
 
     Bzzt_Board *old_board = w->boards[w->boards_current];
     Bzzt_Stat *old_player = old_board->stats[0];
@@ -140,7 +137,6 @@ Bzzt_World *Bzzt_World_Create(char *title)
     w->interpolation_enabled = false;
 #endif
 
-
     return w;
 }
 
@@ -211,6 +207,7 @@ void Bzzt_World_Add_Board(Bzzt_World *w, Bzzt_Board *b)
 }
 
 // Exposed version of this
+// TODO: handle landing on a forest tile (clear it)
 bool Bzzt_World_Switch_Board_To(Bzzt_World *w, int board_idx, int x, int y)
 {
     if (!w || w->boards_current == board_idx || w->boards_count < board_idx)

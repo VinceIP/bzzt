@@ -20,6 +20,8 @@
 #include "zzt_element_defaults.h"
 #include "ui.h"
 
+// Note - i hate this entire file
+
 static void clear_forest(UI *ui, Bzzt_Board *b, int x, int y);
 
 static int get_key_index_from_color(Color_Bzzt color)
@@ -190,76 +192,47 @@ static bool handle_board_edge_move(Bzzt_World *w, UI *ui, int new_x, int new_y)
         return false;
 
     Bzzt_Board *old_board = w->boards[w->boards_current];
+    Bzzt_Board *new_board;
     Bzzt_Stat *old_player = old_board->stats[0];
 
     uint8_t next_board_idx = 0;
-
-    if (new_x < 0)
-        next_board_idx = old_board->board_w;
-    else if (new_x >= old_board->width)
-        next_board_idx = old_board->board_e;
-    else if (new_y < 0)
-        next_board_idx = old_board->board_n;
-    else if (new_y >= old_board->height)
-        next_board_idx = old_board->board_s;
-
-    if (next_board_idx == 0 || next_board_idx > w->boards_count)
-    {
-        Debug_Log(LOG_WARNING, LOG_WORLD, "Tried to transition to invalid board index.");
-        return false;
-    }
-
-    Bzzt_Board *new_board = w->boards[next_board_idx];
-
     int entry_x, entry_y;
 
     if (new_x < 0)
     {
+        next_board_idx = old_board->board_w;
+        new_board = w->boards[next_board_idx];
         entry_x = new_board->width - 1;
         entry_y = old_player->y;
     }
     else if (new_x >= old_board->width)
     {
+        next_board_idx = old_board->board_e;
+        new_board = w->boards[next_board_idx];
         entry_x = 0;
         entry_y = old_player->y;
     }
     else if (new_y < 0)
     {
+        next_board_idx = old_board->board_n;
+        new_board = w->boards[next_board_idx];
         entry_x = old_player->x;
         entry_y = new_board->height - 1;
     }
     else if (new_y >= old_board->height)
     {
+        next_board_idx = old_board->board_s;
+        new_board = w->boards[next_board_idx];
         entry_x = old_player->x;
         entry_y = 0;
     }
 
+    if (next_board_idx <= 0 || next_board_idx >= w->boards_count)
+        return false; // board idx invalid?
+
     Bzzt_Board_Set_Tile(old_board, old_player->x, old_player->y, old_player->under);
 
-    w->boards_current = next_board_idx;
-    Bzzt_Stat *new_player = new_board->stats[0];
-    Bzzt_Tile entry_under = Bzzt_Board_Get_Tile(new_board, entry_x, entry_y);
-    Bzzt_Board_Set_Tile(new_board, new_player->x, new_player->y, new_player->under);
-    new_player->x = entry_x;
-    new_player->y = entry_y;
-    new_player->under = entry_under;
-
-    Bzzt_Tile player_tile = {0};
-    player_tile.element = ZZT_PLAYER;
-    player_tile.glyph = 2;
-    player_tile.fg = COLOR_WHITE;
-    player_tile.bg = COLOR_BLUE;
-    player_tile.visible = true;
-
-    if (entry_under.element == ZZT_FOREST)
-    {
-        clear_forest(ui, w->boards[w->boards_current], new_player->x, new_player->y);
-        new_player->under = (Bzzt_Tile){0};
-    }
-
-    Bzzt_Board_Set_Tile(new_board, entry_x, entry_y, player_tile);
-
-    return true;
+    return Bzzt_World_Switch_Board_To(w, next_board_idx, entry_x, entry_y);
 }
 
 static void clear_forest(UI *ui, Bzzt_Board *b, int x, int y)
