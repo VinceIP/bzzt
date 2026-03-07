@@ -235,6 +235,7 @@ static bool handle_board_edge_move(Bzzt_World *w, UI *ui, int new_x, int new_y)
     }
 
     Bzzt_Board_Set_Tile(old_board, old_player->x, old_player->y, old_player->under);
+
     w->boards_current = next_board_idx;
     Bzzt_Stat *new_player = new_board->stats[0];
     Bzzt_Tile entry_under = Bzzt_Board_Get_Tile(new_board, entry_x, entry_y);
@@ -333,20 +334,20 @@ static bool handle_item_pickup(UI *ui, Bzzt_World *w, Bzzt_Board *b, int x, int 
     }
 }
 
-static bool handle_passage_touch(Bzzt_World *w, int x, int y)
+static uint8_t handle_passage_touch(Bzzt_World *w, int x, int y)
 {
     if (!w)
-        return false;
+        return 0;
 
     Bzzt_Board *current_board = w->boards[w->boards_current];
     Bzzt_Stat *passage = Bzzt_Board_Get_Stat_At(current_board, x, y);
     if (!passage)
-        return false;
+        return 0;
 
     int target_board_idx = passage->data[2];
 
     if (target_board_idx <= 0 || target_board_idx >= w->boards_count)
-        return false;
+        return 0;
 
     Bzzt_Board *target_board = w->boards[target_board_idx];
 
@@ -381,7 +382,7 @@ static bool handle_passage_touch(Bzzt_World *w, int x, int y)
         puts("doing pause");
         Bzzt_World_Set_Pause(w, true);
     }
-    return true;
+    return ZZT_PASSAGE;
 }
 
 // returns the type of thing the player touched
@@ -403,8 +404,8 @@ static uint8_t handle_player_touch(UI *ui, Bzzt_World *w, Bzzt_Tile tile, int x,
     switch (tile.element)
     {
     case ZZT_PASSAGE:
-        handle_passage_touch(w, x, y);
-        break;
+        Debug_Printf(LOG_WORLD, "touching passage");
+        return handle_passage_touch(w, x, y);
     case ZZT_INVISIBLE:
         if (!tile.visible)
         {
@@ -449,7 +450,9 @@ static bool handle_enemy_collision(Bzzt_World *w, Bzzt_Board *current_board, Bzz
     case ZZT_LION:
     case ZZT_TIGER:
     case ZZT_RUFFIAN:
-        break;
+        return false;
+    default:
+        return false;
     }
 }
 
@@ -502,10 +505,16 @@ static void handle_player_move(UI *ui, Bzzt_World *w)
         Bzzt_Board_Move_Stat_To(current_board, stat, new_x, new_y);
     else if (handle_enemy_collision(w, current_board, target_tile))
     {
+        Debug_Printf(LOG_WORLD, "handling enemy collide check");
     }
     else
+    {
+        Debug_Printf(LOG_WORLD, "else player touch");
+
         element_type_touched = handle_player_touch(ui, w, target_tile, new_x,
                                                    new_y);
+        Debug_Log(LOG_LEVEL_WARN, LOG_WORLD, "touched: %d", element_type_touched);
+    }
 
     if (dx != 0)
         stat->step_x = (dx > 0) ? 1 : -1;
@@ -513,7 +522,10 @@ static void handle_player_move(UI *ui, Bzzt_World *w)
         stat->step_y = (dy > 0) ? 1 : -1;
 
     if (w->paused && element_type_touched != ZZT_PASSAGE)
+    {
+        Debug_Printf(LOG_WORLD, "unpausing!");
         Bzzt_World_Set_Pause(w, false);
+    }
 }
 
 static void handle_player_shoot(UI *ui, Bzzt_World *w, Bzzt_Stat *player_stat)
@@ -538,6 +550,7 @@ static void handle_player_shoot(UI *ui, Bzzt_World *w, Bzzt_Stat *player_stat)
         shoot_dx = player_stat->step_x;
         shoot_dy = player_stat->step_y;
     }
+
     else if (in->SHIFT_held && in->arrow_stack_count > 0)
     {
         wants_to_shoot = true;
@@ -590,9 +603,8 @@ static void stat_act(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
     switch (stat_type)
     {
     case ZZT_PLAYER:
+        handle_player_move(ui, w);
         handle_player_shoot(ui, w, stat);
-        if (!w->current_input->SHIFT_held)
-            handle_player_move(ui, w);
         break;
 
     case ZZT_BULLET:
@@ -611,6 +623,7 @@ static void stat_act(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
         else
             Bzzt_Board_Move_Stat_To(b, stat, next_x, next_y);
         break;
+
     case ZZT_SPINNINGGUN:
         // tbd - add star firing
         //  Gun changes char every 2 ticks
@@ -682,6 +695,7 @@ static void stat_act(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
                 Bzzt_Stat_Shoot(b, stat, fire_dir);
         }
         break;
+
     default:
         break;
     }
