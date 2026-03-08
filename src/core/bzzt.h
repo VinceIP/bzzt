@@ -38,18 +38,6 @@ typedef enum
     DIR_RIGHT
 } Direction;
 
-// tbd -- fill for all zzt types. include bzzt types.
-typedef enum
-{
-    INTERACTION_NONE,
-    INTERACTION_KEY,
-    INTERACTION_DOOR,
-    INTERACTION_GEM,
-    INTERACTION_AMMO,
-    INTERACTION_BOULDER_PUSH,
-    INTERACTION_TORCH,
-} Interaction_Type;
-
 // A Bzzt cell.
 typedef struct Bzzt_Tile
 {

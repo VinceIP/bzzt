@@ -371,7 +371,6 @@ static uint8_t handle_player_touch(UI *ui, Bzzt_World *w, Bzzt_Tile tile, int x,
     case ZZT_SCROLL:
         break;
     case ZZT_PASSAGE:
-        Debug_Printf(LOG_WORLD, "touching passage");
         return handle_passage_touch(w, x, y);
     case ZZT_INVISIBLE:
         if (!tile.visible)
@@ -441,12 +440,9 @@ static void handle_player_move(UI *ui, Bzzt_World *w)
         return;
     }
 
-    uint8_t element_type_touched = 0;
-
     Bzzt_Tile target_tile = Bzzt_Board_Get_Tile(current_board, new_x,
                                                 new_y);
-
-    handle_player_touch(ui, w, target_tile, new_x, new_y);
+    uint8_t element_type_touched = handle_player_touch(ui, w, target_tile, new_x, new_y);
 
     bool walkable = Bzzt_Tile_Is_Walkable(w, target_tile);
     if (walkable)
@@ -562,12 +558,14 @@ void push_tile(Direction direction, Bzzt_Tile tile)
     if (!Bzzt_Tile_Is_Pushable(tile))
         return;
 
-    switch (direction)
+    // scan for blockers in direction until hitting non-blocker or end of board
+    bool done = false;
+    int x = tile.x;
+    int y = tile.y;
+    Bzzt_Tile t = tile;
+    while (!done)
     {
-    case DIR_NONE:
-        return;
-    case DIR_UP:
-        break;
+        Bzzt_Tile t =
     }
 }
 
@@ -780,36 +778,19 @@ bool Bzzt_Tile_Is_Pushable(Bzzt_Tile tile)
     }
 }
 
-bool Bzzt_Tile_Is_Blocked(Bzzt_Tile tile, Direction direction)
+bool Bzzt_Tile_Is_Blocked(Bzzt_Board *b, Bzzt_Tile tile, Direction direction)
 {
-}
-
-Interaction_Type Bzzt_Tile_Get_Interaction_Type(Bzzt_Tile tile)
-{
-    switch (tile.element)
+    switch (direction)
     {
-    case ZZT_KEY:
-        return INTERACTION_KEY;
+    case DIR_NONE:
+        return false;
+    case DIR_UP:
         break;
-    case ZZT_DOOR:
-        return INTERACTION_DOOR;
+    case DIR_DOWN:
         break;
-    case ZZT_GEM:
-        return INTERACTION_GEM;
+    case DIR_LEFT:
         break;
-    case ZZT_AMMO:
-        return INTERACTION_AMMO;
-        break;
-    case ZZT_TORCH:
-        return INTERACTION_TORCH;
-        break;
-    case ZZT_BOULDER:
-    case ZZT_NSSLIDER:
-    case ZZT_EWSLIDER:
-        return INTERACTION_BOULDER_PUSH;
-        break;
-    default:
-        return INTERACTION_NONE;
+    case DIR_RIGHT:
         break;
     }
 }

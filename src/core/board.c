@@ -251,6 +251,7 @@ bool Bzzt_Board_Is_In_Bounds(Bzzt_Board *b, int x, int y)
 
 void update_tile_neighbors(Bzzt_Tile tile)
 {
+    
 }
 
 void Bzzt_Board_Move_Tile_To(Bzzt_Board *b, Bzzt_Tile tile, int x, int y)
@@ -259,7 +260,6 @@ void Bzzt_Board_Move_Tile_To(Bzzt_Board *b, Bzzt_Tile tile, int x, int y)
         return;
     int prev_x = tile.x;
     int prev_y = tile.y;
-    Debug_Log(LOG_LEVEL_DEBUG, LOG_BOARD, "prev x: %d\nprev y:%d\n\n", prev_x, prev_y);
     tile.x = x;
     tile.y = y;
     Bzzt_Board_Set_Tile(b, prev_x, prev_y, empty_tile);
