@@ -335,6 +335,89 @@ Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
     return bw;
 }
 
+Bzzt_World *Bzzt_World_From_ZZT_Stream(FILE *fp, const char *display_name)
+{
+    if (!fp)
+    {
+        Debug_Printf(LOG_ENGINE, "Invalid ZZT stream.");
+        return NULL;
+    }
+
+    ZZTworld *zw = zztWorldRead(fp);
+    if (!zw)
+    {
+        Debug_Printf(LOG_ENGINE, "Error loading ZZT world from stream.");
+        return NULL;
+    }
+
+    Bzzt_World *bw = Bzzt_World_Create((char *)zztWorldGetTitle(zw));
+    strncpy(bw->file_path,
+            display_name ? display_name : "<zip world>",
+            sizeof(bw->file_path) - 1);
+    strncpy(bw->author, "Blank", sizeof(bw->author) - 1);
+
+    // Remove default title screen created by Bzzt_World_Create
+    if (bw->boards_count > 0 && bw->boards[0])
+    {
+        Bzzt_Board_Destroy(bw->boards[0]);
+        bw->boards[0] = NULL;
+        bw->boards_count = 0;
+        bw->boards_current = 0;
+    }
+
+    int boardCount = zztWorldGetBoardcount(zw);
+
+    for (int i = 0; i < boardCount; ++i)
+    {
+        zztBoardSelect(zw, i);
+        Bzzt_Board *b = Bzzt_Board_From_ZZT_Board(zw);
+        if (!b)
+            return NULL;
+        b->idx = i;
+        Bzzt_World_Add_Board(bw, b);
+    }
+
+    bw->boards_current = 0;
+    bw->start_board_idx = zztWorldGetStartboard(zw);
+    bw->start_board = bw->boards[bw->start_board_idx];
+
+    bw->ammo = 0;
+    bw->gems = 0;
+    bw->energizer_cycles = 0;
+    bw->health = 100;
+    bw->score = 0;
+    bw->torch_cycles = 0;
+    bw->torches = 0;
+
+    for (int i = 0; i < 7; ++i)
+        bw->keys[i] = 0;
+
+    if (bw->start_board->stat_count > 0)
+    {
+        Bzzt_Stat *player_stat = bw->start_board->stats[0];
+        Bzzt_Tile player_tile = Bzzt_Board_Get_Tile(bw->start_board, player_stat->x, player_stat->y);
+        if (player_tile.element != ZZT_PLAYER)
+        {
+            Debug_Log(LOG_LEVEL_WARN, LOG_WORLD, "Stat[0] is not a player.");
+        }
+    }
+    else
+    {
+        Debug_Log(LOG_LEVEL_WARN, LOG_WORLD, "Found no stats on start board.");
+    }
+
+    if (bw->boards_count > 0 && bw->boards[0] && bw->boards[0]->stat_count > 0)
+    {
+        set_board_avatar_tile(bw->boards[0], bw->boards[0]->stats[0], true);
+    }
+
+    bw->on_title = true;
+
+    zztWorldFree(zw);
+
+    return bw;
+}
+
 void Bzzt_World_Toggle_Interpolation(Bzzt_World *w)
 {
     if (!w)

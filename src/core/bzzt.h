@@ -10,6 +10,7 @@
  */
 
 #pragma once
+#include <stdio.h>
 #include "raylib.h"
 #include "color.h"
 #include "zzt.h"
@@ -169,6 +170,8 @@ bool Bzzt_Tile_Is_Walkable(Bzzt_World *w, Bzzt_Tile tile);
 
 // Return true if tile can be pushed
 bool Bzzt_Tile_Is_Pushable(Bzzt_Tile tile);
+
+Bzzt_World *Bzzt_World_From_ZZT_Stream(FILE *fp, const char *display_name);
 
 bool Bzzt_Tile_Is_Blocked(Bzzt_Board *b, Bzzt_Tile tile, Direction direction);
 

@@ -53,7 +53,11 @@ endif
 # ------------------------------------------------------------
 # Generic compiler & linker flags
 # ------------------------------------------------------------
-INC_DIRS := $(shell find $(SRC_ROOT) -type d)
+INC_DIRS := $(shell find $(SRC_ROOT) -type d \
+	! -path 'src/external/miniz/examples*' \
+	! -path 'src/external/miniz/tests*' \
+	! -path 'src/external/miniz/.git*' \
+	! -path 'src/external/miniz/.github*')
 CFLAGS   := -std=c99 -D_POSIX_C_SOURCE=200809L $(WARN_FLAGS)            \
             -I$(RAYLIB_INC) -I$(CYAML_INC)    \
             $(addprefix -I,$(INC_DIRS))
@@ -70,7 +74,9 @@ ifeq ($(SAN),1)
 endif
 
 # ---------------- source & objects --------------------------
-SRC := $(shell find $(SRC_ROOT) -name '*.c')
+SRC := $(shell find $(SRC_ROOT) -name '*.c' \
+	! -path 'src/external/miniz/examples/*' \
+	! -path 'src/external/miniz/tests/*')
 OBJ := $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRC))
 
 # ---------------- targets -----------------------------------

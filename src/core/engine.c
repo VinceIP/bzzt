@@ -19,6 +19,7 @@
 #include "ui.h"
 #include "bui_loader.h"
 #include "file_browser.h"
+#include "zip_archive.h"
 #include "color.h"
 #include "coords.h"
 #include "bzzt.h"
@@ -31,6 +32,16 @@
 
 static char keys_display_buffer[128];
 static const char *FILE_BROWSER_BUI = "assets/ui/file_browser.bui";
+
+static void clear_pending_world_load(Engine *e)
+{
+    if (!e)
+        return;
+
+    e->world_to_load[0] = '\0';
+    e->world_to_load_member[0] = '\0';
+    e->world_to_load_from_zip = false;
+}
 
 static void reset_file_browser_scroll(Engine *e)
 {
@@ -402,11 +413,50 @@ static void init_camera(Engine *e)
 
 static bool zzt_title_init(Engine *e)
 {
-    char *file = e->world_to_load[0] ? e->world_to_load : ZZT_FILE;
-    Bzzt_World *world = Bzzt_World_From_ZZT_World(file);
+    Bzzt_World *world = NULL;
+    char file[sizeof(e->world_to_load)] = {0};
+    snprintf(file, sizeof(file), "%s", e->world_to_load[0] ? e->world_to_load : ZZT_FILE);
+
+    if (e->world_to_load_from_zip)
+    {
+        FILE *stream = NULL;
+        char error[192] = {0};
+        char display_name[BZZT_MAX_PATH_LENGTH] = {0};
+
+        if (!ZipArchive_Extract_World_To_Stream(e->world_to_load,
+                                                e->world_to_load_member,
+                                                &stream,
+                                                error,
+                                                sizeof(error)))
+        {
+            Debug_Printf(LOG_ENGINE,
+                         "Error extracting zipped ZZT world %s!/%s: %s",
+                         e->world_to_load,
+                         e->world_to_load_member,
+                         error);
+            FileBrowser_ClearPendingLocation(e->file_browser);
+            clear_pending_world_load(e);
+            return false;
+        }
+
+        snprintf(display_name,
+                 sizeof(display_name),
+                 "%s!/%s",
+                 e->world_to_load,
+                 e->world_to_load_member);
+        world = Bzzt_World_From_ZZT_Stream(stream, display_name);
+        fclose(stream);
+    }
+    else
+    {
+        world = Bzzt_World_From_ZZT_World(file);
+    }
+
+    clear_pending_world_load(e);
     if (!world)
     {
         Debug_Printf(LOG_ENGINE, "Error loading ZZT world %s", file);
+        FileBrowser_ClearPendingLocation(e->file_browser);
         return false;
     }
 
@@ -414,6 +464,7 @@ static bool zzt_title_init(Engine *e)
     if (!ui)
     {
         Bzzt_World_Destroy(world);
+        FileBrowser_ClearPendingLocation(e->file_browser);
         return false;
     }
 
@@ -421,6 +472,7 @@ static bool zzt_title_init(Engine *e)
     {
         UI_Destroy(ui);
         Bzzt_World_Destroy(world);
+        FileBrowser_ClearPendingLocation(e->file_browser);
         return false;
     }
 
@@ -446,6 +498,8 @@ static bool zzt_title_init(Engine *e)
         Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to find all sidebar UI components.");
     if (!bind_world_stats_to_ui(e))
         Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to bind world stats to UI.");
+
+    FileBrowser_CommitPendingLocation(e->file_browser);
     return true;
 }
 
@@ -595,7 +649,7 @@ bool Engine_Init(Engine *e, InputState *in)
     e->file_browser_open_requested = false;
     e->file_browser_scroll_direction = 0;
     e->file_browser_scroll_timer_ms = 0.0;
-    e->world_to_load[0] = '\0';
+    clear_pending_world_load(e);
 
     init_cursor(e);
 
@@ -704,12 +758,20 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
             if (IsKeyPressed(KEY_ENTER) && !i->ALT_ENTER_pressed)
             {
                 char selected_path[1024] = {0};
+                char selected_member[1024] = {0};
                 FileBrowserActivateResult result =
-                    FileBrowser_Activate(e->file_browser, selected_path, sizeof(selected_path));
+                    FileBrowser_Activate(e->file_browser,
+                                         selected_path,
+                                         sizeof(selected_path),
+                                         selected_member,
+                                         sizeof(selected_member));
 
                 if (result == FILE_BROWSER_ACTIVATE_SELECTED_WORLD)
                 {
+                    FileBrowser_RememberPendingLocation(e->file_browser);
                     snprintf(e->world_to_load, sizeof(e->world_to_load), "%s", selected_path);
+                    snprintf(e->world_to_load_member, sizeof(e->world_to_load_member), "%s", selected_member);
+                    e->world_to_load_from_zip = selected_member[0] != '\0';
                     Engine_Set_State(e, ENGINE_STATE_TITLE);
                 }
             }

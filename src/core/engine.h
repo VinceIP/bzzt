@@ -108,6 +108,8 @@ typedef struct Engine
     int file_browser_scroll_direction;
     double file_browser_scroll_timer_ms;
     char world_to_load[1024];
+    char world_to_load_member[1024];
+    bool world_to_load_from_zip;
 
     bool running;
     bool firstBoot;

@@ -21,10 +21,15 @@ bool FileBrowser_MovePage(FileBrowser *browser, int page_delta);
 void FileBrowser_SetVisibleRows(FileBrowser *browser, int rows);
 void FileBrowser_SetStatus(FileBrowser *browser, const char *status);
 void FileBrowser_ClearStatus(FileBrowser *browser);
+void FileBrowser_RememberPendingLocation(FileBrowser *browser);
+void FileBrowser_CommitPendingLocation(FileBrowser *browser);
+void FileBrowser_ClearPendingLocation(FileBrowser *browser);
 
 FileBrowserActivateResult FileBrowser_Activate(FileBrowser *browser,
                                                char *out_path,
-                                               size_t out_path_size);
+                                               size_t out_path_size,
+                                               char *out_member_path,
+                                               size_t out_member_path_size);
 
 const char *FileBrowser_FormatDirectory(void *ud);
 const char *FileBrowser_FormatEntries(void *ud);
