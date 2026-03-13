@@ -307,7 +307,7 @@ static bool player_has_key(Bzzt_World *w, Bzzt_Tile tile)
 }
 
 // returns the type of thing the player touched
-static uint8_t handle_player_touch(UI *ui, Bzzt_World *w, Bzzt_Tile tile, int x, int y)
+static uint8_t handle_player_touch(UI *ui, Bzzt_World *w, Bzzt_Tile tile, int x, int y, Direction direction)
 {
     if (!w)
         return false;
@@ -397,6 +397,9 @@ static uint8_t handle_player_touch(UI *ui, Bzzt_World *w, Bzzt_Tile tile, int x,
         Bzzt_Board_Set_Tile(board, x, y, empty_tile);
         UI_Flash_Message(ui, ZZT_MSG_DOOR_OPEN, bzzt_color_name_from_color(tile.bg));
         break;
+    case ZZT_BOULDER:
+        push_tile(board, direction, tile);
+        break;
     default:
         break;
     }
@@ -440,15 +443,17 @@ static void handle_player_move(UI *ui, Bzzt_World *w)
         return;
     }
 
-    Bzzt_Tile target_tile = Bzzt_Board_Get_Tile(current_board, new_x,
-                                                new_y);
-    uint8_t element_type_touched = handle_player_touch(ui, w, target_tile, new_x, new_y);
+    Direction move_dir = (dx > 0) ? DIR_RIGHT : (dx < 0) ? DIR_LEFT
+                                            : (dy > 0)   ? DIR_DOWN
+                                                         : DIR_UP;
 
-    bool walkable = Bzzt_Tile_Is_Walkable(w, target_tile);
-    if (walkable)
-    {
-        Bzzt_Board_Move_Stat_To(current_board, stat, new_x, new_y); // todo: fake wall message popup
-    }
+    Bzzt_Tile target_tile = Bzzt_Board_Get_Tile(current_board, new_x, new_y);
+    uint8_t element_type_touched = handle_player_touch(ui, w, target_tile, new_x, new_y, move_dir);
+
+    // Re-fetch after touch: a successful boulder push leaves an empty tile here
+    target_tile = Bzzt_Board_Get_Tile(current_board, new_x, new_y);
+    if (Bzzt_Tile_Is_Walkable(w, target_tile))
+        Bzzt_Board_Move_Stat_To(current_board, stat, new_x, new_y);
 
     if (dx != 0)
         stat->step_x = (dx > 0) ? 1 : -1;
@@ -553,19 +558,87 @@ static void stat_tick(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
     }
 }
 
-void push_tile(Direction direction, Bzzt_Tile tile)
+Vector2 vector2_from_direction(Direction direction)
+{
+    switch (direction)
+    {
+    case DIR_NONE:
+        return (Vector2){0, 0};
+    case DIR_UP:
+        return (Vector2){0, -1};
+    case DIR_DOWN:
+        return (Vector2){0, 1};
+    case DIR_LEFT:
+        return (Vector2){-1, 0};
+    case DIR_RIGHT:
+        return (Vector2){1, 0};
+    }
+}
+
+void push_tile(Bzzt_Board *b, Direction direction, Bzzt_Tile tile)
 {
     if (!Bzzt_Tile_Is_Pushable(tile))
         return;
 
-    // scan for blockers in direction until hitting non-blocker or end of board
-    bool done = false;
-    int x = tile.x;
-    int y = tile.y;
+    int max_len = b->width - 1;
+
+    Bzzt_Tile chain[max_len];
+    int chain_len = 0;
+    chain[chain_len++] = tile;
+
+    Vector2 vec = vector2_from_direction(direction);
     Bzzt_Tile t = tile;
-    while (!done)
+    bool can_push = false;
+
+    // scan for chain of pushable objects
+    while (true)
     {
-        Bzzt_Tile t =
+        int next_x = t.x + (int)vec.x;
+        int next_y = t.y + (int)vec.y;
+        if (!Bzzt_Board_Is_In_Bounds(b, next_x, next_y))
+            break; // hit board edge
+
+        t = Bzzt_Board_Get_Tile(b, next_x, next_y);
+        if (t.element == ZZT_EWSLIDER)
+        {
+            if (direction == DIR_LEFT || direction == DIR_RIGHT)
+                chain[chain_len++] = t;
+            else
+                break;
+        }
+        else if (t.element == ZZT_NSSLIDER)
+        {
+            if (direction == DIR_UP || direction == DIR_DOWN)
+                chain[chain_len++] = t;
+            else
+                break;
+        }
+        else if (Bzzt_Tile_Is_Pushable(t))
+            chain[chain_len++] = t;
+        else if (t.element == ZZT_EMPTY || t.element == ZZT_FAKE)
+        {
+            can_push = true;
+            break;
+        }
+        else
+            break; // solid wall or other blocker
+    }
+
+    if (!can_push)
+        return;
+
+    // push from tail to head
+    for (int i = chain_len - 1; i >= 0; --i)
+    {
+        Bzzt_Tile src = chain[i];
+        int dest_x = src.x + (int)vec.x;
+        int dest_y = src.y + (int)vec.y;
+
+        Bzzt_Stat *stat = Bzzt_Board_Get_Stat_At(b, src.x, src.y);
+        if (stat)
+            Bzzt_Board_Move_Stat_To(b, stat, dest_x, dest_y);
+        else
+            Bzzt_Board_Move_Tile_To(b, src, dest_x, dest_y);
     }
 }
 
@@ -769,6 +842,7 @@ bool Bzzt_Tile_Is_Pushable(Bzzt_Tile tile)
     case ZZT_GEM:
     case ZZT_AMMO:
     case ZZT_BOMB:
+    case ZZT_KEY:
     case ZZT_BOULDER:
     case ZZT_EWSLIDER:
     case ZZT_NSSLIDER:
@@ -780,19 +854,15 @@ bool Bzzt_Tile_Is_Pushable(Bzzt_Tile tile)
 
 bool Bzzt_Tile_Is_Blocked(Bzzt_Board *b, Bzzt_Tile tile, Direction direction)
 {
-    switch (direction)
-    {
-    case DIR_NONE:
-        return false;
-    case DIR_UP:
-        break;
-    case DIR_DOWN:
-        break;
-    case DIR_LEFT:
-        break;
-    case DIR_RIGHT:
-        break;
-    }
+    Vector2 vec = vector2_from_direction(direction);
+    int dx = tile.x + (int)vec.x;
+    int dy = tile.y + (int)vec.y;
+
+    if (!Bzzt_Board_Is_In_Bounds(b, dx, dy))
+        return true;
+
+    Bzzt_Tile neighbor = Bzzt_Board_Get_Tile(b, dx, dy);
+    return neighbor.element != ZZT_EMPTY && neighbor.element != ZZT_FAKE;
 }
 
 const char *Bzzt_Tile_Get_Type_Name(Bzzt_Tile tile)

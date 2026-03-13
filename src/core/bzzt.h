@@ -46,8 +46,6 @@ typedef struct Bzzt_Tile
     uint8_t element;
     uint8_t glyph;
     Color_Bzzt fg, bg;
-
-    uint8_t neighbors[4];
 } Bzzt_Tile;
 
 typedef struct Bzzt_Stat
@@ -179,7 +177,7 @@ bool Bzzt_Tile_Is_Walkable(Bzzt_World *w, Bzzt_Tile tile);
 // Return true if tile can be pushed
 bool Bzzt_Tile_Is_Pushable(Bzzt_Tile tile);
 
-bool Bzzt_Tile_Is_Blocked(Bzzt_Tile tile, Direction direction);
+bool Bzzt_Tile_Is_Blocked(Bzzt_Board *b, Bzzt_Tile tile, Direction direction);
 
 // Return element type of tile as a string
 const char *Bzzt_Tile_Get_Type_Name(Bzzt_Tile tile);
