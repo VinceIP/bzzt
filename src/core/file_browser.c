@@ -319,7 +319,7 @@ static void file_browser_format_name(char *dst,
         break;
     case FILE_BROWSER_ENTRY_BZZT:
     case FILE_BROWSER_ENTRY_OTHER:
-        color = "\\f8";
+        color = "\\f7";
         break;
     }
 

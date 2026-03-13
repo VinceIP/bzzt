@@ -17,7 +17,7 @@ surfaces:
             y: 0
             width: 60
             align: center
-            value: '\f15\b2 Select a world '
+            value: '\f15\b1 Select a world '
 
           - type: text
             y: 1

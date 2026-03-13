@@ -154,6 +154,8 @@ static void btn_title_press_play(UIActionContext *ctx)
     ui_ctx->play_mode.overlay_play_screen_display->properties.enabled = true;
     ui_ctx->play_mode.overlay_play_screen_display->properties.visible = true;
 
+    Input_Clear_Movement(ctx->engine->input);
+
     Bzzt_World *world = ctx->engine->world;
     Bzzt_Board *start_board = world->start_board;
     Bzzt_Stat *player = start_board->stats[0];
@@ -201,7 +203,6 @@ static void btn_confirm_quit(UIActionContext *ctx)
     if (!ctx || !ctx->engine)
         return;
 
-    int board_idx = ctx->engine->world->boards_current;
     if (ctx->engine->state == ENGINE_STATE_TITLE)
         Engine_Set_State(ctx->engine, ENGINE_STATE_MENU);
     else if (ctx->engine->state == ENGINE_STATE_PLAY)
@@ -210,6 +211,7 @@ static void btn_confirm_quit(UIActionContext *ctx)
         Engine_Set_State(ctx->engine, ENGINE_STATE_TITLE);
         Bzzt_Board *title_board = ctx->engine->world->boards[0];
         Bzzt_Stat *player = title_board->stats[0];
+        Input_Clear_Movement(ctx->engine->input);
         Bzzt_World_Switch_Board_To(ctx->engine->world, 0, player->x, player->y);
         btn_toggle_quit(ctx); // And disable the prompt
     }
@@ -436,6 +438,7 @@ static bool zzt_title_init(Engine *e)
     e->world = world;
     e->ui = ui;
     e->file_browser_active = false;
+    Input_Clear_Movement(e->input);
 
     UI_Resolve_Button_Actions(e->ui, e->action_registry);
     UI_Reset_Button_State();

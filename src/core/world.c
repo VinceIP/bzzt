@@ -14,6 +14,28 @@
 #define TICK_DURATION_DEFAULT 95 // in ms
 #define STICKY_INPUT_DEFAULT true
 
+static Bzzt_Tile make_avatar_tile(bool title_screen)
+{
+    Bzzt_Tile avatar = {0};
+
+    avatar.element = title_screen ? ZZT_MONITOR : ZZT_PLAYER;
+    avatar.glyph = zzt_type_to_cp437(avatar.element, 0x1F);
+    avatar.fg = COLOR_WHITE;
+    avatar.bg = COLOR_BLUE;
+    avatar.visible = true;
+
+    return avatar;
+}
+
+static void set_board_avatar_tile(Bzzt_Board *board, Bzzt_Stat *avatar_stat, bool title_screen)
+{
+    if (!board || !avatar_stat)
+        return;
+
+    Bzzt_Tile avatar = make_avatar_tile(title_screen);
+    Bzzt_Board_Set_Tile(board, avatar_stat->x, avatar_stat->y, avatar);
+}
+
 static bool grow_boards_array(Bzzt_World *w)
 {
     int old_cap = w->boards_cap;
@@ -60,19 +82,8 @@ static bool switch_board_to(Bzzt_World *w, int idx, int x, int y)
     new_player->y = y;
     new_player->under = entry_under;
 
-    Bzzt_Tile player_tile = {0};
-    player_tile.element = ZZT_PLAYER;
-    player_tile.glyph = 2;
-    player_tile.fg = COLOR_WHITE;
-    player_tile.bg = COLOR_BLUE;
-    player_tile.visible = true;
-
-    Bzzt_Board_Set_Tile(new_board, x, y, player_tile);
-
-    if (idx == 0)
-        w->on_title = true;
-    else
-        w->on_title = false;
+    w->on_title = (idx == 0);
+    set_board_avatar_tile(new_board, new_player, w->on_title);
 
     return true;
 }
@@ -310,6 +321,11 @@ Bzzt_World *Bzzt_World_From_ZZT_World(char *file)
     else
     {
         Debug_Log(LOG_LEVEL_WARN, LOG_WORLD, "Found no stats on start board.");
+    }
+
+    if (bw->boards_count > 0 && bw->boards[0] && bw->boards[0]->stat_count > 0)
+    {
+        set_board_avatar_tile(bw->boards[0], bw->boards[0]->stats[0], true);
     }
 
     bw->on_title = true;

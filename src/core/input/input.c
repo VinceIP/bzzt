@@ -103,6 +103,17 @@ void Input_Set_Handler(InputState *in, Key_Handler h)
     in->key_handler = h;
 }
 
+void Input_Clear_Movement(InputState *in)
+{
+    if (!in)
+        return;
+
+    in->input_buffer_count = 0;
+    in->arrow_stack_count = 0;
+    in->key_repeat_timer_ms = 0.0;
+    in->initial_move_done = false;
+}
+
 void Input_Poll(InputState *in)
 {
 

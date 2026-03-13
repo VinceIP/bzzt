@@ -71,6 +71,7 @@ typedef struct MouseState
 
 void Input_Set_Handler(InputState *in, Key_Handler h);
 void Input_Poll(InputState *out);
+void Input_Clear_Movement(InputState *in);
 void Mouse_Poll(MouseState *out);
 ArrowKey Input_Get_Priority_Direction(InputState *in);
 void Input_Get_Direction(ArrowKey key, int *out_dx, int *out_dy);

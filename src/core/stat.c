@@ -27,6 +27,11 @@ static const Bzzt_Tile empty_tile = {0};
 
 static void clear_forest(UI *ui, Bzzt_Board *b, int x, int y);
 
+static bool world_is_on_title_screen(Bzzt_World *w)
+{
+    return w && w->on_title;
+}
+
 // Maps any color (light or dark variant) to a key index 0-6.
 // Palette indices 1-7 and 9-15 pair up via (idx & 7): e.g. BZ_GREEN(2) and
 // BZ_LIGHT_GREEN(10) both give 2 & 7 = 2 -> ZZT_KEY_GREEN. Returns -1 if not
@@ -346,8 +351,6 @@ static uint8_t handle_player_touch(UI *ui, Bzzt_World *w, Bzzt_Tile tile, int x,
         return false;
 
     Bzzt_Board *b = w->boards[w->boards_current];
-    Bzzt_Stat *player = b->stats[0];
-    Bzzt_Tile player_tile = Bzzt_Board_Get_Tile(b, player->x, player->y);
 
     const char *type_name = Bzzt_Tile_Get_Type_Name(tile);
     Debug_Printf(LOG_LEVEL_DEBUG, "Player touched %s at (%d, %d).", type_name, x, y);
@@ -445,6 +448,9 @@ static void handle_player_move(UI *ui, Bzzt_World *w)
     if (!w || !w->current_input)
         return;
 
+    if (world_is_on_title_screen(w))
+        return;
+
     InputState *in = w->current_input;
 
     ArrowKey buffered_key = Input_Pop_Buffered_Direction(in);
@@ -500,6 +506,9 @@ static void handle_player_move(UI *ui, Bzzt_World *w)
 static void handle_player_shoot(UI *ui, Bzzt_World *w, Bzzt_Stat *player_stat)
 {
     if (!w || !player_stat)
+        return;
+
+    if (world_is_on_title_screen(w))
         return;
 
     InputState *in = w->current_input;
@@ -567,19 +576,38 @@ static bool bomb_element_is_destructible(uint8_t elem)
 {
     switch (elem)
     {
+    case ZZT_BREAKABLE:
     case ZZT_BEAR:
+    case ZZT_RUFFIAN:
+    case ZZT_OBJECT:
+    case ZZT_SLIME:
+    case ZZT_SHARK:
+    case ZZT_SPINNINGGUN:
     case ZZT_LION:
     case ZZT_TIGER:
-    case ZZT_RUFFIAN:
     case ZZT_CENTHEAD:
     case ZZT_CENTBODY:
     case ZZT_BULLET:
     case ZZT_STAR:
-    case ZZT_GEM:
         return true;
     default:
         return false;
     }
+}
+
+static void spawn_bomb_blast_tile(Bzzt_Board *b, int x, int y)
+{
+    const ZZT_Element_Defaults *breakable_def = zzt_get_element_defaults(ZZT_BREAKABLE);
+    if (!b || !breakable_def)
+        return;
+
+    Bzzt_Tile blast_tile = Bzzt_Board_Get_Tile(b, x, y);
+    blast_tile.element = ZZT_BREAKABLE;
+    blast_tile.glyph = breakable_def->default_glyph;
+    blast_tile.fg = bzzt_get_color(9 + (rand() % 7));
+    blast_tile.visible = true;
+    blast_tile.blink = false;
+    Bzzt_Board_Set_Tile(b, x, y, blast_tile);
 }
 
 // Phase 1: spawn breakables and kill destructible enemies in the blast radius.
@@ -587,7 +615,6 @@ static void zzt_bomb_explode(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *bo
 {
     int bx = bomb_stat->x;
     int by = bomb_stat->y;
-    const ZZT_Element_Defaults *breakable_def = zzt_get_element_defaults(ZZT_BREAKABLE);
 
     for (int dy = -BZZT_RADIUS_MAX_DY; dy <= BZZT_RADIUS_MAX_DY; dy++)
     {
@@ -602,6 +629,7 @@ static void zzt_bomb_explode(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *bo
 
             Bzzt_Tile t = Bzzt_Board_Get_Tile(b, tx, ty);
             Bzzt_Stat *s = Bzzt_Board_Get_Stat_At(b, tx, ty);
+            bool spawn_blast = false;
 
             if (s)
             {
@@ -611,31 +639,29 @@ static void zzt_bomb_explode(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *bo
                     UI_Flash_Message(ui, ZZT_MSG_OUCH);
                 }
                 else if (s != bomb_stat && bomb_element_is_destructible(t.element))
+                {
                     Bzzt_Board_Stat_Die(b, s);
+                    t = Bzzt_Board_Get_Tile(b, tx, ty);
+                    spawn_blast = (t.element == ZZT_EMPTY || t.element == ZZT_FAKE);
+                }
+
+                if (spawn_blast)
+                    spawn_bomb_blast_tile(b, tx, ty);
                 continue;
             }
 
-            // Tile-only elements
-            switch (t.element)
+            if (t.element == ZZT_BREAKABLE)
             {
-            case ZZT_SOLID:
-            case ZZT_NORMAL:
-            case ZZT_INVISIBLE:
-            case ZZT_FAKE:
-            case ZZT_WATER:
-            case ZZT_EDGE:
-                break; // unaffected
-            default:
-                if (breakable_def)
-                {
-                    t.element = ZZT_BREAKABLE;
-                    t.glyph = breakable_def->default_glyph;
-                    // Random color 9-15
-                    t.fg = bzzt_get_color(9 + (rand() % 7)); // 9-15: light colors only
-                    Bzzt_Board_Set_Tile(b, tx, ty, t);
-                }
-                break;
+                Bzzt_Board_Set_Tile(b, tx, ty, empty_tile);
+                spawn_blast = true;
             }
+            else if (t.element == ZZT_EMPTY || t.element == ZZT_FAKE)
+            {
+                spawn_blast = true;
+            }
+
+            if (spawn_blast)
+                spawn_bomb_blast_tile(b, tx, ty);
         }
     }
 }
@@ -702,20 +728,48 @@ static void zzt_bomb_tick(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
 // tbd
 static void zzt_pusher_tick(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
 {
+    (void)w;
+
     Direction dir;
+    int dx = 0;
+    int dy = 0;
+
     if (stat->step_x > 0)
+    {
         dir = DIR_RIGHT;
+        dx = 1;
+    }
     else if (stat->step_x < 0)
+    {
         dir = DIR_LEFT;
+        dx = -1;
+    }
     else if (stat->step_y > 0)
+    {
         dir = DIR_DOWN;
+        dy = 1;
+    }
     else if (stat->step_y < 0)
+    {
         dir = DIR_UP;
+        dy = -1;
+    }
     else
         return;
 
-    Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, stat->x, stat->y);
-    push_tile(b, dir, tile);
+    int next_x = stat->x + dx;
+    int next_y = stat->y + dy;
+
+    if (!Bzzt_Board_Is_In_Bounds(b, next_x, next_y))
+        return;
+
+    Bzzt_Tile next_tile = Bzzt_Board_Get_Tile(b, next_x, next_y);
+    if (Bzzt_Tile_Is_Pushable(next_tile))
+        push_tile(b, dir, next_tile);
+
+    next_tile = Bzzt_Board_Get_Tile(b, next_x, next_y);
+    if (next_tile.element == ZZT_EMPTY || next_tile.element == ZZT_FAKE)
+        Bzzt_Board_Move_Stat_To(b, stat, next_x, next_y);
 }
 
 static void stat_tick(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
@@ -728,6 +782,9 @@ static void stat_tick(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
 
     switch (stat_type)
     {
+    case ZZT_MONITOR:
+        break;
+
     case ZZT_PLAYER:
         zzt_player_tick(ui, w, stat);
         break;
@@ -1018,6 +1075,7 @@ bool Bzzt_Tile_Is_Pushable(Bzzt_Tile tile)
     case ZZT_AMMO:
     case ZZT_BOMB:
     case ZZT_KEY:
+    case ZZT_SCROLL:
     case ZZT_BOULDER:
     case ZZT_EWSLIDER:
     case ZZT_NSSLIDER:
