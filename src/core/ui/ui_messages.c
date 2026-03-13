@@ -90,9 +90,6 @@ void UI_Flash_Message(UI *ui, zzt_message_t zzt_msg, ...)
     if (!ui->flashing_text_surface)
         return;
 
-    if (ui->message_active)
-        return;
-
     // Check if this message should be shown
     if (!zzt_message_should_show(ui->shown_messages, zzt_msg))
         return;

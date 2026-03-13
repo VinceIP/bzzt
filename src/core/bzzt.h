@@ -164,13 +164,6 @@ typedef struct Bzzt_Camera
     Bzzt_Viewport viewport;      // viewport displaying this camera
 } Bzzt_Camera;
 
-/* -- Objects --*/
-// defunct until bzzt expansion
-//  Create a new Bzzt_Object
-Bzzt_Object *Bzzt_Object_Create(uint8_t glyph, Color_Bzzt fg, Color_Bzzt bg, int x, int y);
-// Destroy a Bzzt_Object
-void Bzzt_Object_Destroy(Bzzt_Object *o);
-
 // Return true if object can be walked on top of.
 bool Bzzt_Tile_Is_Walkable(Bzzt_World *w, Bzzt_Tile tile);
 
@@ -298,4 +291,19 @@ Bzzt_World *Bzzt_World_From_ZZT_World(char *file);
 // Instantiate a new camera
 Bzzt_Camera *BzztCamera_Create();
 
+/* -- --*/
+
+/* -- Radius -- */
+// ZZT-style ellipse radius, cell-aspect-ratio corrected for bzzt's 16x32 cells.
+// Gives a 15-tile wide, 7-tile tall area that appears roughly circular on screen.
+// Use for bomb explosions, torch lighting, and any other ZZT-style radius check.
+//   - East/west extent: dx = ±7  (loop over -BZZT_RADIUS_MAX_DX .. +BZZT_RADIUS_MAX_DX)
+//   - North/south extent: dy = ±3 (loop over -BZZT_RADIUS_MAX_DY .. +BZZT_RADIUS_MAX_DY)
+#define BZZT_RADIUS_MAX_DX 7
+#define BZZT_RADIUS_MAX_DY 3
+
+static inline bool bzzt_in_radius(int dx, int dy)
+{
+    return (dx * 4) * (dx * 4) + (dy * 8) * (dy * 8) <= 784;
+}
 /* -- --*/

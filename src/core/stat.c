@@ -21,49 +21,25 @@
 #include "ui.h"
 
 // Note - i hate this entire file
+// tbd - stop passing in boards, worlds, ui, etc to all these functions. instead pass in one engine context. maybe?
+
+static const Bzzt_Tile empty_tile = {0};
 
 static void clear_forest(UI *ui, Bzzt_Board *b, int x, int y);
 
+// Maps any color (light or dark variant) to a key index 0-6.
+// Palette indices 1-7 and 9-15 pair up via (idx & 7): e.g. BZ_GREEN(2) and
+// BZ_LIGHT_GREEN(10) both give 2 & 7 = 2 -> ZZT_KEY_GREEN. Returns -1 if not
+// a valid key color (black, dark gray, transparent).
 static int get_key_index_from_color(Color_Bzzt color)
 {
-    // Map bzzt color to key index
-    if (bzzt_color_equals(color, bzzt_get_color(BZ_LIGHT_BLUE)))
-        return ZZT_KEY_BLUE;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_LIGHT_GREEN)))
-        return ZZT_KEY_GREEN;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_LIGHT_CYAN)))
-        return ZZT_KEY_CYAN;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_LIGHT_RED)))
-        return ZZT_KEY_RED;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_LIGHT_MAGENTA)))
-        return ZZT_KEY_PURPLE;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_YELLOW)))
-        return ZZT_KEY_YELLOW;
-    else if (bzzt_color_equals(color, bzzt_get_color(BZ_WHITE)))
-        return ZZT_KEY_WHITE;
-
-    return -1; // Invalid color
-}
-
-static int get_key_index_from_door_color(Color_Bzzt door_color)
-{
-    if (bzzt_color_equals(door_color, bzzt_get_color(BZ_BLUE)))
-        return ZZT_KEY_BLUE;
-    else if (bzzt_color_equals(door_color, bzzt_get_color(BZ_GREEN)))
-        return ZZT_KEY_GREEN;
-    else if (bzzt_color_equals(door_color, bzzt_get_color(BZ_CYAN)))
-        return ZZT_KEY_CYAN;
-    else if (bzzt_color_equals(door_color, bzzt_get_color(BZ_RED)))
-        return ZZT_KEY_RED;
-    else if (bzzt_color_equals(door_color, bzzt_get_color(BZ_MAGENTA)))
-        return ZZT_KEY_PURPLE;
-    else if (bzzt_color_equals(door_color, bzzt_get_color(BZ_BROWN)))
-        return ZZT_KEY_YELLOW; // Brown door -> Yellow key
-    else if (bzzt_color_equals(door_color,
-                               bzzt_get_color(BZ_LIGHT_GRAY)))
-        return ZZT_KEY_WHITE; // Light gray door -> White key
-
-    return -1; // Invalid door color
+    int pal = bzzt_color_to_index(color);
+    if (pal < 0)
+        return -1;
+    int base = pal & 7; // normalize: collapses light/dark pairs to 1-7
+    if (base < 1 || base > 7)
+        return -1;
+    return base - 1; // 0=blue, 1=green, 2=cyan, 3=red, 4=purple, 5=yellow, 6=white
 }
 
 static const char *get_key_color_name(int key_index)
@@ -122,7 +98,8 @@ static void handle_bullet_collision(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_S
         Bzzt_Board_Stat_Die(b, bullet);
         break; // pun
     case ZZT_RICOCHET:
-        // tbd
+        bullet->step_x = -bullet->step_x;
+        bullet->step_y = -bullet->step_y;
         break;
     case ZZT_OBJECT:
         // tbd
@@ -306,16 +283,71 @@ static bool player_has_key(Bzzt_World *w, Bzzt_Tile tile)
     return false;
 }
 
+void zzt_touch_enemy(UI *ui, Bzzt_World *w, Bzzt_Board *b, int x, int y)
+{
+    Bzzt_Stat *enemy = Bzzt_Board_Get_Stat_At(b, x, y);
+    if (enemy)
+    {
+        Bzzt_Board_Stat_Die(b, enemy);
+        UI_Flash_Message(ui, ZZT_MSG_OUCH);
+        w->health -= 10;
+    }
+}
+
+void zzt_touch_ammo(UI *ui, Bzzt_World *w, Bzzt_Board *b, int x, int y)
+{
+    w->ammo += 5;
+    Bzzt_Board_Set_Tile(b, x, y, empty_tile);
+    UI_Flash_Message(ui, ZZT_MSG_AMMO_GET);
+}
+
+void zzt_touch_gem(UI *ui, Bzzt_World *w, Bzzt_Board *b, int x, int y)
+{
+    w->gems++;
+    w->score += 10;
+    Bzzt_Board_Set_Tile(b, x, y, empty_tile);
+    UI_Flash_Message(ui, ZZT_MSG_GEM_GET);
+}
+
+void zzt_touch_torch(UI *ui, Bzzt_World *w, Bzzt_Board *b, int x, int y)
+{
+    w->torches++;
+    Bzzt_Board_Set_Tile(b, x, y, empty_tile);
+    UI_Flash_Message(ui, ZZT_MSG_TORCH_GET);
+}
+
+// tbd
+void zzt_touch_energizer(UI *ui, Bzzt_Board *b, int x, int y)
+{
+    Bzzt_Board_Set_Tile(b, x, y, empty_tile);
+    UI_Flash_Message(ui, ZZT_MSG_ENERGIZER_ACTIVATED);
+}
+
+void zzt_touch_key(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Tile t, int x, int y)
+{
+    int key_idx = get_key_index_from_color(t.fg);
+    if (key_idx < 0 || key_idx >= 7)
+        return;
+    const char *color_name = get_key_color_name(key_idx);
+    if (w->keys[key_idx])
+    {
+        UI_Flash_Message(ui, ZZT_MSG_KEY_ALREADY_HAVE, color_name);
+        return;
+    }
+    w->keys[key_idx] = 1;
+    Bzzt_Board_Set_Tile(b, x, y, empty_tile);
+    UI_Flash_Message(ui, ZZT_MSG_KEY_GET, color_name);
+}
+
 // returns the type of thing the player touched
 static uint8_t handle_player_touch(UI *ui, Bzzt_World *w, Bzzt_Tile tile, int x, int y, Direction direction)
 {
     if (!w)
         return false;
 
-    Bzzt_Board *board = w->boards[w->boards_current];
-    Bzzt_Stat *player = board->stats[0];
-    Bzzt_Tile player_tile = Bzzt_Board_Get_Tile(board, player->x, player->y);
-    const Bzzt_Tile empty_tile = {0};
+    Bzzt_Board *b = w->boards[w->boards_current];
+    Bzzt_Stat *player = b->stats[0];
+    Bzzt_Tile player_tile = Bzzt_Board_Get_Tile(b, player->x, player->y);
 
     const char *type_name = Bzzt_Tile_Get_Type_Name(tile);
     Debug_Printf(LOG_LEVEL_DEBUG, "Player touched %s at (%d, %d).", type_name, x, y);
@@ -323,50 +355,30 @@ static uint8_t handle_player_touch(UI *ui, Bzzt_World *w, Bzzt_Tile tile, int x,
     switch (tile.element)
     {
     case ZZT_FOREST:
-        clear_forest(ui, board, x, y);
-        return true;
+        clear_forest(ui, b, x, y);
+        break;
     case ZZT_BEAR:
     case ZZT_LION:
     case ZZT_TIGER:
     case ZZT_RUFFIAN:
-        Bzzt_Stat *enemy = Bzzt_Board_Get_Stat_At(board, x, y);
-        if (enemy)
-        {
-            Bzzt_Board_Stat_Die(board, enemy);
-            UI_Flash_Message(ui, ZZT_MSG_OUCH);
-            w->health -= 10;
-        }
+    case ZZT_CENTHEAD:
+    case ZZT_CENTBODY:
+        zzt_touch_enemy(ui, w, b, x, y);
         break;
     case ZZT_AMMO:
-        w->ammo += 5;
-        Bzzt_Board_Set_Tile(board, x, y, empty_tile);
-        UI_Flash_Message(ui, ZZT_MSG_AMMO_GET);
+        zzt_touch_ammo(ui, w, b, x, y);
         break;
     case ZZT_GEM:
-        w->gems++;
-        w->score += 10;
-        Bzzt_Board_Set_Tile(board, x, y, empty_tile);
-        UI_Flash_Message(ui, ZZT_MSG_GEM_GET);
+        zzt_touch_gem(ui, w, b, x, y);
         break;
     case ZZT_TORCH:
-        w->torches++;
-        Bzzt_Board_Set_Tile(board, x, y, empty_tile);
-        UI_Flash_Message(ui, ZZT_MSG_TORCH_GET);
+        zzt_touch_torch(ui, w, b, x, y);
         break;
     case ZZT_ENERGIZER:
-        // do energize
-        Bzzt_Board_Set_Tile(board, x, y, empty_tile);
-        UI_Flash_Message(ui, ZZT_MSG_ENERGIZER_ACTIVATED);
+        zzt_touch_energizer(ui, b, x, y);
         break;
     case ZZT_KEY:
-    {
-        if (!player_has_key(w, tile)) // give key if player doesn't have one already
-        {
-            int key_idx = get_key_index_from_color(tile.fg);
-            w->keys[key_idx] = 1;
-            Bzzt_Board_Set_Tile(board, x, y, empty_tile);
-            UI_Flash_Message(ui, ZZT_MSG_KEY_GET, bzzt_color_name_from_color(tile.fg)); // tbd: ensure light color names only}
-        }
+        zzt_touch_key(ui, w, b, tile, x, y);
         break;
     case ZZT_SCROLL:
         break;
@@ -376,7 +388,7 @@ static uint8_t handle_player_touch(UI *ui, Bzzt_World *w, Bzzt_Tile tile, int x,
         if (!tile.visible)
         {
             tile.visible = true;
-            Bzzt_Board_Set_Tile(board, x, y, tile);
+            Bzzt_Board_Set_Tile(b, x, y, tile);
             UI_Flash_Message(ui, ZZT_MSG_TOUCH_INVISIBLE_WALL);
         }
         break;
@@ -384,27 +396,48 @@ static uint8_t handle_player_touch(UI *ui, Bzzt_World *w, Bzzt_Tile tile, int x,
         UI_Flash_Message(ui, ZZT_MSG_TOUCH_WATER);
         break;
     case ZZT_DOOR:
-        Color_Bzzt door_color = tile.bg;
-        int key_idx = get_key_index_from_door_color(door_color);
+        int key_idx = get_key_index_from_color(tile.bg);
         if (key_idx < 0 || key_idx >= 7)
             return false;
+        const char *door_color_name = get_key_color_name(key_idx);
         if (w->keys[key_idx] == 0)
-        { // If player doesn't have this key
-            UI_Flash_Message(ui, ZZT_MSG_DOOR_LOCKED, bzzt_color_name_from_color(tile.bg));
+        {
+            UI_Flash_Message(ui, ZZT_MSG_DOOR_LOCKED, door_color_name);
             return false;
         }
-        w->keys[key_idx] = 0; // success, consume key
-        Bzzt_Board_Set_Tile(board, x, y, empty_tile);
-        UI_Flash_Message(ui, ZZT_MSG_DOOR_OPEN, bzzt_color_name_from_color(tile.bg));
+        w->keys[key_idx] = 0;
+        Bzzt_Board_Set_Tile(b, x, y, empty_tile);
+        UI_Flash_Message(ui, ZZT_MSG_DOOR_OPEN, door_color_name);
         break;
+    case ZZT_BOMB:
+    {
+        Bzzt_Stat *bomb = Bzzt_Board_Get_Stat_At(b, x, y);
+        if (bomb && bomb->data[0] == 0)
+        {
+            // Inactive bomb — activate it, don't push
+            bomb->data[0] = 9;
+            Bzzt_Tile bomb_tile = Bzzt_Board_Get_Tile(b, x, y);
+            bomb_tile.glyph = '9';
+            Bzzt_Board_Set_Tile(b, x, y, bomb_tile);
+            UI_Flash_Message(ui, ZZT_MSG_BOMB_ACTIVATED);
+        }
+        else
+        {
+            // Active bomb — push it
+            push_tile(b, direction, tile);
+        }
+        break;
+    }
     case ZZT_BOULDER:
-        push_tile(board, direction, tile);
+    case ZZT_EWSLIDER:
+    case ZZT_NSSLIDER:
+        push_tile(b, direction, tile);
         break;
     default:
         break;
-    }
         return tile.element;
     }
+    return tile.element;
 }
 
 static void handle_player_move(UI *ui, Bzzt_World *w)
@@ -531,6 +564,163 @@ static void handle_player_shoot(UI *ui, Bzzt_World *w, Bzzt_Stat *player_stat)
     w->ammo--;
 }
 
+// Elliptical blast: uses bzzt_in_radius() from bzzt.h
+
+static bool bomb_element_is_destructible(uint8_t elem)
+{
+    switch (elem)
+    {
+    case ZZT_BEAR:
+    case ZZT_LION:
+    case ZZT_TIGER:
+    case ZZT_RUFFIAN:
+    case ZZT_CENTHEAD:
+    case ZZT_CENTBODY:
+    case ZZT_BULLET:
+    case ZZT_STAR:
+    case ZZT_GEM:
+        return true;
+    default:
+        return false;
+    }
+}
+
+// Phase 1: spawn breakables and kill destructible enemies in the blast radius.
+static void zzt_bomb_explode(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *bomb_stat)
+{
+    int bx = bomb_stat->x;
+    int by = bomb_stat->y;
+    const ZZT_Element_Defaults *breakable_def = zzt_get_element_defaults(ZZT_BREAKABLE);
+
+    for (int dy = -BZZT_RADIUS_MAX_DY; dy <= BZZT_RADIUS_MAX_DY; dy++)
+    {
+        for (int dx = -BZZT_RADIUS_MAX_DX; dx <= BZZT_RADIUS_MAX_DX; dx++)
+        {
+            if (!bzzt_in_radius(dx, dy))
+                continue;
+            int tx = bx + dx;
+            int ty = by + dy;
+            if (!Bzzt_Board_Is_In_Bounds(b, tx, ty))
+                continue;
+
+            Bzzt_Tile t = Bzzt_Board_Get_Tile(b, tx, ty);
+            Bzzt_Stat *s = Bzzt_Board_Get_Stat_At(b, tx, ty);
+
+            if (s)
+            {
+                if (t.element == ZZT_PLAYER)
+                {
+                    w->health -= 10;
+                    UI_Flash_Message(ui, ZZT_MSG_OUCH);
+                }
+                else if (s != bomb_stat && bomb_element_is_destructible(t.element))
+                    Bzzt_Board_Stat_Die(b, s);
+                continue;
+            }
+
+            // Tile-only elements
+            switch (t.element)
+            {
+            case ZZT_SOLID:
+            case ZZT_NORMAL:
+            case ZZT_INVISIBLE:
+            case ZZT_WATER:
+            case ZZT_EDGE:
+                break; // unaffected
+            default:
+                if (breakable_def)
+                {
+                    t.element = ZZT_BREAKABLE;
+                    t.glyph = breakable_def->default_glyph;
+                    // Random color 9-15
+                    t.fg = bzzt_get_color(9 + (rand() % 7)); // 9-15: light colors only
+                    Bzzt_Board_Set_Tile(b, tx, ty, t);
+                }
+                break;
+            }
+        }
+    }
+}
+
+// Phase 2: clear breakables spawned by the explosion, then bomb dies.
+static void zzt_bomb_cleanup(Bzzt_Board *b, Bzzt_Stat *bomb_stat)
+{
+    int bx = bomb_stat->x;
+    int by = bomb_stat->y;
+
+    for (int dy = -BZZT_RADIUS_MAX_DY; dy <= BZZT_RADIUS_MAX_DY; dy++)
+    {
+        for (int dx = -BZZT_RADIUS_MAX_DX; dx <= BZZT_RADIUS_MAX_DX; dx++)
+        {
+            if (!bzzt_in_radius(dx, dy))
+                continue;
+            int tx = bx + dx;
+            int ty = by + dy;
+            if (!Bzzt_Board_Is_In_Bounds(b, tx, ty))
+                continue;
+
+            Bzzt_Tile t = Bzzt_Board_Get_Tile(b, tx, ty);
+            if (t.element == ZZT_BREAKABLE)
+            {
+                t.element = ZZT_EMPTY;
+                t.glyph = ' ';
+                Bzzt_Board_Set_Tile(b, tx, ty, t);
+            }
+        }
+    }
+    Bzzt_Board_Stat_Die(b, bomb_stat);
+}
+
+static void zzt_bomb_tick(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
+{
+    if (stat->data[0] == 0)
+        return; // inactive
+
+    // data[0] == 255 is the cleanup sentinel (one tick after explosion)
+    if (stat->data[0] == 255)
+    {
+        zzt_bomb_cleanup(b, stat);
+        return;
+    }
+
+    stat->data[0]--;
+
+    Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, stat->x, stat->y);
+
+    if (stat->data[0] <= 1)
+    {
+        // Explosion tick — glyph reverts to ♂ (11) briefly
+        tile.glyph = 11;
+        Bzzt_Board_Set_Tile(b, stat->x, stat->y, tile);
+        zzt_bomb_explode(ui, w, b, stat);
+        stat->data[0] = 255; // arm cleanup for next tick
+        return;
+    }
+
+    tile.glyph = '0' + stat->data[0];
+    Bzzt_Board_Set_Tile(b, stat->x, stat->y, tile);
+}
+
+// tbd
+static void zzt_pusher_tick(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
+{
+    Debug_Log(LOG_DEBUG, LOG_BOARD, "Ticking pusher with x-step of: %d", stat->step_x);
+    Direction dir;
+    if (stat->step_x > 0)
+        dir = DIR_RIGHT;
+    else if (stat->step_x < 0)
+        dir = DIR_LEFT;
+    else if (stat->step_y > 0)
+        dir = DIR_DOWN;
+    else if (stat->step_y < 0)
+        dir = DIR_UP;
+    else
+        return;
+
+    Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, stat->x, stat->y);
+    push_tile(b, dir, tile);
+}
+
 static void stat_tick(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
 {
     if (!w || !b || !stat)
@@ -551,6 +741,14 @@ static void stat_tick(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
 
     case ZZT_SPINNINGGUN:
         zzt_spinninggun_tick(w, b, stat, tile);
+        break;
+
+    case ZZT_BOMB:
+        zzt_bomb_tick(ui, w, b, stat);
+        break;
+
+    case ZZT_PUSHER:
+        zzt_pusher_tick(w, b, stat);
         break;
 
     default:
@@ -578,6 +776,11 @@ Vector2 vector2_from_direction(Direction direction)
 void push_tile(Bzzt_Board *b, Direction direction, Bzzt_Tile tile)
 {
     if (!Bzzt_Tile_Is_Pushable(tile))
+        return;
+
+    if (tile.element == ZZT_EWSLIDER && (direction == DIR_UP || direction == DIR_DOWN))
+        return;
+    if (tile.element == ZZT_NSSLIDER && (direction == DIR_LEFT || direction == DIR_RIGHT))
         return;
 
     int max_len = b->width - 1;
@@ -788,31 +991,6 @@ void Bzzt_Stat_Update(UI *ui, Bzzt_World *w, Bzzt_Stat *stat, int stat_idx)
         stat_tick(ui, w, current_board, stat);
 }
 
-Bzzt_Object *Bzzt_Object_Create(uint8_t glyph, Color_Bzzt fg, Color_Bzzt bg, int x, int y)
-{
-    Bzzt_Object *o = malloc(sizeof(Bzzt_Object));
-    if (!o)
-        return NULL;
-    o->id = 0;
-    o->dir = DIR_NONE;
-    o->x = x;
-    o->y = y;
-    o->cell.glyph = glyph;
-    o->cell.bg = bg;
-    o->cell.fg = fg;
-    return o;
-}
-
-void Bzzt_Object_Destroy(Bzzt_Object *o)
-{
-    if (!o)
-        return;
-    if (o->param)
-        bzzt_param_destroy(o->param);
-
-    free(o);
-}
-
 bool Bzzt_Tile_Is_Walkable(Bzzt_World *w, Bzzt_Tile tile)
 {
     switch (tile.element)
@@ -826,7 +1004,7 @@ bool Bzzt_Tile_Is_Walkable(Bzzt_World *w, Bzzt_Tile tile)
     case ZZT_FOREST:
         return true;
     case ZZT_KEY:
-        return player_has_key(w, tile); // key is walkable if player does not already have it
+        return !player_has_key(w, tile); // walkable only if player doesn't already have this color
     default:
         return false;
         break;
@@ -1004,13 +1182,12 @@ Bzzt_Tile Bzzt_Tile_From_ZZT_Tile(ZZTblock *block, int x, int y)
     Bzzt_Tile tile = {0};
     if (!block || x < 0 || x > block->width || y < 0 || y > block->height)
         return tile;
-
     tile.glyph = zztTileGetDisplayChar(block, x, y);
     uint8_t attr = zztTileGetDisplayColor(block, x, y);
 
     uint8_t fg_idx = attr & 0x0F;
-    uint8_t bg_idx = (attr >> 4) & 0x0F;
-    bool blink = (attr & 0x80) != 0;
+    uint8_t bg_idx = (attr >> 4) & 0x07; // 3 bits: background is 0-7 in EGA
+    bool blink = (attr & 0x80) != 0;     // bit 7: blink flag
 
     tile.fg = bzzt_get_color(fg_idx);
     tile.bg = bzzt_get_color(bg_idx);
@@ -1064,7 +1241,7 @@ Bzzt_Stat *Bzzt_Stat_From_ZZT_Param(ZZTparam *param, ZZTtile tile, int x, int y)
     stat->under.glyph = zzt_type_to_cp437(param->utype, param->ucolor);
 
     uint8_t fg_idx = param->ucolor & 0x0F;
-    uint8_t bg_idx = (param->ucolor >> 4) & 0x0F;
+    uint8_t bg_idx = (param->ucolor >> 4) & 0x07; // 3 bits: background is 0-7 in EGA
     bool blink = (param->ucolor & 0x80) != 0;
     stat->under.fg = bzzt_get_color(fg_idx);
     stat->under.bg = bzzt_get_color(bg_idx);
