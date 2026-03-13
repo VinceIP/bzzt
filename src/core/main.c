@@ -26,6 +26,7 @@ static void setup_raylib()
     const int screenWidth = 1280;
     const int screenHeight = 800;
     InitWindow(screenWidth, screenHeight, "Bzzt - prototype");
+    SetExitKey(KEY_NULL);
     SetTargetFPS(60);
 }
 

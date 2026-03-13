@@ -18,6 +18,7 @@
 #include "editor.h"
 #include "ui.h"
 #include "bui_loader.h"
+#include "file_browser.h"
 #include "color.h"
 #include "coords.h"
 #include "bzzt.h"
@@ -29,6 +30,104 @@
 #define PROMPT_PAUSING "Pausing..."
 
 static char keys_display_buffer[128];
+static const char *FILE_BROWSER_BUI = "assets/ui/file_browser.bui";
+
+static void reset_file_browser_scroll(Engine *e)
+{
+    if (!e)
+        return;
+
+    e->file_browser_scroll_direction = 0;
+    e->file_browser_scroll_timer_ms = 0.0;
+}
+
+static void bind_file_browser_ui(Engine *e)
+{
+    if (!e || !e->ui || !e->file_browser)
+        return;
+
+    UIElement_Text *dir_text = (UIElement_Text *)UIElement_Find_By_Name(e->ui, "browser directory");
+    UIElement_Text *entries_text = (UIElement_Text *)UIElement_Find_By_Name(e->ui, "browser entries");
+    UIElement_Text *status_text = (UIElement_Text *)UIElement_Find_By_Name(e->ui, "browser status");
+
+    if (dir_text)
+    {
+        if (dir_text->owns_ud && dir_text->ud)
+            free(dir_text->ud);
+        dir_text->textCallback = FileBrowser_FormatDirectory;
+        dir_text->ud = e->file_browser;
+        dir_text->owns_ud = false;
+    }
+
+    if (entries_text)
+    {
+        if (entries_text->owns_ud && entries_text->ud)
+            free(entries_text->ud);
+        entries_text->textCallback = FileBrowser_FormatEntries;
+        entries_text->ud = e->file_browser;
+        entries_text->owns_ud = false;
+        FileBrowser_SetVisibleRows(e->file_browser, entries_text->base.properties.h);
+    }
+
+    if (status_text)
+    {
+        if (status_text->owns_ud && status_text->ud)
+            free(status_text->ud);
+        status_text->textCallback = FileBrowser_FormatStatus;
+        status_text->ud = e->file_browser;
+        status_text->owns_ud = false;
+    }
+}
+
+static void load_splash_screen(UI *ui, UIActionRegistry *registry);
+
+static bool open_file_browser(Engine *e)
+{
+    if (!e || !e->file_browser)
+        return false;
+
+    if (!FileBrowser_Open(e->file_browser, GetApplicationDirectory()))
+        return false;
+
+    if (e->ui)
+    {
+        UI_Destroy(e->ui);
+        e->ui = NULL;
+    }
+
+    e->ui = UI_Create(true, true);
+    if (!e->ui)
+        return false;
+
+    if (!UI_Load_From_BUI(e->ui, FILE_BROWSER_BUI))
+        return false;
+
+    bind_file_browser_ui(e);
+    e->file_browser_active = true;
+    reset_file_browser_scroll(e);
+    UI_Reset_Button_State();
+    return true;
+}
+
+static void close_file_browser(Engine *e)
+{
+    if (!e)
+        return;
+
+    e->file_browser_active = false;
+    FileBrowser_ClearStatus(e->file_browser);
+    reset_file_browser_scroll(e);
+
+    if (e->ui)
+    {
+        UI_Destroy(e->ui);
+        e->ui = NULL;
+    }
+
+    e->ui = UI_Create(true, true);
+    if (e->ui)
+        load_splash_screen(e->ui, e->action_registry);
+}
 
 static void btn_press_pause(UIActionContext *ctx)
 {
@@ -120,7 +219,7 @@ static void splash_press_play(UIActionContext *ctx)
 {
     if (!ctx || !ctx->engine)
         return;
-    Engine_Set_State(ctx->engine, ENGINE_STATE_TITLE);
+    ctx->engine->file_browser_open_requested = true;
 }
 
 static void splash_press_editor(UIActionContext *ctx)
@@ -262,8 +361,6 @@ static bool bind_world_stats_to_ui(Engine *e)
     return true;
 }
 
-static void load_splash_screen(UI *ui, UIActionRegistry *registry);
-
 static void init_cursor(Engine *e)
 {
     Debug_Printf(LOG_ENGINE, "Initializing cursor.");
@@ -301,8 +398,30 @@ static void init_camera(Engine *e)
     e->camera->cell_height = 32;
 }
 
-static void zzt_title_init(Engine *e)
+static bool zzt_title_init(Engine *e)
 {
+    char *file = e->world_to_load[0] ? e->world_to_load : ZZT_FILE;
+    Bzzt_World *world = Bzzt_World_From_ZZT_World(file);
+    if (!world)
+    {
+        Debug_Printf(LOG_ENGINE, "Error loading ZZT world %s", file);
+        return false;
+    }
+
+    UI *ui = UI_Create(true, true);
+    if (!ui)
+    {
+        Bzzt_World_Destroy(world);
+        return false;
+    }
+
+    if (!UI_Load_From_BUI(ui, "assets/ui/sidebar_play.bui"))
+    {
+        UI_Destroy(ui);
+        Bzzt_World_Destroy(world);
+        return false;
+    }
+
     if (e->ui)
     {
         UI_Destroy(e->ui);
@@ -313,23 +432,18 @@ static void zzt_title_init(Engine *e)
         Bzzt_World_Destroy(e->world);
         e->world = NULL;
     }
-    char *file = ZZT_FILE;
-    e->world = Bzzt_World_From_ZZT_World(file);
 
-    if (!e->world)
-    {
-        Debug_Printf(LOG_ENGINE, "Error loading ZZT world %s", file);
-        return;
-    }
+    e->world = world;
+    e->ui = ui;
+    e->file_browser_active = false;
 
-    e->ui = UI_Create(true, true);
-    UI_Load_From_BUI(e->ui, "assets/ui/sidebar_play.bui");
     UI_Resolve_Button_Actions(e->ui, e->action_registry);
     UI_Reset_Button_State();
     if (!register_ui_components(e))
         Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to find all sidebar UI components.");
     if (!bind_world_stats_to_ui(e))
         Debug_Log(LOG_LEVEL_ERROR, LOG_UI, "Failed to bind world stats to UI.");
+    return true;
 }
 
 static void load_splash_screen(UI *ui, UIActionRegistry *registry)
@@ -389,6 +503,7 @@ static void apply_state_change(Engine *e)
             e->world = NULL;
         }
 
+        e->file_browser_active = false;
         load_splash_screen(e->ui, e->action_registry);
         break;
 
@@ -410,9 +525,14 @@ static void apply_state_change(Engine *e)
             Editor_Destroy(e->editor);
             e->editor = NULL;
         }
-        zzt_title_init(e);
-        register_ui_components(e);
-        break;
+        if (!zzt_title_init(e))
+        {
+        e->state = ENGINE_STATE_MENU;
+        e->file_browser_active = true;
+        reset_file_browser_scroll(e);
+        FileBrowser_SetStatus(e->file_browser, "Failed to load selected .zzt world.");
+    }
+    break;
     }
 }
 
@@ -468,11 +588,17 @@ bool Engine_Init(Engine *e, InputState *in)
     e->input = in;
     e->firstBoot = true;
     e->has_pending_state = false;
+    e->file_browser_active = false;
+    e->file_browser_open_requested = false;
+    e->file_browser_scroll_direction = 0;
+    e->file_browser_scroll_timer_ms = 0.0;
+    e->world_to_load[0] = '\0';
 
     init_cursor(e);
 
     e->ui = UI_Create(true, true);
     e->action_registry = UIAction_Registry_Create();
+    e->file_browser = FileBrowser_Create();
     register_ui_actions(e);
     e->ui_ctx = malloc(sizeof(UIContext));
 
@@ -503,9 +629,88 @@ void Engine_Update(Engine *e, InputState *i, MouseState *m)
     if (e->ui)
         UI_Update_Button_Events(e->ui, e);
 
+    if (e->file_browser_open_requested)
+    {
+        e->file_browser_open_requested = false;
+        if (!open_file_browser(e))
+            Debug_Printf(LOG_ENGINE, "Failed to open file browser.");
+    }
+
     switch (e->state)
     {
     case ENGINE_STATE_MENU:
+        if (e->file_browser_active && e->file_browser)
+        {
+            if (i->ESC_pressed)
+            {
+                close_file_browser(e);
+                break;
+            }
+
+            if (IsKeyPressed(KEY_PAGE_UP))
+            {
+                FileBrowser_MovePage(e->file_browser, -1);
+                reset_file_browser_scroll(e);
+            }
+            if (IsKeyPressed(KEY_PAGE_DOWN))
+            {
+                FileBrowser_MovePage(e->file_browser, 1);
+                reset_file_browser_scroll(e);
+            }
+
+            int hold_direction = 0;
+            if (IsKeyDown(KEY_UP) && !IsKeyDown(KEY_DOWN))
+                hold_direction = -1;
+            else if (IsKeyDown(KEY_DOWN) && !IsKeyDown(KEY_UP))
+                hold_direction = 1;
+
+            if (IsKeyPressed(KEY_UP))
+            {
+                FileBrowser_MoveSelection(e->file_browser, -1);
+                e->file_browser_scroll_direction = -1;
+                e->file_browser_scroll_timer_ms = INITIAL_MOVE_DELAY_MS;
+            }
+            else if (IsKeyPressed(KEY_DOWN))
+            {
+                FileBrowser_MoveSelection(e->file_browser, 1);
+                e->file_browser_scroll_direction = 1;
+                e->file_browser_scroll_timer_ms = INITIAL_MOVE_DELAY_MS;
+            }
+            else if (hold_direction == 0)
+            {
+                reset_file_browser_scroll(e);
+            }
+            else
+            {
+                if (hold_direction != e->file_browser_scroll_direction)
+                {
+                    e->file_browser_scroll_direction = hold_direction;
+                    e->file_browser_scroll_timer_ms = INITIAL_MOVE_DELAY_MS;
+                }
+                else
+                {
+                    e->file_browser_scroll_timer_ms -= GetFrameTime() * 1000.0;
+                    while (e->file_browser_scroll_timer_ms <= 0.0)
+                    {
+                        FileBrowser_MoveSelection(e->file_browser, hold_direction);
+                        e->file_browser_scroll_timer_ms += KEY_REPEAT_INTERVAL_MS;
+                    }
+                }
+            }
+
+            if (IsKeyPressed(KEY_ENTER) && !i->ALT_ENTER_pressed)
+            {
+                char selected_path[1024] = {0};
+                FileBrowserActivateResult result =
+                    FileBrowser_Activate(e->file_browser, selected_path, sizeof(selected_path));
+
+                if (result == FILE_BROWSER_ACTIVATE_SELECTED_WORLD)
+                {
+                    snprintf(e->world_to_load, sizeof(e->world_to_load), "%s", selected_path);
+                    Engine_Set_State(e, ENGINE_STATE_TITLE);
+                }
+            }
+        }
         break;
 
     case ENGINE_STATE_TITLE:
@@ -557,6 +762,9 @@ void Engine_Quit(Engine *e)
 
     if (e->action_registry)
         UIAction_Registry_Destroy(e->action_registry);
+
+    if (e->file_browser)
+        FileBrowser_Destroy(e->file_browser);
 
     if (e->ui_ctx)
         free(e->ui_ctx);

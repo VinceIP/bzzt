@@ -1,0 +1,67 @@
+# -- file_browser.bui
+surfaces:
+  - name: "File Browser"
+    layer: 0
+    width: 60
+    height: 18
+    fg: light_gray
+    bg: dark_gray
+    x: 10
+    y: 3
+    z: 0
+    overlays:
+      - name: "browser chrome"
+        elements:
+          - type: text
+            name: "browser title"
+            y: 0
+            width: 60
+            align: center
+            value: '\f15\b2 Select a world '
+
+          - type: text
+            y: 1
+            x: 1
+            width: 58
+            value: '\f8----------------------------------------------------------'
+
+          - type: text
+            name: "browser directory"
+            x: 2
+            y: 2
+            width: 56
+            value: 'Dir: .'
+
+          - type: text
+            y: 3
+            x: 1
+            width: 58
+            value: '\f8----------------------------------------------------------'
+
+          - type: text
+            name: "browser entries"
+            x: 2
+            y: 4
+            width: 56
+            height: 10
+            value: '(loading)'
+
+          - type: text
+            y: 14
+            x: 1
+            width: 58
+            value: '\f8----------------------------------------------------------'
+
+          - type: text
+            name: "browser help"
+            x: 2
+            y: 15
+            width: 56
+            value: '\f15Up/Down\f8 move   \f15Enter\f8 open   \f15Esc\f8 back'
+
+          - type: text
+            name: "browser status"
+            x: 2
+            y: 16
+            width: 56
+            value: ''

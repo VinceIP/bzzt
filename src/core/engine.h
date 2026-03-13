@@ -24,6 +24,7 @@ typedef struct UIActionRegistry UIActionRegistry;
 typedef struct UIOverlay UIOverlay;
 typedef struct UIElement UIElement;
 typedef struct UIElement_Text UIElement_Text;
+typedef struct FileBrowser FileBrowser;
 
 typedef enum EngineState
 {
@@ -101,6 +102,12 @@ typedef struct Engine
 
     UIActionRegistry *action_registry; // Contains pointers to various functions called on UI button presses
     UIContext *ui_ctx;                 // Exposes UI components used by core engine
+    FileBrowser *file_browser;
+    bool file_browser_active;
+    bool file_browser_open_requested;
+    int file_browser_scroll_direction;
+    double file_browser_scroll_timer_ms;
+    char world_to_load[1024];
 
     bool running;
     bool firstBoot;
