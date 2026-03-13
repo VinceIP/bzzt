@@ -492,6 +492,8 @@ bool Engine_Init(Engine *e, InputState *in)
 void Engine_Update(Engine *e, InputState *i, MouseState *m)
 {
     Input_Poll(i);
+    if (i->ALT_ENTER_pressed)
+        ToggleBorderlessWindowed();
     Mouse_Poll(m);
     if (e->cursor && e->cursor->enabled)
     {

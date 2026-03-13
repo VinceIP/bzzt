@@ -494,10 +494,7 @@ static void handle_player_move(UI *ui, Bzzt_World *w)
         stat->step_y = (dy > 0) ? 1 : -1;
 
     if (w->paused && element_type_touched != ZZT_PASSAGE)
-    {
-        Debug_Printf(LOG_WORLD, "unpausing!");
         Bzzt_World_Set_Pause(w, false);
-    }
 }
 
 static void handle_player_shoot(UI *ui, Bzzt_World *w, Bzzt_Stat *player_stat)
@@ -624,6 +621,7 @@ static void zzt_bomb_explode(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *bo
             case ZZT_SOLID:
             case ZZT_NORMAL:
             case ZZT_INVISIBLE:
+            case ZZT_FAKE:
             case ZZT_WATER:
             case ZZT_EDGE:
                 break; // unaffected
@@ -704,7 +702,6 @@ static void zzt_bomb_tick(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
 // tbd
 static void zzt_pusher_tick(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
 {
-    Debug_Log(LOG_DEBUG, LOG_BOARD, "Ticking pusher with x-step of: %d", stat->step_x);
     Direction dir;
     if (stat->step_x > 0)
         dir = DIR_RIGHT;

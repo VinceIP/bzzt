@@ -16,6 +16,7 @@
 #include "debugger.h"
 #include "coords.h"
 #include "bzzt.h"
+#include "renderer.h"
 
 static bool is_key_in_stack(InputState *in, ArrowKey key)
 {
@@ -157,6 +158,8 @@ void Input_Poll(InputState *in)
     in->SPACE_pressed = IsKeyPressed(KEY_SPACE);
 
     in->SHIFT_held = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+    in->ALT_ENTER_pressed = IsKeyPressed(KEY_ENTER) &&
+                            (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT));
 
     in->quit = WindowShouldClose();
 }
@@ -200,11 +203,21 @@ void Mouse_Poll(MouseState *s)
 
 static Vector2 handle_key_move(Vector2 pos, Rectangle bounds, InputState *in)
 {
+    (void)bounds;
+    (void)in;
+    return pos;
 }
 
 static Vector2 handle_mouse_move(MouseState *m, Bzzt_Camera *c, Rectangle bounds, Vector2 currentPos)
 {
-    Vector2 pos = Camera_ScreenToCell(c, m->screenPosition); // Translate screen coords to world coords
+    Vector2 logical_pos = Renderer_ScreenToLogical(m->screenPosition);
+    if (logical_pos.x < 0 || logical_pos.y < 0)
+    {
+        m->worldPosition = currentPos;
+        return currentPos;
+    }
+
+    Vector2 pos = Camera_ScreenToCell(c, logical_pos); // Translate screen coords to world coords
 
     // Determine if the cursor would move out of bounds
     bool invalid = pos.x == -1 || pos.y == -1;
@@ -223,4 +236,12 @@ static Vector2 handle_mouse_move(MouseState *m, Bzzt_Camera *c, Rectangle bounds
 
 Vector2 Handle_Cursor_Move(Vector2 currentPos, InputState *in, MouseState *m, Bzzt_Camera *c, Rectangle bounds)
 {
+    if (!c)
+        return currentPos;
+
+    Vector2 next_pos = handle_key_move(currentPos, bounds, in);
+    if (!m || !m->moved)
+        return next_pos;
+
+    return handle_mouse_move(m, c, bounds, next_pos);
 }

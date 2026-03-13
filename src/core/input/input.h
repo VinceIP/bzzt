@@ -51,6 +51,7 @@ typedef struct InputState
     bool ESC_pressed;
     bool SPACE_pressed;
     bool SHIFT_held;
+    bool ALT_ENTER_pressed;
     bool quit;
     int heldFrames;
     double elapsedTime;

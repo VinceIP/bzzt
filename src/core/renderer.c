@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <math.h>
 #include "raylib.h"
 #include "renderer.h"
 #include "engine.h"
@@ -16,6 +17,60 @@
 #define TRANSPARENT_GLYPH 255
 
 static BzztCharset defaultCharset;
+static int renderer_logical_w = 0;
+static int renderer_logical_h = 0;
+
+static Rectangle output_rect_for_size(int logical_w, int logical_h, int available_w, int available_h)
+{
+    if (logical_w <= 0 || logical_h <= 0 || available_w <= 0 || available_h <= 0)
+        return (Rectangle){0};
+
+    int scale_w = available_w / logical_w;
+    int scale_h = available_h / logical_h;
+    int integer_scale = scale_w < scale_h ? scale_w : scale_h;
+
+    if (integer_scale >= 1)
+    {
+        int width = logical_w * integer_scale;
+        int height = logical_h * integer_scale;
+
+        return (Rectangle){
+            (float)((available_w - width) / 2),
+            (float)((available_h - height) / 2),
+            (float)width,
+            (float)height};
+    }
+
+    float scale_x = (float)available_w / (float)logical_w;
+    float scale_y = (float)available_h / (float)logical_h;
+    float scale = scale_x < scale_y ? scale_x : scale_y;
+    int width = (int)floorf((float)logical_w * scale);
+    int height = (int)floorf((float)logical_h * scale);
+
+    return (Rectangle){
+        (float)((available_w - width) / 2),
+        (float)((available_h - height) / 2),
+        (float)width,
+        (float)height};
+}
+
+static Rectangle render_output_rect(int logical_w, int logical_h)
+{
+    return output_rect_for_size(logical_w, logical_h, GetRenderWidth(), GetRenderHeight());
+}
+
+static Rectangle window_output_rect(int logical_w, int logical_h)
+{
+    return output_rect_for_size(logical_w, logical_h, GetScreenWidth(), GetScreenHeight());
+}
+
+static void refresh_present_rect(Renderer *r)
+{
+    if (!r)
+        return;
+
+    r->present_rect = render_output_rect(r->logical_w, r->logical_h);
+}
 
 static Texture2D texture_from_charset(BzztCharset *c)
 {
@@ -194,23 +249,61 @@ bool Renderer_Init(Renderer *r, Engine *e, const char *path)
     r->src_w = defaultCharset.header.glyph_w;
     r->src_h = defaultCharset.header.glyph_h;
 
-    float desired = 2.0f;
-    int screenW = GetScreenWidth();
-    int screenH = GetScreenHeight();
-    int maxScaleW = screenW / (BZZT_BOARD_DEFAULT_W * r->src_w);
-    int maxScaleH = screenH / (BZZT_BOARD_DEFAULT_H * r->src_h);
-    int maxScale = maxScaleW < maxScaleH ? maxScaleW : maxScaleH;
-    if (desired > maxScale)
-        desired = (float)maxScale;
-    if (desired < 1)
-        desired = 1.0f;
-    r->scale = desired;
-    r->glyph_w = (int)(r->src_w * desired);
-    r->glyph_h = (int)(r->src_h * desired);
+    r->scale = 1.0f;
+    r->glyph_w = r->src_w;
+    r->glyph_h = r->src_h;
+    r->logical_w = BZZT_BOARD_DEFAULT_W * r->glyph_w;
+    r->logical_h = BZZT_BOARD_DEFAULT_H * r->glyph_h;
+
+    r->target = LoadRenderTexture(r->logical_w, r->logical_h);
+    if (r->target.texture.id == 0)
+    {
+        Debug_Printf(LOG_ENGINE, "Failed to create render target.");
+        if (IsShaderValid(r->glyphShader))
+            UnloadShader(r->glyphShader);
+        if (IsTextureValid(r->font))
+            UnloadTexture(r->font);
+        if (defaultCharset.pixels)
+        {
+            free(defaultCharset.pixels);
+            defaultCharset.pixels = NULL;
+        }
+        return false;
+    }
+
+    SetTextureFilter(r->target.texture, TEXTURE_FILTER_POINT);
+    renderer_logical_w = r->logical_w;
+    renderer_logical_h = r->logical_h;
+    refresh_present_rect(r);
+
+    if (e && e->camera)
+    {
+        e->camera->cell_width = r->glyph_w;
+        e->camera->cell_height = r->glyph_h;
+    }
 
     Vector2 centerCoord = {(float)GetRenderWidth() / 2.0f, (float)GetRenderHeight() / 2.0f};
     r->centerCoord = centerCoord;
     return true;
+}
+
+Vector2 Renderer_ScreenToLogical(Vector2 screenPos)
+{
+    if (renderer_logical_w <= 0 || renderer_logical_h <= 0)
+        return screenPos;
+
+    Rectangle present_rect = window_output_rect(renderer_logical_w, renderer_logical_h);
+    bool outside = screenPos.x < present_rect.x ||
+                   screenPos.y < present_rect.y ||
+                   screenPos.x >= present_rect.x + present_rect.width ||
+                   screenPos.y >= present_rect.y + present_rect.height;
+
+    if (outside)
+        return (Vector2){-1.0f, -1.0f};
+
+    return (Vector2){
+        (screenPos.x - present_rect.x) * ((float)renderer_logical_w / present_rect.width),
+        (screenPos.y - present_rect.y) * ((float)renderer_logical_h / present_rect.height)};
 }
 
 static Rectangle glyph_rec(Renderer *r, unsigned char ascii)
@@ -292,6 +385,9 @@ static void draw_cursor(Renderer *r, Engine *e)
 
 void Renderer_Update(Renderer *r, Engine *e)
 {
+    refresh_present_rect(r);
+
+    BeginTextureMode(r->target);
     ClearBackground(BLACK);
     BeginShaderMode(r->glyphShader);
     switch (e->state)
@@ -324,10 +420,21 @@ void Renderer_Update(Renderer *r, Engine *e)
         break;
     }
     EndShaderMode();
+    EndTextureMode();
+
+    ClearBackground(BLACK);
+    DrawTexturePro(r->target.texture,
+                   (Rectangle){0.0f, 0.0f, (float)r->target.texture.width, (float)-r->target.texture.height},
+                   r->present_rect,
+                   (Vector2){0.0f, 0.0f},
+                   0.0f,
+                   WHITE);
 }
 
 void Renderer_Quit(Renderer *r)
 {
+    if (r->target.texture.id != 0)
+        UnloadRenderTexture(r->target);
     if (IsTextureValid(r->font))
         UnloadTexture(r->font);
     if (IsShaderValid(r->glyphShader))
@@ -337,4 +444,6 @@ void Renderer_Quit(Renderer *r)
         free(defaultCharset.pixels);
         defaultCharset.pixels = NULL;
     }
+    renderer_logical_w = 0;
+    renderer_logical_h = 0;
 }

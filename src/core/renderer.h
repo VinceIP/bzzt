@@ -13,9 +13,12 @@ typedef struct Renderer
 {
     int glyph_w, glyph_h; // rendered glyph size (in pixels)
     int src_w, src_h;     // source glyph size on texture
+    int logical_w, logical_h;
     float scale;          // scaling factor applied to glyphs
     Texture2D font;
+    RenderTexture2D target;
     Vector2 centerCoord;
+    Rectangle present_rect;
     Shader glyphShader;
 } Renderer;
 
@@ -26,4 +29,5 @@ void Renderer_Draw_Cell(Renderer *r, int x, int y, unsigned char glyph,
 void Renderer_Draw_Cell_Float(Renderer *r, float x, float y, unsigned char glyph,
                               Color_Bzzt fg, Color_Bzzt bg);
 void Renderer_Draw_UI(Renderer *r, const UI *ui);
+Vector2 Renderer_ScreenToLogical(Vector2 screenPos);
 void Renderer_Quit(Renderer *);
