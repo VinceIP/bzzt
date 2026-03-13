@@ -294,16 +294,29 @@ Bzzt_Camera *BzztCamera_Create();
 /* -- --*/
 
 /* -- Radius -- */
-// ZZT-style ellipse radius, cell-aspect-ratio corrected for bzzt's 16x32 cells.
-// Gives a 15-tile wide, 7-tile tall area that appears roughly circular on screen.
-// Use for bomb explosions, torch lighting, and any other ZZT-style radius check.
-//   - East/west extent: dx = ±7  (loop over -BZZT_RADIUS_MAX_DX .. +BZZT_RADIUS_MAX_DX)
-//   - North/south extent: dy = ±3 (loop over -BZZT_RADIUS_MAX_DY .. +BZZT_RADIUS_MAX_DY)
+// Original ZZT bomb/torch mask.
+// 15 tiles wide by 9 tiles tall:
+//   000111111111000
+//   001111111111100
+//   011111111111110
+//   011111111111110
+//   111111111111111
+//   011111111111110
+//   011111111111110
+//   001111111111100
+//   000111111111000
 #define BZZT_RADIUS_MAX_DX 7
-#define BZZT_RADIUS_MAX_DY 3
+#define BZZT_RADIUS_MAX_DY 4
 
 static inline bool bzzt_in_radius(int dx, int dy)
 {
-    return (dx * 4) * (dx * 4) + (dy * 8) * (dy * 8) <= 784;
+    int adx = dx < 0 ? -dx : dx;
+    int ady = dy < 0 ? -dy : dy;
+
+    if (adx > BZZT_RADIUS_MAX_DX || ady > BZZT_RADIUS_MAX_DY)
+        return false;
+
+    static const int max_dx_by_dy[] = {7, 6, 6, 5, 4};
+    return adx <= max_dx_by_dy[ady];
 }
 /* -- --*/

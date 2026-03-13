@@ -26,10 +26,30 @@
 static const Bzzt_Tile empty_tile = {0};
 
 static void clear_forest(UI *ui, Bzzt_Board *b, int x, int y);
+Vector2 vector2_from_direction(Direction direction);
+static bool transporter_try_move_stat(Bzzt_Board *b, Bzzt_Stat *stat, int transporter_x, int transporter_y, Direction move_dir);
+void push_tile(Bzzt_Board *b, Direction direction, Bzzt_Tile tile);
 
 static bool world_is_on_title_screen(Bzzt_World *w)
 {
     return w && w->on_title;
+}
+
+static Direction opposite_direction(Direction dir)
+{
+    switch (dir)
+    {
+    case DIR_UP:
+        return DIR_DOWN;
+    case DIR_DOWN:
+        return DIR_UP;
+    case DIR_LEFT:
+        return DIR_RIGHT;
+    case DIR_RIGHT:
+        return DIR_LEFT;
+    default:
+        return DIR_NONE;
+    }
 }
 
 // Maps any color (light or dark variant) to a key index 0-6.
@@ -487,6 +507,18 @@ static void handle_player_move(UI *ui, Bzzt_World *w)
                                                          : DIR_UP;
 
     Bzzt_Tile target_tile = Bzzt_Board_Get_Tile(current_board, new_x, new_y);
+
+    if (target_tile.element == ZZT_TRANSPORTER && transporter_try_move_stat(current_board, stat, new_x, new_y, move_dir))
+    {
+        if (dx != 0)
+            stat->step_x = (dx > 0) ? 1 : -1;
+        if (dy != 0)
+            stat->step_y = (dy > 0) ? 1 : -1;
+        if (w->paused)
+            Bzzt_World_Set_Pause(w, false);
+        return;
+    }
+
     uint8_t element_type_touched = handle_player_touch(ui, w, target_tile, new_x, new_y, move_dir);
 
     // Re-fetch after touch: a successful boulder push leaves an empty tile here
@@ -579,10 +611,6 @@ static bool bomb_element_is_destructible(uint8_t elem)
     case ZZT_BREAKABLE:
     case ZZT_BEAR:
     case ZZT_RUFFIAN:
-    case ZZT_OBJECT:
-    case ZZT_SLIME:
-    case ZZT_SHARK:
-    case ZZT_SPINNINGGUN:
     case ZZT_LION:
     case ZZT_TIGER:
     case ZZT_CENTHEAD:
@@ -605,9 +633,739 @@ static void spawn_bomb_blast_tile(Bzzt_Board *b, int x, int y)
     blast_tile.element = ZZT_BREAKABLE;
     blast_tile.glyph = breakable_def->default_glyph;
     blast_tile.fg = bzzt_get_color(9 + (rand() % 7));
+    blast_tile.bg = COLOR_BLACK;
     blast_tile.visible = true;
     blast_tile.blink = false;
     Bzzt_Board_Set_Tile(b, x, y, blast_tile);
+}
+
+static Direction blink_wall_direction(Bzzt_Stat *stat)
+{
+    if (!stat)
+        return DIR_NONE;
+
+    if (stat->step_x > 0)
+        return DIR_RIGHT;
+    if (stat->step_x < 0)
+        return DIR_LEFT;
+    if (stat->step_y > 0)
+        return DIR_DOWN;
+    if (stat->step_y < 0)
+        return DIR_UP;
+
+    return DIR_NONE;
+}
+
+static uint8_t blink_wall_ray_element(Direction dir)
+{
+    return (dir == DIR_LEFT || dir == DIR_RIGHT) ? ZZT_BLINKHORIZ : ZZT_BLINKVERT;
+}
+
+static bool tile_is_blink_ray_for_direction(Bzzt_Tile tile, Direction dir)
+{
+    return tile.element == blink_wall_ray_element(dir);
+}
+
+static bool tile_is_walkable_for_blink_escape(Bzzt_World *w, Bzzt_Board *b, int x, int y)
+{
+    if (!b || !Bzzt_Board_Is_In_Bounds(b, x, y))
+        return false;
+
+    Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, x, y);
+    return Bzzt_Tile_Is_Walkable(w, tile);
+}
+
+static bool move_player_out_of_blink_ray(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *player, Direction ray_dir)
+{
+    if (!w || !b || !player)
+        return false;
+
+    int dest_x = player->x;
+    int dest_y = player->y;
+
+    if (ray_dir == DIR_UP || ray_dir == DIR_DOWN)
+    {
+        bool east_open = tile_is_walkable_for_blink_escape(w, b, player->x + 1, player->y);
+        bool west_open = tile_is_walkable_for_blink_escape(w, b, player->x - 1, player->y);
+
+        if (east_open)
+            dest_x = player->x + 1;
+        else if (west_open)
+            dest_x = player->x + 1; // Original ZZT bug: west is checked, but east is still used.
+        else
+        {
+            w->health = 0;
+            UI_Flash_Message(ui, ZZT_MSG_OUCH);
+            return false;
+        }
+    }
+    else
+    {
+        bool north_open = tile_is_walkable_for_blink_escape(w, b, player->x, player->y - 1);
+        bool south_open = tile_is_walkable_for_blink_escape(w, b, player->x, player->y + 1);
+
+        if (north_open)
+            dest_y = player->y - 1;
+        else if (south_open)
+            dest_y = player->y + 1;
+        else
+        {
+            w->health = 0;
+            UI_Flash_Message(ui, ZZT_MSG_OUCH);
+            return false;
+        }
+    }
+
+    w->health -= 10;
+    UI_Flash_Message(ui, ZZT_MSG_OUCH);
+    Bzzt_Board_Move_Stat_To(b, player, dest_x, dest_y);
+    return true;
+}
+
+static bool blink_wall_hits_creature(Bzzt_World *w, Bzzt_Tile tile)
+{
+    (void)w;
+
+    switch (tile.element)
+    {
+    case ZZT_BEAR:
+    case ZZT_RUFFIAN:
+    case ZZT_OBJECT:
+    case ZZT_SLIME:
+    case ZZT_SHARK:
+    case ZZT_SPINNINGGUN:
+    case ZZT_PUSHER:
+    case ZZT_LION:
+    case ZZT_TIGER:
+    case ZZT_CENTHEAD:
+    case ZZT_CENTBODY:
+    case ZZT_BULLET:
+    case ZZT_STAR:
+    case ZZT_BOMB:
+    case ZZT_PLAYER:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static bool blink_wall_handle_obstruction(UI *ui, Bzzt_World *w, Bzzt_Board *b, Direction ray_dir, int x, int y)
+{
+    Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, x, y);
+    Bzzt_Stat *stat = Bzzt_Board_Get_Stat_At(b, x, y);
+
+    if (!stat)
+        return false;
+
+    if (tile.element == ZZT_PLAYER && stat == b->stats[0])
+    {
+        move_player_out_of_blink_ray(ui, w, b, stat, ray_dir);
+        return true;
+    }
+
+    if (blink_wall_hits_creature(w, tile))
+    {
+        Bzzt_Board_Stat_Die(b, stat);
+        return true;
+    }
+
+    return true;
+}
+
+static void clear_blink_wall_rays(Bzzt_Board *b, Bzzt_Stat *stat)
+{
+    if (!b || !stat)
+        return;
+
+    Direction dir = blink_wall_direction(stat);
+    Vector2 vec = vector2_from_direction(dir);
+    uint8_t ray_element = blink_wall_ray_element(dir);
+    int x = stat->x + (int)vec.x;
+    int y = stat->y + (int)vec.y;
+
+    while (Bzzt_Board_Is_In_Bounds(b, x, y))
+    {
+        Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, x, y);
+        if (tile.element != ray_element)
+            break;
+
+        Bzzt_Board_Set_Tile(b, x, y, empty_tile);
+        x += (int)vec.x;
+        y += (int)vec.y;
+    }
+}
+
+static void create_blink_wall_rays(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
+{
+    if (!w || !b || !stat)
+        return;
+
+    Direction dir = blink_wall_direction(stat);
+    Vector2 vec = vector2_from_direction(dir);
+    uint8_t ray_element = blink_wall_ray_element(dir);
+    Bzzt_Tile wall_tile = Bzzt_Board_Get_Tile(b, stat->x, stat->y);
+
+    int x = stat->x + (int)vec.x;
+    int y = stat->y + (int)vec.y;
+
+    while (Bzzt_Board_Is_In_Bounds(b, x, y))
+    {
+        Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, x, y);
+        if (tile.element != ZZT_EMPTY)
+        {
+            blink_wall_handle_obstruction(ui, w, b, dir, x, y);
+            break;
+        }
+
+        Bzzt_Tile ray_tile = tile;
+        ray_tile.element = ray_element;
+        ray_tile.glyph = zzt_type_to_cp437(ray_element, 0);
+        ray_tile.fg = wall_tile.fg;
+        ray_tile.bg = wall_tile.bg;
+        ray_tile.visible = true;
+        ray_tile.blink = false;
+        Bzzt_Board_Set_Tile(b, x, y, ray_tile);
+
+        x += (int)vec.x;
+        y += (int)vec.y;
+    }
+}
+
+static void zzt_blink_wall_tick(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
+{
+    if (!w || !b || !stat)
+        return;
+
+    Direction dir = blink_wall_direction(stat);
+    if (dir == DIR_NONE)
+        return;
+
+    if (stat->data[0] > 0)
+    {
+        stat->data[0]--;
+        if (stat->data[0] > 0)
+            return;
+    }
+
+    Vector2 vec = vector2_from_direction(dir);
+    int first_x = stat->x + (int)vec.x;
+    int first_y = stat->y + (int)vec.y;
+
+    if (Bzzt_Board_Is_In_Bounds(b, first_x, first_y) &&
+        tile_is_blink_ray_for_direction(Bzzt_Board_Get_Tile(b, first_x, first_y), dir))
+        clear_blink_wall_rays(b, stat);
+    else
+        create_blink_wall_rays(ui, w, b, stat);
+
+    stat->data[0] = stat->data[1];
+}
+
+static bool transporter_faces_direction(Bzzt_Stat *transporter, Direction move_dir)
+{
+    return blink_wall_direction(transporter) == move_dir;
+}
+
+static bool transporter_try_open_destination(Bzzt_Board *b, int dest_x, int dest_y, Direction move_dir)
+{
+    if (!b || !Bzzt_Board_Is_In_Bounds(b, dest_x, dest_y))
+        return false;
+
+    Bzzt_Tile dest_tile = Bzzt_Board_Get_Tile(b, dest_x, dest_y);
+    if (Bzzt_Tile_Is_Pushable(dest_tile))
+        push_tile(b, move_dir, dest_tile);
+
+    dest_tile = Bzzt_Board_Get_Tile(b, dest_x, dest_y);
+    return dest_tile.element == ZZT_EMPTY || dest_tile.element == ZZT_FAKE;
+}
+
+static bool transporter_resolve_exit(Bzzt_Board *b, int transporter_x, int transporter_y, Direction move_dir, int *out_x, int *out_y)
+{
+    int x = transporter_x;
+    int y = transporter_y;
+    Vector2 vec = vector2_from_direction(move_dir);
+    int one_way_x = transporter_x + (int)vec.x;
+    int one_way_y = transporter_y + (int)vec.y;
+
+    if (transporter_try_open_destination(b, one_way_x, one_way_y, move_dir))
+    {
+        *out_x = one_way_x;
+        *out_y = one_way_y;
+        return true;
+    }
+
+    x = one_way_x;
+    y = one_way_y;
+
+    while (Bzzt_Board_Is_In_Bounds(b, x, y))
+    {
+        Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, x, y);
+        Bzzt_Stat *transporter = Bzzt_Board_Get_Stat_At(b, x, y);
+
+        if (tile.element == ZZT_TRANSPORTER &&
+            transporter &&
+            transporter_faces_direction(transporter, opposite_direction(move_dir)))
+        {
+            int dest_x = x + (int)vec.x;
+            int dest_y = y + (int)vec.y;
+
+            if (transporter_try_open_destination(b, dest_x, dest_y, move_dir))
+            {
+                *out_x = dest_x;
+                *out_y = dest_y;
+                return true;
+            }
+        }
+
+        x += (int)vec.x;
+        y += (int)vec.y;
+    }
+
+    return false;
+}
+
+static void update_transporter_glyph(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
+{
+    if (!w || !w->timer || !b || !stat)
+        return;
+
+    Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, stat->x, stat->y);
+    int phase = (stat->cycle > 0) ? ((w->timer->current_tick / stat->cycle) % 4) : 0;
+    Direction dir = blink_wall_direction(stat);
+
+    switch (dir)
+    {
+    case DIR_UP:
+        tile.glyph = (phase == 0 || phase == 2) ? '^' : (phase == 1) ? '~'
+                                                                      : '-';
+        break;
+    case DIR_DOWN:
+        tile.glyph = (phase == 0 || phase == 2) ? 'v' : (phase == 1) ? '_'
+                                                                      : '-';
+        break;
+    case DIR_RIGHT:
+        tile.glyph = (phase == 0 || phase == 2) ? '(' : (phase == 1) ? '<'
+                                                                      : 179;
+        break;
+    case DIR_LEFT:
+        tile.glyph = (phase == 0 || phase == 2) ? ')' : (phase == 1) ? '>'
+                                                                      : 179;
+        break;
+    default:
+        tile.glyph = zzt_type_to_cp437(ZZT_TRANSPORTER, 0);
+        break;
+    }
+
+    Bzzt_Board_Set_Tile(b, stat->x, stat->y, tile);
+}
+
+static bool transporter_try_move_stat(Bzzt_Board *b, Bzzt_Stat *stat, int transporter_x, int transporter_y, Direction move_dir)
+{
+    int dest_x = 0;
+    int dest_y = 0;
+    if (!b || !stat)
+        return false;
+
+    Bzzt_Stat *transporter = Bzzt_Board_Get_Stat_At(b, transporter_x, transporter_y);
+    if (!transporter || !transporter_faces_direction(transporter, move_dir))
+        return false;
+
+    if (!transporter_resolve_exit(b, transporter_x, transporter_y, move_dir, &dest_x, &dest_y))
+        return false;
+
+    Bzzt_Board_Move_Stat_To(b, stat, dest_x, dest_y);
+    return true;
+}
+
+static bool transporter_try_move_tile(Bzzt_Board *b, Bzzt_Tile tile, int transporter_x, int transporter_y, Direction move_dir)
+{
+    int dest_x = 0;
+    int dest_y = 0;
+    Bzzt_Stat *transporter;
+
+    if (!b)
+        return false;
+
+    transporter = Bzzt_Board_Get_Stat_At(b, transporter_x, transporter_y);
+    if (!transporter || !transporter_faces_direction(transporter, move_dir))
+        return false;
+
+    if (!transporter_resolve_exit(b, transporter_x, transporter_y, move_dir, &dest_x, &dest_y))
+        return false;
+
+    Bzzt_Board_Move_Tile_To(b, tile, dest_x, dest_y);
+    return true;
+}
+
+static Bzzt_Stat *clone_stat_for_duplication(Bzzt_Stat *source, Bzzt_Tile under, int x, int y)
+{
+    if (!source)
+        return NULL;
+
+    Bzzt_Stat *clone = malloc(sizeof(Bzzt_Stat));
+    if (!clone)
+        return NULL;
+
+    memcpy(clone, source, sizeof(Bzzt_Stat));
+    clone->x = x;
+    clone->y = y;
+    clone->prev_x = x;
+    clone->prev_y = y;
+    clone->under = under;
+    clone->leader = -1;
+    clone->follower = -1;
+
+    if (source->program && source->program_length > 0)
+    {
+        clone->program = malloc(source->program_length + 1);
+        if (!clone->program)
+        {
+            free(clone);
+            return NULL;
+        }
+
+        memcpy(clone->program, source->program, source->program_length + 1);
+    }
+    else
+    {
+        clone->program = NULL;
+        clone->program_length = 0;
+        clone->program_counter = 0;
+    }
+
+    return clone;
+}
+
+static int duplicator_interval(Bzzt_Stat *stat)
+{
+    if (!stat)
+        return 27;
+
+    int rate = stat->data[1];
+    if (rate < 0)
+        rate = 0;
+    if (rate > 8)
+        rate = 8;
+    return (9 - rate) * 3;
+}
+
+static void update_duplicator_glyph(Bzzt_Board *b, Bzzt_Stat *stat)
+{
+    static const uint8_t seq[] = {250, 250, 249, 248, 111, 79};
+
+    if (!b || !stat)
+        return;
+
+    Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, stat->x, stat->y);
+    if (stat->data[0] >= 1 && stat->data[0] <= 5)
+        tile.glyph = seq[stat->data[0]];
+    else
+        tile.glyph = 250;
+    Bzzt_Board_Set_Tile(b, stat->x, stat->y, tile);
+}
+
+static void zzt_duplicator_tick(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
+{
+    if (!w || !b || !stat)
+        return;
+
+    stat->cycle = duplicator_interval(stat);
+    if (stat->data[0] < 255)
+        stat->data[0]++;
+    update_duplicator_glyph(b, stat);
+
+    Direction dir = blink_wall_direction(stat);
+    if (dir == DIR_NONE)
+    {
+        stat->data[0] = 0;
+        return;
+    }
+
+    Vector2 vec = vector2_from_direction(dir);
+    Direction output_dir = opposite_direction(dir);
+    int src_x = stat->x + (int)vec.x;
+    int src_y = stat->y + (int)vec.y;
+    int dest_x = stat->x - (int)vec.x;
+    int dest_y = stat->y - (int)vec.y;
+
+    if (!Bzzt_Board_Is_In_Bounds(b, src_x, src_y) || !Bzzt_Board_Is_In_Bounds(b, dest_x, dest_y))
+    {
+        return;
+    }
+
+    Bzzt_Tile src_tile = Bzzt_Board_Get_Tile(b, src_x, src_y);
+    Bzzt_Stat *src_stat = Bzzt_Board_Get_Stat_At(b, src_x, src_y);
+    if (src_tile.element == ZZT_PLAYER || src_tile.element == ZZT_MONITOR)
+    {
+        stat->data[0] = 0;
+        update_duplicator_glyph(b, stat);
+        return;
+    }
+
+    Bzzt_Tile dest_tile = Bzzt_Board_Get_Tile(b, dest_x, dest_y);
+    if (stat->data[0] < 5)
+        return;
+
+    Bzzt_Stat *dest_stat = Bzzt_Board_Get_Stat_At(b, dest_x, dest_y);
+    if (dest_tile.element == ZZT_PLAYER && dest_stat == b->stats[0])
+    {
+        // TODO: Objects likely need extra duplication/touch quirks once ZZT-OOP support is expanded.
+        handle_player_touch(ui, w, src_tile, src_x, src_y, dir);
+        stat->data[0] = 0;
+        update_duplicator_glyph(b, stat);
+        return;
+    }
+
+    if (Bzzt_Tile_Is_Pushable(dest_tile))
+        push_tile(b, output_dir, dest_tile);
+
+    dest_tile = Bzzt_Board_Get_Tile(b, dest_x, dest_y);
+    if (dest_tile.element != ZZT_EMPTY && dest_tile.element != ZZT_FAKE)
+    {
+        stat->data[0] = 0;
+        update_duplicator_glyph(b, stat);
+        return;
+    }
+
+    if (src_stat)
+    {
+        Bzzt_Stat *clone = clone_stat_for_duplication(src_stat, dest_tile, dest_x, dest_y);
+        if (!clone || !Bzzt_Board_Add_Stat(b, clone))
+        {
+            if (clone)
+            {
+                if (clone->program)
+                    free(clone->program);
+                free(clone);
+            }
+            stat->data[0] = 0;
+            update_duplicator_glyph(b, stat);
+            return;
+        }
+    }
+    else
+    {
+        Bzzt_Stat *existing_dest_stat = Bzzt_Board_Get_Stat_At(b, dest_x, dest_y);
+        if (existing_dest_stat)
+            Bzzt_Board_Stat_Die(b, existing_dest_stat);
+    }
+
+    Bzzt_Tile out_tile = src_tile;
+    out_tile.x = dest_x;
+    out_tile.y = dest_y;
+    if (src_stat && out_tile.element != ZZT_PLAYER)
+        out_tile.bg = dest_tile.bg;
+    Bzzt_Board_Set_Tile(b, dest_x, dest_y, out_tile);
+
+    stat->data[0] = 0;
+    update_duplicator_glyph(b, stat);
+}
+
+typedef struct ConveyorRingCell
+{
+    int x;
+    int y;
+    bool in_bounds;
+    Bzzt_Tile tile;
+    Bzzt_Stat *stat;
+} ConveyorRingCell;
+
+static const int conveyor_ring_dx[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+static const int conveyor_ring_dy[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
+
+static bool conveyor_cell_is_emptyish(ConveyorRingCell cell)
+{
+    return cell.in_bounds &&
+           (cell.tile.element == ZZT_EMPTY || cell.tile.element == ZZT_FAKE);
+}
+
+static bool conveyor_cell_is_pushable(ConveyorRingCell cell)
+{
+    return cell.in_bounds && Bzzt_Tile_Is_Pushable(cell.tile);
+}
+
+static bool conveyor_cell_is_blocker(ConveyorRingCell cell)
+{
+    return !cell.in_bounds || (!conveyor_cell_is_emptyish(cell) && !conveyor_cell_is_pushable(cell));
+}
+
+static void build_conveyor_ring(Bzzt_Board *b, Bzzt_Stat *stat, ConveyorRingCell ring[8])
+{
+    for (int i = 0; i < 8; ++i)
+    {
+        int x = stat->x + conveyor_ring_dx[i];
+        int y = stat->y + conveyor_ring_dy[i];
+
+        ring[i].x = x;
+        ring[i].y = y;
+        ring[i].in_bounds = Bzzt_Board_Is_In_Bounds(b, x, y);
+        ring[i].tile = ring[i].in_bounds ? Bzzt_Board_Get_Tile(b, x, y) : empty_tile;
+        ring[i].stat = ring[i].in_bounds ? Bzzt_Board_Get_Stat_At(b, x, y) : NULL;
+    }
+}
+
+static int wrap_ring_index(int idx)
+{
+    while (idx < 0)
+        idx += 8;
+    while (idx >= 8)
+        idx -= 8;
+    return idx;
+}
+
+static void conveyor_shift_linear_segment(int working[8], const int indices[], int len)
+{
+    for (int pos = len - 1; pos > 0; --pos)
+    {
+        int dest = indices[pos];
+        int src = indices[pos - 1];
+
+        if (working[dest] == -1 && working[src] >= 0)
+        {
+            working[dest] = working[src];
+            working[src] = -1;
+        }
+    }
+}
+
+static void compute_conveyor_targets(const ConveyorRingCell ring[8], bool clockwise, int targets[8])
+{
+    int working[8];
+    int blocker_count = 0;
+
+    for (int i = 0; i < 8; ++i)
+    {
+        if (conveyor_cell_is_blocker(ring[i]))
+        {
+            working[i] = -2;
+            blocker_count++;
+        }
+        else if (conveyor_cell_is_pushable(ring[i]))
+            working[i] = i;
+        else
+            working[i] = -1;
+    }
+
+    if (blocker_count == 0)
+    {
+        for (int i = 0; i < 8; ++i)
+        {
+            int source = clockwise ? wrap_ring_index(i - 1) : wrap_ring_index(i + 1);
+            targets[i] = (working[source] >= 0) ? working[source] : -1;
+        }
+        return;
+    }
+
+    for (int i = 0; i < 8; ++i)
+        targets[i] = (working[i] >= 0) ? working[i] : -1;
+
+    int blockers[8];
+    for (int i = 0; i < 8; ++i)
+    {
+        if (working[i] == -2)
+            blockers[i] = 1;
+        else
+            blockers[i] = 0;
+    }
+
+    for (int blocker_idx = 0; blocker_idx < 8; ++blocker_idx)
+    {
+        if (!blockers[blocker_idx])
+            continue;
+
+        int indices[8];
+        int len = 0;
+        int cursor = blocker_idx;
+
+        while (true)
+        {
+            cursor = clockwise ? wrap_ring_index(cursor + 1) : wrap_ring_index(cursor - 1);
+            if (working[cursor] == -2)
+                break;
+            indices[len++] = cursor;
+        }
+
+        if (len == 0)
+            continue;
+
+        conveyor_shift_linear_segment(working, indices, len);
+    }
+
+    for (int i = 0; i < 8; ++i)
+        targets[i] = (working[i] >= 0) ? working[i] : -1;
+}
+
+static void apply_conveyor_targets(Bzzt_Board *b, const ConveyorRingCell ring[8], const int targets[8])
+{
+    Bzzt_Tile base_tiles[8];
+
+    for (int i = 0; i < 8; ++i)
+    {
+        if (!ring[i].in_bounds)
+            continue;
+
+        if (ring[i].stat)
+            base_tiles[i] = ring[i].stat->under;
+        else if (conveyor_cell_is_pushable(ring[i]))
+            base_tiles[i] = empty_tile;
+        else
+            base_tiles[i] = ring[i].tile;
+
+        Bzzt_Board_Set_Tile(b, ring[i].x, ring[i].y, base_tiles[i]);
+    }
+
+    for (int i = 0; i < 8; ++i)
+    {
+        int source_idx = targets[i];
+        if (!ring[i].in_bounds || source_idx < 0)
+            continue;
+
+        ConveyorRingCell source = ring[source_idx];
+        Bzzt_Tile moved_tile = source.tile;
+        moved_tile.x = ring[i].x;
+        moved_tile.y = ring[i].y;
+
+        if (source.stat)
+        {
+            source.stat->prev_x = source.stat->x;
+            source.stat->prev_y = source.stat->y;
+            source.stat->x = ring[i].x;
+            source.stat->y = ring[i].y;
+            source.stat->under = base_tiles[i];
+
+            if (moved_tile.element != ZZT_PLAYER)
+                moved_tile.bg = base_tiles[i].bg;
+        }
+
+        Bzzt_Board_Set_Tile(b, ring[i].x, ring[i].y, moved_tile);
+    }
+}
+
+static void update_conveyor_glyph(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat, bool clockwise)
+{
+    static const uint8_t cw_seq[] = {179, '/', 196, '\\'};
+    static const uint8_t ccw_seq[] = {179, '\\', 196, '/'};
+
+    if (!w || !w->timer || !b || !stat)
+        return;
+
+    Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, stat->x, stat->y);
+    int phase = (stat->cycle > 0) ? ((w->timer->current_tick / stat->cycle) % 4) : 0;
+    tile.glyph = clockwise ? cw_seq[phase] : ccw_seq[phase];
+    Bzzt_Board_Set_Tile(b, stat->x, stat->y, tile);
+}
+
+static void zzt_conveyor_tick(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat, bool clockwise)
+{
+    if (!w || !b || !stat)
+        return;
+
+    ConveyorRingCell ring[8];
+    int targets[8];
+
+    update_conveyor_glyph(w, b, stat, clockwise);
+    build_conveyor_ring(b, stat, ring);
+    compute_conveyor_targets(ring, clockwise, targets);
+    apply_conveyor_targets(b, ring, targets);
 }
 
 // Phase 1: spawn breakables and kill destructible enemies in the blast radius.
@@ -642,7 +1400,7 @@ static void zzt_bomb_explode(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *bo
                 {
                     Bzzt_Board_Stat_Die(b, s);
                     t = Bzzt_Board_Get_Tile(b, tx, ty);
-                    spawn_blast = (t.element == ZZT_EMPTY || t.element == ZZT_FAKE);
+                    spawn_blast = (t.element == ZZT_EMPTY);
                 }
 
                 if (spawn_blast)
@@ -655,7 +1413,7 @@ static void zzt_bomb_explode(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *bo
                 Bzzt_Board_Set_Tile(b, tx, ty, empty_tile);
                 spawn_blast = true;
             }
-            else if (t.element == ZZT_EMPTY || t.element == ZZT_FAKE)
+            else if (t.element == ZZT_EMPTY)
             {
                 spawn_blast = true;
             }
@@ -685,11 +1443,7 @@ static void zzt_bomb_cleanup(Bzzt_Board *b, Bzzt_Stat *bomb_stat)
 
             Bzzt_Tile t = Bzzt_Board_Get_Tile(b, tx, ty);
             if (t.element == ZZT_BREAKABLE)
-            {
-                t.element = ZZT_EMPTY;
-                t.glyph = ' ';
-                Bzzt_Board_Set_Tile(b, tx, ty, t);
-            }
+                Bzzt_Board_Set_Tile(b, tx, ty, empty_tile);
         }
     }
     Bzzt_Board_Stat_Die(b, bomb_stat);
@@ -699,7 +1453,6 @@ static void zzt_bomb_tick(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
 {
     if (stat->data[0] == 0)
         return; // inactive
-
     // data[0] == 255 is the cleanup sentinel (one tick after explosion)
     if (stat->data[0] == 255)
     {
@@ -797,8 +1550,28 @@ static void stat_tick(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
         zzt_spinninggun_tick(w, b, stat, tile);
         break;
 
+    case ZZT_DUPLICATOR:
+        zzt_duplicator_tick(ui, w, b, stat);
+        break;
+
+    case ZZT_CWCONV:
+        zzt_conveyor_tick(w, b, stat, true);
+        break;
+
+    case ZZT_CCWCONV:
+        zzt_conveyor_tick(w, b, stat, false);
+        break;
+
+    case ZZT_TRANSPORTER:
+        update_transporter_glyph(w, b, stat);
+        break;
+
     case ZZT_BOMB:
         zzt_bomb_tick(ui, w, b, stat);
+        break;
+
+    case ZZT_BLINK:
+        zzt_blink_wall_tick(ui, w, b, stat);
         break;
 
     case ZZT_PUSHER:
@@ -846,6 +1619,7 @@ void push_tile(Bzzt_Board *b, Direction direction, Bzzt_Tile tile)
     Vector2 vec = vector2_from_direction(direction);
     Bzzt_Tile t = tile;
     bool can_push = false;
+    bool head_uses_transporter = false;
 
     // scan for chain of pushable objects
     while (true)
@@ -872,6 +1646,21 @@ void push_tile(Bzzt_Board *b, Direction direction, Bzzt_Tile tile)
         }
         else if (Bzzt_Tile_Is_Pushable(t))
             chain[chain_len++] = t;
+        else if (t.element == ZZT_TRANSPORTER)
+        {
+            Bzzt_Stat *transporter = Bzzt_Board_Get_Stat_At(b, t.x, t.y);
+            int transport_x = 0;
+            int transport_y = 0;
+            if (transporter &&
+                transporter_faces_direction(transporter, direction) &&
+                transporter_resolve_exit(b, t.x, t.y, direction, &transport_x, &transport_y))
+            {
+                can_push = true;
+                head_uses_transporter = true;
+                break;
+            }
+            break;
+        }
         else if (t.element == ZZT_EMPTY || t.element == ZZT_FAKE)
         {
             can_push = true;
@@ -892,7 +1681,14 @@ void push_tile(Bzzt_Board *b, Direction direction, Bzzt_Tile tile)
         int dest_y = src.y + (int)vec.y;
 
         Bzzt_Stat *stat = Bzzt_Board_Get_Stat_At(b, src.x, src.y);
-        if (stat)
+        if (i == 0 && head_uses_transporter)
+        {
+            if (stat)
+                transporter_try_move_stat(b, stat, dest_x, dest_y, direction);
+            else
+                transporter_try_move_tile(b, src, dest_x, dest_y, direction);
+        }
+        else if (stat)
             Bzzt_Board_Move_Stat_To(b, stat, dest_x, dest_y);
         else
             Bzzt_Board_Move_Tile_To(b, src, dest_x, dest_y);
@@ -911,6 +1707,15 @@ void zzt_bullet_tick(UI *ui, Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *stat)
     }
 
     Bzzt_Tile next_tile = Bzzt_Board_Get_Tile(b, next_x, next_y);
+    Direction move_dir = (stat->step_x > 0) ? DIR_RIGHT : (stat->step_x < 0) ? DIR_LEFT
+                                                 : (stat->step_y > 0)         ? DIR_DOWN
+                                                 : (stat->step_y < 0)         ? DIR_UP
+                                                                              : DIR_NONE;
+    if (next_tile.element == ZZT_TRANSPORTER &&
+        move_dir != DIR_NONE &&
+        transporter_try_move_stat(b, stat, next_x, next_y, move_dir))
+        return;
+
     if (next_tile.element != ZZT_EMPTY && next_tile.element != ZZT_FAKE && next_tile.element != ZZT_WATER)
         handle_bullet_collision(ui, w, b, stat, next_x, next_y);
     else
