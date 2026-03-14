@@ -19,6 +19,13 @@ void Bzzt_Timer_Run_Frame(Engine *e, Bzzt_World *w, double frame_ms)
     if (!w || !w->timer)
         return;
 
+    if (w->timer->paused)
+    {
+        if (e->ui && e->ui->message_active)
+            UI_Update_Message_Timer(e->ui);
+        return;
+    }
+
     w->timer->accumulator_ms += frame_ms;
     while (w->timer->accumulator_ms >= w->timer->tick_duration_ms)
     {
@@ -33,9 +40,14 @@ double Bzzt_Timer_Run_Tick(Engine *e, Bzzt_World *w)
     if (!e || !e->ui || !w || !w->timer)
         return 0.0;
 
+    if (w->timer->paused)
+        return w->timer->tick_duration_ms;
+
     Bzzt_Board *current_board = w->boards[w->boards_current];
     if (!current_board)
         return w->timer->tick_duration_ms;
+
+    Bzzt_World_Begin_Tick(w);
 
     for (int i = 0; i < current_board->stat_count; ++i)
     {
@@ -47,7 +59,6 @@ double Bzzt_Timer_Run_Tick(Engine *e, Bzzt_World *w)
         }
     }
 
-    int initial_count = current_board->stat_count;
     for (int i = 0; i < current_board->stat_count; ++i)
     {
         Bzzt_Stat *stat = current_board->stats[i];
@@ -62,6 +73,8 @@ double Bzzt_Timer_Run_Tick(Engine *e, Bzzt_World *w)
             }
         }
     }
+
+    Bzzt_World_Advance_Status_Effects(w);
 
     if (e->ui && e->ui->message_active)
     {

@@ -6,8 +6,41 @@
 #include "ui.h"
 #include "ui_messages.h"
 #include "color.h"
+#include "bzzt.h"
 
-#define DEFAULT_TICK_TIME_DURATION 8
+#define ZZT_MESSAGE_MAX_CHARS 58
+
+const char *const zzt_message_table[] = {
+    "Bomb activated!",
+    "Energizer - you are invincible",
+    "You already have a %s key!",
+    "You now have a %s key.",
+    "Ammunition - 5 shots per container.",
+    "Gems give you Health!",
+    "The %s door is now open.",
+    "The %s door is locked!",
+    "Torch - used for lighting in the underground.",
+    "Don't need a torch - room is not dark!",
+    "You don't have any torches!",
+    "You are blocked by an invisible wall.",
+    "A path is cleared through the forest.",
+    "A fake wall - secret passage!",
+    "Your way is blocked by water.",
+    "Ouch!",
+    "Can't shoot in this place!",
+    "You don't have any ammo!",
+    "Game over - Press ESCAPE",
+    "Room is dark - you need to light a torch!",
+    "Running out of time!",
+    "",
+    "ERR: %s",
+    "%s"
+};
+
+static int message_duration_ticks(Bzzt_World *w)
+{
+    return Bzzt_World_Message_Ticks(w);
+}
 
 UISurface *create_flashing_text_surface(UI *ui)
 {
@@ -67,8 +100,7 @@ static UIElement_Text *get_message_text_element(UI *ui)
     return (UIElement_Text *)elem;
 }
 
-static void set_message_text_and_color(UI *ui, const char *text,
-                                       Color_Bzzt fg)
+static void set_message_text_and_color(UI *ui, const char *text, Color_Bzzt fg)
 {
     UIElement_Text *text_elem = get_message_text_element(ui);
     if (!text_elem)
@@ -79,7 +111,7 @@ static void set_message_text_and_color(UI *ui, const char *text,
     text_elem->bg = COLOR_BLACK;
 }
 
-void UI_Flash_Message(UI *ui, zzt_message_t zzt_msg, ...)
+void UI_Flash_Message(UI *ui, Bzzt_World *w, zzt_message_t zzt_msg, ...)
 {
     if (!ui)
         return;
@@ -110,11 +142,14 @@ void UI_Flash_Message(UI *ui, zzt_message_t zzt_msg, ...)
     vsnprintf(formatted_message, sizeof(formatted_message), format, args);
     va_end(args);
 
-    // Add spaces around the message (ZZT convention)
-    char *message_with_spaces = malloc(strlen(formatted_message) + 3);
+    size_t source_len = strnlen(formatted_message, ZZT_MESSAGE_MAX_CHARS);
+    char *message_with_spaces = malloc(source_len + 3);
     if (!message_with_spaces)
         return;
-    sprintf(message_with_spaces, " %s ", formatted_message);
+    message_with_spaces[0] = ' ';
+    memcpy(message_with_spaces + 1, formatted_message, source_len);
+    message_with_spaces[source_len + 1] = ' ';
+    message_with_spaces[source_len + 2] = '\0';
 
     // Free old message if exists
     if (ui->message_text)
@@ -122,8 +157,7 @@ void UI_Flash_Message(UI *ui, zzt_message_t zzt_msg, ...)
 
     ui->message_text = message_with_spaces;
 
-    // Calculate display duration: 200 / (TickTimeDuration + 1)
-    ui->message_ticks_remaining = 200 / (DEFAULT_TICK_TIME_DURATION + 1);
+    ui->message_ticks_remaining = message_duration_ticks(w);
     ui->message_active = true;
 
     // Set initial color (9 + (P2 mod 7) where P2 starts at ticks_remaining)
@@ -136,7 +170,7 @@ void UI_Flash_Message(UI *ui, zzt_message_t zzt_msg, ...)
     UISurface_Set_Enabled(ui->flashing_text_surface, true);
 }
 
-void UI_Flash_Message_String(UI *ui, const char *message)
+void UI_Flash_Message_String(UI *ui, Bzzt_World *w, const char *message)
 {
     if (!ui || !message)
         return;
@@ -147,11 +181,14 @@ void UI_Flash_Message_String(UI *ui, const char *message)
     if (!ui->flashing_text_surface)
         return;
 
-    // Add spaces around the message (ZZT convention)
-    char *message_with_spaces = malloc(strlen(message) + 3);
+    size_t source_len = strnlen(message, ZZT_MESSAGE_MAX_CHARS);
+    char *message_with_spaces = malloc(source_len + 3);
     if (!message_with_spaces)
         return;
-    sprintf(message_with_spaces, " %s ", message);
+    message_with_spaces[0] = ' ';
+    memcpy(message_with_spaces + 1, message, source_len);
+    message_with_spaces[source_len + 1] = ' ';
+    message_with_spaces[source_len + 2] = '\0';
 
     // Free old message if exists
     if (ui->message_text)
@@ -159,8 +196,7 @@ void UI_Flash_Message_String(UI *ui, const char *message)
 
     ui->message_text = message_with_spaces;
 
-    // Calculate display duration
-    ui->message_ticks_remaining = 200 / (DEFAULT_TICK_TIME_DURATION + 1);
+    ui->message_ticks_remaining = message_duration_ticks(w);
     ui->message_active = true;
 
     // Set initial color

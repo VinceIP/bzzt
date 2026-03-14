@@ -39,6 +39,16 @@ typedef enum
     DIR_RIGHT
 } Direction;
 
+typedef enum
+{
+    BZZT_DAMAGE_SOURCE_ENEMY_TOUCH,
+    BZZT_DAMAGE_SOURCE_PROJECTILE,
+    BZZT_DAMAGE_SOURCE_BLINK_WALL,
+    BZZT_DAMAGE_SOURCE_BOMB,
+    BZZT_DAMAGE_SOURCE_SCRIPT,
+    BZZT_DAMAGE_SOURCE_ENDGAME
+} Bzzt_DamageSource;
+
 // A Bzzt cell.
 typedef struct Bzzt_Tile
 {
@@ -96,6 +106,7 @@ typedef struct Bzzt_Board
     int width, height; // Dimensions. Defaults to 60x25
 
     Bzzt_Tile *tiles;
+    int *stat_index_grid;
 
     Bzzt_Stat **stats;
     int stat_count, stat_cap;
@@ -135,12 +146,16 @@ typedef struct Bzzt_World
 
     bool paused;
     bool on_title;
+    int16_t title_monitor_x;
+    int16_t title_monitor_y;
 
     bool interpolation_enabled;
 
+    int16_t game_speed;
     int16_t ammo, gems, health, torches, score;
     uint8_t keys[7];
     int16_t torch_cycles, energizer_cycles;
+    int16_t player_hurt_flash_ticks;
     char flags[10][21];
     int16_t time_passed;
 
@@ -150,7 +165,6 @@ typedef struct Bzzt_World
     bool strict_palette;
 
     bool loaded;
-    bool doUnload;
 } Bzzt_World;
 
 typedef struct Bzzt_Viewport
@@ -186,6 +200,8 @@ bool Bzzt_Stat_Is_Blocked(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *s, Direction 
 
 // Make the stat shoot in given direction. Returns the bullet stat if successful, NULL if not.
 Bzzt_Stat *Bzzt_Stat_Shoot(Bzzt_Board *b, Bzzt_Stat *shooter, Direction dir);
+// Spawn a bullet/star-style projectile in the requested direction.
+Bzzt_Stat *Bzzt_Stat_Fire_Projectile(Bzzt_Board *b, Bzzt_Stat *shooter, Direction dir, uint8_t element, uint8_t lifetime_ticks);
 
 // Return the distance from a stat to a target x/y position
 uint8_t Bzzt_Stat_Get_Distance_From_Target(Bzzt_Stat *s, int tx, int ty);
@@ -217,6 +233,7 @@ void Bzzt_Board_Update_Stats(Bzzt_World *w, Bzzt_Board *b);
 
 // Return a stat from an x/y position
 Bzzt_Stat *Bzzt_Board_Get_Stat_At(Bzzt_Board *b, int x, int y);
+void Bzzt_Board_Rebuild_Stat_Index(Bzzt_Board *b);
 
 // Return a stat's index on the target board
 int Bzzt_Board_Get_Stat_Index(Bzzt_Board *b, Bzzt_Stat *stat);
@@ -284,6 +301,13 @@ bool Bzzt_World_Switch_Board_To(Bzzt_World *w, int board_idx, int x, int y);
 // Pause or unpause the game
 void Bzzt_World_Set_Pause(Bzzt_World *w, bool pause);
 void Bzzt_World_Inc_Score(Bzzt_World *w, int amount);
+bool Bzzt_World_Is_Energized(Bzzt_World *w);
+void Bzzt_World_Begin_Tick(Bzzt_World *w);
+void Bzzt_World_Advance_Status_Effects(Bzzt_World *w);
+bool Bzzt_World_Damage_Player(UI *ui, Bzzt_World *w, int amount, Bzzt_DamageSource source);
+Bzzt_Tile Bzzt_World_Get_Player_Render_Tile(Bzzt_World *w, Bzzt_Tile tile);
+int Bzzt_World_Normalize_Game_Speed(int game_speed);
+int Bzzt_World_Message_Ticks(Bzzt_World *w);
 
 // Convert a ZZT world to a Bzzt world
 Bzzt_World *Bzzt_World_From_ZZT_World(char *file);

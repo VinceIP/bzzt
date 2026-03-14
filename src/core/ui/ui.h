@@ -20,6 +20,7 @@
 struct Color;
 typedef struct Renderer Renderer;
 typedef struct Bzzt_Tile Bzzt_Tile;
+typedef struct Bzzt_World Bzzt_World;
 typedef struct cJSON cJSON;
 typedef struct UISurface UISurface;
 typedef struct UIOverlay UIOverlay;
@@ -260,8 +261,8 @@ UI *UI_Create(bool visible, bool enabled);
 void UI_Update(UI *ui);
 void UI_Destroy(UI *ui);
 
-void UI_Flash_Message(UI *ui, zzt_message_t zzt_msg, ...);
-void UI_Flash_Message_String(UI *ui, const char *message);
+void UI_Flash_Message(UI *ui, Bzzt_World *w, zzt_message_t zzt_msg, ...);
+void UI_Flash_Message_String(UI *ui, Bzzt_World *w, const char *message);
 void UI_Clear_Message(UI *ui);
 void UI_Update_Message_Timer(UI *ui);
 

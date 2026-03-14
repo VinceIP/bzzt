@@ -9,9 +9,27 @@
 
 static Bzzt_Tile empty_tile = {0};
 
+static int board_cell_index(Bzzt_Board *b, int x, int y)
+{
+    if (!b || x < 0 || x >= b->width || y < 0 || y >= b->height)
+        return -1;
+
+    return (y * b->width) + x;
+}
+
+static void board_clear_stat_index(Bzzt_Board *b)
+{
+    if (!b || !b->stat_index_grid)
+        return;
+
+    int cell_count = b->width * b->height;
+    for (int i = 0; i < cell_count; ++i)
+        b->stat_index_grid[i] = -1;
+}
+
 Bzzt_Board *Bzzt_Board_Create(const char *name, int w, int h)
 {
-    Bzzt_Board *b = malloc(sizeof(Bzzt_Board));
+    Bzzt_Board *b = calloc(1, sizeof(Bzzt_Board));
 
     if (!b)
         return NULL;
@@ -25,6 +43,7 @@ Bzzt_Board *Bzzt_Board_Create(const char *name, int w, int h)
     if (!b->stats)
     {
         Debug_Log(LOG_LEVEL_ERROR, LOG_BOARD, "Failed to allocate stats while creating board '%s'", name);
+        free(b);
         return NULL;
     }
 
@@ -32,10 +51,31 @@ Bzzt_Board *Bzzt_Board_Create(const char *name, int w, int h)
     if (!b->tiles)
     {
         Debug_Log(LOG_LEVEL_ERROR, LOG_BOARD, "Failed to allocate tiles while creating board '%s'", name);
+        free(b->stats);
+        free(b);
+        return NULL;
+    }
+
+    b->stat_index_grid = malloc(sizeof(int) * (size_t)(w * h));
+    if (!b->stat_index_grid)
+    {
+        Debug_Log(LOG_LEVEL_ERROR, LOG_BOARD, "Failed to allocate stat index while creating board '%s'", name);
+        free(b->tiles);
+        free(b->stats);
+        free(b);
         return NULL;
     }
 
     b->name = strdup(name ? name : "Untitled");
+    if (!b->name)
+    {
+        free(b->stat_index_grid);
+        free(b->tiles);
+        free(b->stats);
+        free(b);
+        return NULL;
+    }
+    board_clear_stat_index(b);
     return b;
 }
 
@@ -73,8 +113,8 @@ void Bzzt_Board_Destroy(Bzzt_Board *b)
         }
     }
 
-    int len = b->width * b->height;
-
+    free(b->name);
+    free(b->stat_index_grid);
     free(b->stats);
     free(b->tiles);
     free(b);
@@ -89,6 +129,7 @@ Bzzt_Stat *Bzzt_Board_Add_Stat(Bzzt_Board *b, Bzzt_Stat *s)
         return NULL;
 
     b->stats[b->stat_count++] = s;
+    Bzzt_Board_Rebuild_Stat_Index(b);
 
     return s;
 }
@@ -124,19 +165,37 @@ void Bzzt_Board_Remove_Stat(Bzzt_Board *b, int idx)
         b->stats[i - 1] = b->stats[i];
 
     b->stat_count--;
+    Bzzt_Board_Rebuild_Stat_Index(b);
 }
 
 Bzzt_Stat *Bzzt_Board_Get_Stat_At(Bzzt_Board *b, int x, int y)
 {
-    if (!b)
+    int cell_idx = board_cell_index(b, x, y);
+    if (!b || cell_idx < 0 || !b->stat_index_grid)
         return NULL;
+
+    int stat_idx = b->stat_index_grid[cell_idx];
+    if (stat_idx < 0 || stat_idx >= b->stat_count)
+        return NULL;
+
+    return b->stats[stat_idx];
+}
+
+void Bzzt_Board_Rebuild_Stat_Index(Bzzt_Board *b)
+{
+    if (!b || !b->stat_index_grid)
+        return;
+
+    board_clear_stat_index(b);
 
     for (int i = 0; i < b->stat_count; ++i)
     {
-        if (b->stats[i]->x == x && b->stats[i]->y == y)
-            return b->stats[i];
+        Bzzt_Stat *stat = b->stats[i];
+        int cell_idx = board_cell_index(b, stat ? stat->x : -1, stat ? stat->y : -1);
+        if (!stat || cell_idx < 0)
+            continue;
+        b->stat_index_grid[cell_idx] = i;
     }
-    return NULL;
 }
 
 int Bzzt_Board_Get_Stat_Index(Bzzt_Board *b, Bzzt_Stat *stat)
@@ -180,6 +239,20 @@ int Bzzt_Board_Get_Bullet_Count(Bzzt_Board *b)
             count++;
     }
     return count;
+}
+
+static bool projectile_can_enter_tile(Bzzt_Tile tile)
+{
+    switch (tile.element)
+    {
+    case ZZT_EMPTY:
+    case ZZT_WATER:
+    case ZZT_FAKE:
+    case ZZT_BREAKABLE:
+        return true;
+    default:
+        return false;
+    }
 }
 
 static int get_default_glyph_for_element(uint8_t type)
@@ -238,9 +311,9 @@ bool Bzzt_Board_Set_Tile(Bzzt_Board *b, int x, int y, Bzzt_Tile tile)
     if (!b || x < 0 || x >= b->width || y < 0 || y >= b->height)
         return false;
 
-    b->tiles[y * b->width + x] = tile;
     tile.x = x;
     tile.y = y;
+    b->tiles[y * b->width + x] = tile;
     return true;
 }
 
@@ -251,7 +324,7 @@ bool Bzzt_Board_Is_In_Bounds(Bzzt_Board *b, int x, int y)
 
 void update_tile_neighbors(Bzzt_Tile tile)
 {
-    
+    (void)tile;
 }
 
 void Bzzt_Board_Move_Tile_To(Bzzt_Board *b, Bzzt_Tile tile, int x, int y)
@@ -291,6 +364,17 @@ void Bzzt_Board_Move_Stat_To(Bzzt_Board *board, Bzzt_Stat *stat, int new_x, int 
 
     stat->x = new_x;
     stat->y = new_y;
+
+    int prev_cell = board_cell_index(board, stat->prev_x, stat->prev_y);
+    int new_cell = board_cell_index(board, stat->x, stat->y);
+    int stat_idx = Bzzt_Board_Get_Stat_Index(board, stat);
+    if (board->stat_index_grid && stat_idx >= 0)
+    {
+        if (prev_cell >= 0)
+            board->stat_index_grid[prev_cell] = -1;
+        if (new_cell >= 0)
+            board->stat_index_grid[new_cell] = stat_idx;
+    }
 }
 
 bool Bzzt_Stat_Is_Blocked(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *s, Direction dir)
@@ -335,41 +419,46 @@ bool Bzzt_Stat_Is_Blocked(Bzzt_World *w, Bzzt_Board *b, Bzzt_Stat *s, Direction 
 
 Bzzt_Stat *Bzzt_Stat_Shoot(Bzzt_Board *b, Bzzt_Stat *shooter, Direction dir)
 {
+    return Bzzt_Stat_Fire_Projectile(b, shooter, dir, ZZT_BULLET, 0);
+}
+
+Bzzt_Stat *Bzzt_Stat_Fire_Projectile(Bzzt_Board *b, Bzzt_Stat *shooter, Direction dir, uint8_t element, uint8_t lifetime_ticks)
+{
     if (!b || !shooter || dir == DIR_NONE)
         return NULL;
 
-    const ZZT_Element_Defaults *bullet_defaults = zzt_get_element_defaults(ZZT_BULLET);
-    if (!bullet_defaults)
-        return;
+    const ZZT_Element_Defaults *defaults = zzt_get_element_defaults(element);
+    if (!defaults)
+        return NULL;
 
-    int bullet_x = 0;
-    int bullet_y = 0;
+    int projectile_x = 0;
+    int projectile_y = 0;
     int step_x = 0;
     int step_y = 0;
 
     switch (dir)
     {
     case DIR_UP:
-        bullet_x = shooter->x;
-        bullet_y = shooter->y - 1;
+        projectile_x = shooter->x;
+        projectile_y = shooter->y - 1;
         step_x = 0;
         step_y = -1;
         break;
     case DIR_DOWN:
-        bullet_x = shooter->x;
-        bullet_y = shooter->y + 1;
+        projectile_x = shooter->x;
+        projectile_y = shooter->y + 1;
         step_x = 0;
         step_y = 1;
         break;
     case DIR_LEFT:
-        bullet_x = shooter->x - 1;
-        bullet_y = shooter->y;
+        projectile_x = shooter->x - 1;
+        projectile_y = shooter->y;
         step_x = -1;
         step_y = 0;
         break;
     case DIR_RIGHT:
-        bullet_x = shooter->x + 1;
-        bullet_y = shooter->y;
+        projectile_x = shooter->x + 1;
+        projectile_y = shooter->y;
         step_x = 1;
         step_y = 0;
         break;
@@ -377,20 +466,26 @@ Bzzt_Stat *Bzzt_Stat_Shoot(Bzzt_Board *b, Bzzt_Stat *shooter, Direction dir)
         return NULL;
     }
 
-    if (!Bzzt_Board_Is_In_Bounds(b, bullet_x, bullet_y))
-        return NULL; // Out of bounds
+    if (!Bzzt_Board_Is_In_Bounds(b, projectile_x, projectile_y))
+        return NULL;
 
-    Bzzt_Tile target_tile = Bzzt_Board_Get_Tile(b, bullet_x, bullet_y);
-    if (target_tile.element != ZZT_EMPTY && target_tile.element != ZZT_WATER && target_tile.element != ZZT_FAKE && target_tile.element != ZZT_BREAKABLE)
-        return; // Can't shoot into solid object
+    Bzzt_Tile target_tile = Bzzt_Board_Get_Tile(b, projectile_x, projectile_y);
+    if (!projectile_can_enter_tile(target_tile))
+        return NULL;
 
-    Bzzt_Stat *bullet = Bzzt_Board_Spawn_Stat(b, ZZT_BULLET, bullet_x, bullet_y,
-                                              bzzt_get_color(bullet_defaults->default_fg_idx),
-                                              bzzt_get_color(bullet_defaults->default_bg_idx));
-    bullet->step_x = step_x;
-    bullet->step_y = step_y;
-    bullet->data[0] = Bzzt_Board_Get_Stat_Index(b, shooter); // set shooter index
-    return bullet;
+    Bzzt_Stat *projectile = Bzzt_Board_Spawn_Stat(b, element, projectile_x, projectile_y,
+                                                  bzzt_get_color(defaults->default_fg_idx),
+                                                  bzzt_get_color(defaults->default_bg_idx));
+    if (!projectile)
+        return NULL;
+
+    projectile->step_x = step_x;
+    projectile->step_y = step_y;
+    if (element == ZZT_BULLET)
+        projectile->data[0] = Bzzt_Board_Get_Stat_Index(b, shooter);
+    else if (element == ZZT_STAR)
+        projectile->data[0] = lifetime_ticks;
+    return projectile;
 }
 
 Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw)
@@ -399,7 +494,7 @@ Bzzt_Board *Bzzt_Board_From_ZZT_Board(ZZTworld *zw)
         return NULL;
 
     ZZTblock *block = zztBoardGetBlock(zw);
-    Bzzt_Board *bzzt_board = Bzzt_Board_Create(zztBoardGetTitle(zw), block->width, block->height);
+    Bzzt_Board *bzzt_board = Bzzt_Board_Create((const char *)zztBoardGetTitle(zw), block->width, block->height);
 
     bzzt_board->board_n = zztBoardGetBoard_n(zw);
     bzzt_board->board_s = zztBoardGetBoard_s(zw);

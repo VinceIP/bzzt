@@ -48,32 +48,7 @@ typedef uint32_t zzt_message_shown_flags_t;
     (1U << ZZT_MSG_SHOT_EMPTY) |           \
     (1U << ZZT_MSG_ROOM_DARK))
 
-static const char *zzt_message_table[] = {
-    "Bomb activated!",
-    "Energizer - you are invincible",
-    "You already have a %s key!",
-    "You now have a %s key.",
-    "Ammunition - 5 shots per container.",
-    "Gems give you Health!",
-    "The %s door is now open.",
-    "The %s door is locked!",
-    "Torch - used for lighting in the underground.",
-    "Don't need a torch - room is not dark!",
-    "You don't have any torches!",
-    "You are blocked by an invisible wall.",
-    "A path is cleared through the forest.",
-    "A fake wall - secret passage!",
-    "Your way is blocked by water.",
-    "Ouch!",
-    "Can't shoot in this place!",
-    "You don't have any ammo!",
-    "Game over - Press ESCAPE",
-    "Room is dark - you need to light a torch!",
-    "Running out of time!",
-    "",
-    "ERR: %s", // s = failing oop command
-    "%s"       // s = one-line text string from ZZT-OOP
-};
+extern const char *const zzt_message_table[];
 
 // Return true if a one-time message was already shown
 static inline bool zzt_message_was_shown(zzt_message_shown_flags_t flags, zzt_message_t msg)

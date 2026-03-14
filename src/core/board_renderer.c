@@ -46,14 +46,14 @@
 //     }
 // }
 
-static void clear_board(Renderer *r, Bzzt_Board *b)
+static void clear_board(Renderer *r, const Bzzt_Board *b)
 {
     int count = b->width * b->height;
 
-    for (size_t i = 0; i < count; ++i)
+    for (int i = 0; i < count; ++i)
     {
-        int col = (int)(i % b->width);
-        int row = (int)(i / b->width);
+        int col = i % b->width;
+        int row = i / b->width;
         Renderer_Draw_Cell(r, col, row, 0, COLOR_BLACK, COLOR_BLACK);
     }
 }
@@ -71,8 +71,8 @@ void Renderer_Draw_Board(Renderer *r, Bzzt_World *w, const Bzzt_Board *b)
     {
         for (int x = 0; x < b->width; ++x)
         {
-            Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, x, y);
-            Bzzt_Stat *stat = Bzzt_Board_Get_Stat_At(b, x, y);
+            Bzzt_Tile tile = Bzzt_Board_Get_Tile((Bzzt_Board *)b, x, y);
+            Bzzt_Stat *stat = Bzzt_Board_Get_Stat_At((Bzzt_Board *)b, x, y);
 
             // Only draw tiles that don't have stats on them
             // OR draw the under-tile if stat is present
@@ -106,13 +106,17 @@ void Renderer_Draw_Board(Renderer *r, Bzzt_World *w, const Bzzt_Board *b)
         Bzzt_Stat *stat = b->stats[i];
         if (!stat)
             continue;
+        if (!Bzzt_Board_Is_In_Bounds((Bzzt_Board *)b, stat->x, stat->y))
+            continue;
 
         // Get interpolated position
         float render_x, render_y;
         Bzzt_Get_Interpolated_Position(w, stat, &render_x, &render_y);
 
         // Get the tile at the stat's LOGICAL position (not interpolated)
-        Bzzt_Tile tile = Bzzt_Board_Get_Tile(b, stat->x, stat->y);
+        Bzzt_Tile tile = Bzzt_Board_Get_Tile((Bzzt_Board *)b, stat->x, stat->y);
+        if (tile.element == ZZT_PLAYER)
+            tile = Bzzt_World_Get_Player_Render_Tile(w, tile);
 
         // Check if we should draw this stat
         bool should_draw = true;
@@ -121,12 +125,6 @@ void Renderer_Draw_Board(Renderer *r, Bzzt_World *w, const Bzzt_Board *b)
         if (tile.blink && w->allow_blink && !w->blink_state)
         {
             should_draw = false; // Don't draw stat during blink-off
-        }
-
-        // Don't draw player on title screen
-        if (w->boards_current == 0 && tile.element == ZZT_PLAYER)
-        {
-            should_draw = false;
         }
 
         if (should_draw && tile.visible)

@@ -29,6 +29,12 @@
 #define PROMPT_QUIT_TO_MENU "Quit to main menu?"
 #define PROMPT_QUIT_TO_TITLE "End the game?"
 #define PROMPT_PAUSING "Pausing..."
+#define PLAY_SIDEBAR_BUI "assets/ui/sidebar_play_bzzt.bui"
+/* Swap this define to test variants:
+ * "assets/ui/sidebar_play.bui"
+ * "assets/ui/sidebar_play_bzzt.bui"
+ * "assets/ui/sidebar_play_industrial.bui"
+ */
 
 static char keys_display_buffer[128];
 static const char *FILE_BROWSER_BUI = "assets/ui/file_browser.bui";
@@ -41,6 +47,15 @@ static void clear_pending_world_load(Engine *e)
     e->world_to_load[0] = '\0';
     e->world_to_load_member[0] = '\0';
     e->world_to_load_from_zip = false;
+}
+
+static void destroy_current_world(Engine *e)
+{
+    if (!e || !e->world)
+        return;
+
+    Bzzt_World_Destroy(e->world);
+    e->world = NULL;
 }
 
 static void reset_file_browser_scroll(Engine *e)
@@ -91,6 +106,66 @@ static void bind_file_browser_ui(Engine *e)
 }
 
 static void load_splash_screen(UI *ui, UIActionRegistry *registry);
+
+static bool title_mode_from_loaded_world(Engine *e)
+{
+    if (!e || !e->world || !e->ui || !e->ui_ctx)
+        return false;
+
+    if (!e->world->boards[0])
+        return false;
+
+    Bzzt_World_Switch_Board_To(e->world, 0, e->world->title_monitor_x, e->world->title_monitor_y);
+    Bzzt_World_Set_Pause(e->world, false);
+    e->file_browser_active = false;
+    Input_Clear_Movement(e->input);
+
+    UIContext *ui_ctx = e->ui_ctx;
+    if (ui_ctx->title_mode.overlay_title_screen_display)
+    {
+        UIOverlay_Set_Enabled(ui_ctx->title_mode.overlay_title_screen_display, true);
+        UIOverlay_Set_Visible(ui_ctx->title_mode.overlay_title_screen_display, true);
+    }
+
+    if (ui_ctx->play_mode.overlay_play_screen_display)
+    {
+        UIOverlay_Set_Enabled(ui_ctx->play_mode.overlay_play_screen_display, false);
+        UIOverlay_Set_Visible(ui_ctx->play_mode.overlay_play_screen_display, false);
+    }
+
+    if (ui_ctx->title_mode.overlay_confirm_quit_buttons)
+    {
+        UIOverlay_Set_Enabled(ui_ctx->title_mode.overlay_confirm_quit_buttons, false);
+        UIOverlay_Set_Visible(ui_ctx->title_mode.overlay_confirm_quit_buttons, false);
+    }
+
+    if (ui_ctx->play_mode.overlay_confirm_quit_buttons)
+    {
+        UIOverlay_Set_Enabled(ui_ctx->play_mode.overlay_confirm_quit_buttons, false);
+        UIOverlay_Set_Visible(ui_ctx->play_mode.overlay_confirm_quit_buttons, false);
+    }
+
+    if (ui_ctx->title_mode.quit_to_menu_text)
+    {
+        UIElement_Set_Enabled((UIElement *)ui_ctx->title_mode.quit_to_menu_text, false);
+        UIElement_Set_Visible((UIElement *)ui_ctx->title_mode.quit_to_menu_text, false);
+    }
+
+    if (ui_ctx->play_mode.quit_to_title_text)
+    {
+        UIElement_Set_Enabled((UIElement *)ui_ctx->play_mode.quit_to_title_text, false);
+        UIElement_Set_Visible((UIElement *)ui_ctx->play_mode.quit_to_title_text, false);
+    }
+
+    if (ui_ctx->play_mode.pausing_text)
+    {
+        UIElement_Set_Enabled((UIElement *)ui_ctx->play_mode.pausing_text, false);
+        UIElement_Set_Visible((UIElement *)ui_ctx->play_mode.pausing_text, false);
+    }
+
+    UI_Reset_Button_State();
+    return true;
+}
 
 static bool open_file_browser(Engine *e)
 {
@@ -160,10 +235,10 @@ static void btn_title_press_play(UIActionContext *ctx)
 
     Engine_Set_State(ctx->engine, ENGINE_STATE_PLAY);
 
-    ui_ctx->title_mode.overlay_title_screen_display->properties.enabled = false;
-    ui_ctx->title_mode.overlay_title_screen_display->properties.visible = false;
-    ui_ctx->play_mode.overlay_play_screen_display->properties.enabled = true;
-    ui_ctx->play_mode.overlay_play_screen_display->properties.visible = true;
+    UIOverlay_Set_Enabled(ui_ctx->title_mode.overlay_title_screen_display, false);
+    UIOverlay_Set_Visible(ui_ctx->title_mode.overlay_title_screen_display, false);
+    UIOverlay_Set_Enabled(ui_ctx->play_mode.overlay_play_screen_display, true);
+    UIOverlay_Set_Visible(ui_ctx->play_mode.overlay_play_screen_display, true);
 
     Input_Clear_Movement(ctx->engine->input);
 
@@ -196,16 +271,16 @@ static void btn_toggle_quit(UIActionContext *ctx)
         UIOverlay_Set_Enabled(ui_ctx->title_mode.overlay_title_screen_display, !title_bar_enabled);
         UIOverlay_Set_Visible(ui_ctx->title_mode.overlay_title_screen_display, !title_bar_enabled);
 
-        UIElement_Set_Enabled(ui_ctx->title_mode.quit_to_menu_text, !title_txt_enabled);
-        UIElement_Set_Visible(ui_ctx->title_mode.quit_to_menu_text, !title_txt_enabled);
+        UIElement_Set_Enabled((UIElement *)ui_ctx->title_mode.quit_to_menu_text, !title_txt_enabled);
+        UIElement_Set_Visible((UIElement *)ui_ctx->title_mode.quit_to_menu_text, !title_txt_enabled);
     }
     else if (e->state == ENGINE_STATE_PLAY)
     {
         UIOverlay_Set_Enabled(ui_ctx->play_mode.overlay_play_screen_display, !play_bar_enabled);
         UIOverlay_Set_Visible(ui_ctx->play_mode.overlay_play_screen_display, !play_bar_enabled);
 
-        UIElement_Set_Enabled(ui_ctx->play_mode.quit_to_title_text, !play_txt_enabled);
-        UIElement_Set_Visible(ui_ctx->play_mode.quit_to_title_text, !play_txt_enabled);
+        UIElement_Set_Enabled((UIElement *)ui_ctx->play_mode.quit_to_title_text, !play_txt_enabled);
+        UIElement_Set_Visible((UIElement *)ui_ctx->play_mode.quit_to_title_text, !play_txt_enabled);
     }
 }
 
@@ -218,12 +293,8 @@ static void btn_confirm_quit(UIActionContext *ctx)
         Engine_Set_State(ctx->engine, ENGINE_STATE_MENU);
     else if (ctx->engine->state == ENGINE_STATE_PLAY)
     {
-        // Change to title board
         Engine_Set_State(ctx->engine, ENGINE_STATE_TITLE);
-        Bzzt_Board *title_board = ctx->engine->world->boards[0];
-        Bzzt_Stat *player = title_board->stats[0];
         Input_Clear_Movement(ctx->engine->input);
-        Bzzt_World_Switch_Board_To(ctx->engine->world, 0, player->x, player->y);
         btn_toggle_quit(ctx); // And disable the prompt
     }
 }
@@ -267,12 +338,12 @@ static bool register_ui_components(Engine *e)
 
     ctx->title_mode.overlay_title_screen_display = UIOverlay_Find_By_Name(ui, "Title Screen Display");
     ctx->title_mode.overlay_confirm_quit_buttons = UIOverlay_Find_By_Name(ui, "confirm quit buttons");
-    ctx->title_mode.quit_to_menu_text = UIElement_Find_By_Name(ui, "quit to menu text");
+    ctx->title_mode.quit_to_menu_text = (UIElement_Text *)UIElement_Find_By_Name(ui, "quit to menu text");
 
     ctx->play_mode.overlay_play_screen_display = UIOverlay_Find_By_Name(ui, "play screen display");
     ctx->play_mode.overlay_confirm_quit_buttons = UIOverlay_Find_By_Name(ui, "confirm quit buttons");
-    ctx->play_mode.quit_to_title_text = UIElement_Find_By_Name(ui, "quit to title text");
-    ctx->play_mode.pausing_text = UIElement_Find_By_Name(ui, "pausing text");
+    ctx->play_mode.quit_to_title_text = (UIElement_Text *)UIElement_Find_By_Name(ui, "quit to title text");
+    ctx->play_mode.pausing_text = (UIElement_Text *)UIElement_Find_By_Name(ui, "pausing text");
 
     return true;
 }
@@ -439,11 +510,22 @@ static bool zzt_title_init(Engine *e)
             return false;
         }
 
-        snprintf(display_name,
-                 sizeof(display_name),
-                 "%s!/%s",
-                 e->world_to_load,
-                 e->world_to_load_member);
+        size_t written = 0;
+        size_t outer_len = strnlen(e->world_to_load, sizeof(display_name) - 1);
+        memcpy(display_name, e->world_to_load, outer_len);
+        written = outer_len;
+        if (written < sizeof(display_name) - 1)
+            display_name[written++] = '!';
+        if (written < sizeof(display_name) - 1)
+            display_name[written++] = '/';
+        size_t remaining = sizeof(display_name) - written - 1;
+        if (remaining > 0)
+        {
+            size_t member_len = strnlen(e->world_to_load_member, remaining);
+            memcpy(display_name + written, e->world_to_load_member, member_len);
+            written += member_len;
+        }
+        display_name[written] = '\0';
         world = Bzzt_World_From_ZZT_Stream(stream, display_name);
         fclose(stream);
     }
@@ -468,7 +550,7 @@ static bool zzt_title_init(Engine *e)
         return false;
     }
 
-    if (!UI_Load_From_BUI(ui, "assets/ui/sidebar_play.bui"))
+    if (!UI_Load_From_BUI(ui, PLAY_SIDEBAR_BUI))
     {
         UI_Destroy(ui);
         Bzzt_World_Destroy(world);
@@ -481,16 +563,13 @@ static bool zzt_title_init(Engine *e)
         UI_Destroy(e->ui);
         e->ui = NULL;
     }
-    if (e->world)
-    {
-        Bzzt_World_Destroy(e->world);
-        e->world = NULL;
-    }
+    destroy_current_world(e);
 
     e->world = world;
     e->ui = ui;
     e->file_browser_active = false;
     Input_Clear_Movement(e->input);
+    Bzzt_World_Set_Pause(e->world, false);
 
     UI_Resolve_Button_Actions(e->ui, e->action_registry);
     UI_Reset_Button_State();
@@ -556,8 +635,7 @@ static void apply_state_change(Engine *e)
 
         if (e->world)
         {
-            Bzzt_World_Destroy(e->world);
-            e->world = NULL;
+            destroy_current_world(e);
         }
 
         e->file_browser_active = false;
@@ -569,11 +647,7 @@ static void apply_state_change(Engine *e)
             UI_Destroy(e->ui);
         e->ui = UI_Create(true, true);
         Editor_Init(e);
-        if (e->world)
-        {
-            Bzzt_World *w = e->world;
-            w->doUnload = true;
-        }
+        destroy_current_world(e);
         break;
 
     case ENGINE_STATE_TITLE:
@@ -582,14 +656,27 @@ static void apply_state_change(Engine *e)
             Editor_Destroy(e->editor);
             e->editor = NULL;
         }
-        if (!zzt_title_init(e))
+        if (e->world && !e->world_to_load[0] && !e->world_to_load_from_zip)
         {
-        e->state = ENGINE_STATE_MENU;
-        e->file_browser_active = true;
-        reset_file_browser_scroll(e);
-        FileBrowser_SetStatus(e->file_browser, "Failed to load selected .zzt world.");
-    }
-    break;
+            if (!title_mode_from_loaded_world(e))
+            {
+                e->state = ENGINE_STATE_MENU;
+                e->file_browser_active = true;
+                reset_file_browser_scroll(e);
+                FileBrowser_SetStatus(e->file_browser, "Failed to return to title screen.");
+            }
+        }
+        else if (!zzt_title_init(e))
+        {
+            e->state = ENGINE_STATE_MENU;
+            e->file_browser_active = true;
+            reset_file_browser_scroll(e);
+            FileBrowser_SetStatus(e->file_browser, "Failed to load selected .zzt world.");
+        }
+        break;
+    case ENGINE_STATE_PLAY:
+    case ENGINE_STATE__COUNT:
+        break;
     }
 }
 
@@ -605,16 +692,16 @@ static void sync_ui_to_world_state(Engine *e)
     {
         if (!ui_ctx->play_mode.pausing_text->base.properties.enabled)
         {
-            UIElement_Set_Enabled(ui_ctx->play_mode.pausing_text, true);
-            UIElement_Set_Visible(ui_ctx->play_mode.pausing_text, true);
+            UIElement_Set_Enabled((UIElement *)ui_ctx->play_mode.pausing_text, true);
+            UIElement_Set_Visible((UIElement *)ui_ctx->play_mode.pausing_text, true);
         }
     }
     else
     {
         if (ui_ctx->play_mode.pausing_text->base.properties.enabled)
         {
-            UIElement_Set_Enabled(ui_ctx->play_mode.pausing_text, false);
-            UIElement_Set_Visible(ui_ctx->play_mode.pausing_text, false);
+            UIElement_Set_Enabled((UIElement *)ui_ctx->play_mode.pausing_text, false);
+            UIElement_Set_Visible((UIElement *)ui_ctx->play_mode.pausing_text, false);
         }
     }
 }
@@ -657,7 +744,7 @@ bool Engine_Init(Engine *e, InputState *in)
     e->action_registry = UIAction_Registry_Create();
     e->file_browser = FileBrowser_Create();
     register_ui_actions(e);
-    e->ui_ctx = malloc(sizeof(UIContext));
+    e->ui_ctx = calloc(1, sizeof(UIContext));
 
     init_camera(e);
 

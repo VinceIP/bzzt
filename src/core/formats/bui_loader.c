@@ -54,9 +54,12 @@ static void measure_text(const char *str, int *w, int *h)
             }
             else if (next == 'f' || next == 'b' || next == 'c')
             {
+                bool draws_glyph = (next == 'c');
                 i += 2;
                 while (str[i] && isdigit((unsigned char)str[i]))
                     i++;
+                if (draws_glyph)
+                    cur_w++;
                 continue;
             }
         }
@@ -99,7 +102,8 @@ typedef struct
     char *type;
     char *name;
     int id;
-    int x, y, z, w, h;
+    int x, y, z;
+    int *w, *h;
     int padding;
     char *text;
     char *value;
@@ -258,9 +262,6 @@ static const cyaml_schema_field_t button_events_fields[] = {
     CYAML_FIELD_STRING_PTR("on_release", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlButtonEvents, on_release, 0, CYAML_UNLIMITED),
     CYAML_FIELD_END};
 
-static const cyaml_schema_value_t button_events_schema = {
-    CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, YamlButtonEvents, button_events_fields)};
-
 static const cyaml_schema_field_t element_fields[] = {
     CYAML_FIELD_STRING_PTR("type", CYAML_FLAG_POINTER, YamlElement, type, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("name", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, name, 0, CYAML_UNLIMITED),
@@ -268,8 +269,8 @@ static const cyaml_schema_field_t element_fields[] = {
     CYAML_FIELD_INT("x", CYAML_FLAG_OPTIONAL, YamlElement, x),
     CYAML_FIELD_INT("y", CYAML_FLAG_OPTIONAL, YamlElement, y),
     CYAML_FIELD_INT("z", CYAML_FLAG_OPTIONAL, YamlElement, z),
-    CYAML_FIELD_INT("width", CYAML_FLAG_OPTIONAL, YamlElement, w),
-    CYAML_FIELD_INT("height", CYAML_FLAG_OPTIONAL, YamlElement, h),
+    CYAML_FIELD_INT_PTR("width", CYAML_FLAG_OPTIONAL, YamlElement, w),
+    CYAML_FIELD_INT_PTR("height", CYAML_FLAG_OPTIONAL, YamlElement, h),
     CYAML_FIELD_INT("padding", CYAML_FLAG_OPTIONAL, YamlElement, padding),
     CYAML_FIELD_STRING_PTR("text", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, text, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("value", CYAML_FLAG_OPTIONAL | CYAML_FLAG_POINTER, YamlElement, value, 0, CYAML_UNLIMITED),
@@ -567,7 +568,9 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                     const char *src = ye->text ? ye->text : "";
                     char *caption = strdup(src);
                     UIAlign align = align_from_string(ye->align);
-                    UIButton *btn = UIButton_Create(ov, ye->name, eid, ye->x, ye->y, ye->z, ye->w, ye->h, ye->padding,
+                    int element_w = ye->w ? *ye->w : 0;
+                    int element_h = ye->h ? *ye->h : 0;
+                    UIButton *btn = UIButton_Create(ov, ye->name, eid, ye->x, ye->y, ye->z, element_w, element_h, ye->padding,
                                                     elem_fg, elem_bg,
                                                     is_elem_visible, is_elem_enabled,
                                                     ye->expand, align, caption,
@@ -575,13 +578,13 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
 
                     int mw, mh;
                     measure_text(caption ? caption : "", &mw, &mh);
-                    btn->base.properties.w = ye->w > 0 ? ye->w : mw;
-                    btn->base.properties.h = ye->h > 0 ? ye->h : mh;
+                    btn->base.properties.w = element_w > 0 ? element_w : mw;
+                    btn->base.properties.h = element_h > 0 ? element_h : mh;
 
                     if (ye->input_bindings && ye->input_bindings_count > 0)
                     {
                         btn->input_bindings.count = 0;
-                        for (int i = 0; i < ye->input_bindings_count && i < 8; ++i)
+                        for (unsigned i = 0; i < ye->input_bindings_count && i < 8; ++i)
                         {
                             YamlInputBinding *yb = &ye->input_bindings[i];
                             UIInputBinding *ib =
@@ -622,8 +625,6 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                     }
 
                     UIOverlay_Add_New_Element(ov, (UIElement *)btn);
-                    int step = (btn->base.properties.h > 0 ? btn->base.properties.h : 1) + yo->spacing;
-                    // y_cursor += step;
                 }
 
                 else if (strcasecmp(ye->type, "text") == 0)
@@ -640,13 +641,9 @@ bool UI_Load_From_BUI(UI *ui, const char *path)
                     txt->base.properties.parent = ov;
                     txt->base.properties.visible = is_elem_visible;
                     txt->base.properties.enabled = is_elem_enabled;
-                    int mw, mh;
-                    measure_text(ye->text ? ye->text : "", &mw, &mh);
-                    txt->base.properties.w = ye->w > 0 ? ye->w : mw;
-                    txt->base.properties.h = ye->h > 0 ? ye->h : mh;
+                    txt->base.properties.w = (ye->w && *ye->w > 0) ? *ye->w : 0;
+                    txt->base.properties.h = (ye->h && *ye->h > 0) ? *ye->h : 0;
                     UIOverlay_Add_New_Element(ov, (UIElement *)txt);
-                    int step = (txt->base.properties.h > 0 ? txt->base.properties.h : 1) + yo->spacing;
-                    // y_cursor += step;
                 }
             }
         }

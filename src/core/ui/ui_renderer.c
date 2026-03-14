@@ -56,9 +56,12 @@ static LineMetrics get_next_line_metrics(const char **str_ptr)
                                      *(metrics.end + 1) == 'b' ||
                                      *(metrics.end + 1) == 'c'))
         {
+            bool draws_glyph = (*(metrics.end + 1) == 'c');
             metrics.end += 2; // Skip over '\f' or '\b or \c'
             while (isdigit((unsigned char)*metrics.end))
                 metrics.end++;
+            if (draws_glyph)
+                metrics.visible_width++;
         }
         else
         {
@@ -115,6 +118,52 @@ static void measure_text(const char *str, int *w, int *h)
         *w = max_w;
     if (h)
         *h = lines;
+}
+
+static void get_text_element_bounds(UIElement_Text *text_elem, int *w, int *h)
+{
+    if (!text_elem)
+    {
+        if (w)
+            *w = 0;
+        if (h)
+            *h = 0;
+        return;
+    }
+
+    const char *str = text_elem->textCallback ? text_elem->textCallback(text_elem->ud) : NULL;
+    measure_text(str ? str : "", w, h);
+}
+
+static void get_element_render_bounds(UIElement *element, int *w, int *h)
+{
+    if (!element)
+    {
+        if (w)
+            *w = 0;
+        if (h)
+            *h = 0;
+        return;
+    }
+
+    int render_w = element->properties.w;
+    int render_h = element->properties.h;
+
+    if (element->type == UI_ELEM_TEXT && (render_w <= 0 || render_h <= 0))
+    {
+        int measured_w = 0;
+        int measured_h = 0;
+        get_text_element_bounds((UIElement_Text *)element, &measured_w, &measured_h);
+        if (render_w <= 0)
+            render_w = measured_w;
+        if (render_h <= 0)
+            render_h = measured_h;
+    }
+
+    if (w)
+        *w = render_w;
+    if (h)
+        *h = render_h;
 }
 
 /**
@@ -233,9 +282,12 @@ static void draw_ui_element(Renderer *r, UIOverlay *overlay, UIElement *element,
         const char *str = text_elem->textCallback(text_elem->ud);
         if (str)
         {
+            int render_w = 0;
+            int render_h = 0;
+            get_element_render_bounds(element, &render_w, &render_h);
             // For text elements, the alignment is applied to the text *within* the element's bounding box.
-            draw_text(r, str, abs_x, abs_y, element->properties.w,
-                      element->properties.h,
+            draw_text(r, str, abs_x, abs_y, render_w,
+                      render_h,
                       text_elem->fg, text_elem->bg,
                       element->properties.align != ALIGN_LEFT ? element->properties.align : overlay->align);
         }
@@ -295,6 +347,9 @@ static void draw_ui_overlay(Renderer *r, UISurface *surface, UIOverlay *overlay)
             continue;
 
         int element_abs_x;
+        int element_render_w = 0;
+        int element_render_h = 0;
+        get_element_render_bounds(element, &element_render_w, &element_render_h);
 
         // Use elements align if it's explicitly set, otherwise fall back to align setting of parent overlay
         UIAlign effective_align =
@@ -305,12 +360,12 @@ static void draw_ui_overlay(Renderer *r, UISurface *surface, UIOverlay *overlay)
         if (effective_align == ALIGN_CENTER)
         {
             // Center the element within the container, then apply its own x as an offset.
-            element_abs_x = overlay_abs_x + (container_w - element->properties.w) / 2 + element->properties.x;
+            element_abs_x = overlay_abs_x + (container_w - element_render_w) / 2 + element->properties.x;
         }
         else if (effective_align == ALIGN_RIGHT)
         {
             // Right-align the element, then apply its own x as an offset.
-            element_abs_x = overlay_abs_x + container_w - element->properties.w + element->properties.x;
+            element_abs_x = overlay_abs_x + container_w - element_render_w + element->properties.x;
         }
         else // ALIGN_LEFT
         {
